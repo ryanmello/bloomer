@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { ContactRound, Home, Settings, Users } from "lucide-react";
 import { Command, CommandGroup, CommandList } from "../ui/command";
@@ -11,10 +9,6 @@ import UserFooter from "./UserFooter";
 import { User } from "@prisma/client";
 
 const SidebarContent = ({ currentUser }: { currentUser: User }) => {
-  if (!currentUser) {
-    return <p>uh oh</p>;
-  }
-
   const menuList = [
     {
       group: "General",

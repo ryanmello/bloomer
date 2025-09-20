@@ -10,16 +10,13 @@ interface SidebarItemProps {
   className: string;
 }
 
-export default function SidebarItem({
-  option,
-  className,
-}: SidebarItemProps) {
+export default function SidebarItem({ option, className }: SidebarItemProps) {
   const router = useRouter();
   const pathname = usePathname();
 
   return (
     <div
-      onClick={() => router.push(option.link)}
+      // onClick={() => router.push(option.link)}
       className={`sidebar-item ${className}`}
     >
       <CommandItem
@@ -28,7 +25,8 @@ export default function SidebarItem({
           pathname == option.link && "bg-primary-foreground"
         )}
       >
-        {option.icon}<p className="">{option.text}</p>
+        {option.icon}
+        <p className="">{option.text}</p>
       </CommandItem>
     </div>
   );

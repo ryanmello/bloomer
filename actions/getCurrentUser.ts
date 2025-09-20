@@ -12,8 +12,6 @@ export const getCurrentUser = async () => {
       },
     });
 
-    console.log(user);
-
     if (!user) {
       return null;
     }
