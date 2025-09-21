@@ -6,7 +6,7 @@ import Sidebar from "@/components/sidebar/Sidebar";
 
 export const metadata: Metadata = {
   title: "Bloomer",
-  description: "Bloomer",
+  description: "Let's grow together.",
 };
 
 export default function RootLayout({
