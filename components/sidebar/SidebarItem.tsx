@@ -8,21 +8,30 @@ import { CommandItem } from "../ui/command";
 interface SidebarItemProps {
   option: any;
   className: string;
+  disabled?: boolean;
 }
 
-export default function SidebarItem({ option, className }: SidebarItemProps) {
+export default function SidebarItem({ option, className, disabled = false }: SidebarItemProps) {
   const router = useRouter();
   const pathname = usePathname();
 
+  const handleClick = () => {
+    if (!disabled) {
+      router.push(option.link);
+    }
+  };
+
   return (
     <div
-      // onClick={() => router.push(option.link)}
+      onClick={handleClick}
       className={`sidebar-item ${className}`}
     >
       <CommandItem
         className={cn(
-          "flex gap-4 cursor-pointer hover:bg-primary-foreground",
-          pathname == option.link && "bg-primary-foreground"
+          "flex gap-4",
+          !disabled && "cursor-pointer hover:bg-primary-foreground",
+          disabled && "cursor-not-allowed opacity-50",
+          !disabled && pathname == option.link && "bg-primary-foreground"
         )}
       >
         {option.icon}
