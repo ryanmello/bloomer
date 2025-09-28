@@ -28,9 +28,8 @@ export default function SidebarItem({ option, className, disabled = false }: Sid
     >
       <CommandItem
         className={cn(
-          "flex gap-4",
-          !disabled && "cursor-pointer hover:bg-primary-foreground",
-          disabled && "cursor-not-allowed opacity-50",
+          "flex gap-4 cursor-pointer",
+          !disabled && "hover:bg-primary-foreground",
           !disabled && pathname == option.link && "bg-primary-foreground"
         )}
       >

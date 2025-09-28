@@ -127,8 +127,8 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="flex flex-col border-r min-h-screen p-4 transition-width duration-300 ease-in-out w-[260px] flex-shrink-0">
-      <div className="flex items-center justify-between mb-4">
+    <aside className="flex flex-col border-r min-h-screen p-4 transition-width duration-300 ease-in-out w-[260px] flex-shrink-0 space-y-4">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 px-2 cursor-pointer">
           <Image src={Flower} alt="Flower" width="24" height="24" />
           <h1 className="font-bold">Bloomer</h1>

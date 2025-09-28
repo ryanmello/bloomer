@@ -1,5 +1,9 @@
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 export default function Settings() {
   return (
-    <div>Settings</div>
+    <div>
+        <ThemeToggle />
+    </div>
   )
 }

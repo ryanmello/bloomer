@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import AuthContext from "../context/AuthContext";
+import { ThemeProvider } from "../context/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import Sidebar from "@/components/sidebar/Sidebar";
 
@@ -15,17 +16,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
-        <AuthContext>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <main className="flex-1">
-              {children}
-            </main>
-          </div>
-          <Toaster />
-        </AuthContext>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthContext>
+            <div className="flex min-h-screen">
+              <Sidebar />
+              <main className="flex-1">
+                {children}
+              </main>
+            </div>
+            <Toaster />
+          </AuthContext>
+        </ThemeProvider>
       </body>
     </html>
   );
