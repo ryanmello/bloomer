@@ -39,7 +39,7 @@ export default function UserFooter({ currentUser }: UserFooterProps) {
               className="rounded-full object-cover"
             />
           ) : (
-            <div className="w-10 h-10 bg-red-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+            <div className="w-8 h-8 bg-red-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
               {initials}
             </div>
           )}

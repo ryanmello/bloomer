@@ -18,9 +18,11 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <AuthContext>
-          <Sidebar />
-          <div className="ml-[260px] min-h-screen">
-            {children}
+          <div className="flex min-h-screen">
+            <Sidebar />
+            <main className="flex-1">
+              {children}
+            </main>
           </div>
           <Toaster />
         </AuthContext>

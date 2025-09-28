@@ -3,9 +3,7 @@
 import { useUser } from "@/context/AuthContext";
 import {
   BookText,
-  ContactRound,
   Funnel,
-  Home,
   LayoutDashboard,
   Mail,
   MessageSquare,
@@ -15,7 +13,6 @@ import {
   ShoppingBag,
   Store,
   Ticket,
-  Users,
   UsersRound,
   Zap,
 } from "lucide-react";
@@ -23,7 +20,7 @@ import { Command, CommandGroup, CommandList } from "../ui/command";
 import Image from "next/image";
 import Flower from "@/public/flower.png";
 import SidebarItem from "./SidebarItem";
-import UserFooter from "./UserFooter";
+import SidebarFooter from "./SidebarFooter";
 
 export default function Sidebar() {
   const { user, isLoading } = useUser();
@@ -109,9 +106,9 @@ export default function Sidebar() {
           hidden: false,
         },
         {
-          link: "/vouchers",
+          link: "/coupons",
           icon: <Ticket />,
-          text: "Vouchers",
+          text: "Coupons",
           hidden: false,
         },
       ],
@@ -130,7 +127,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="flex flex-col border-r min-h-screen p-4 transition-width duration-300 ease-in-out fixed w-[260px] min-w-[260px]">
+    <aside className="flex flex-col border-r min-h-screen p-4 transition-width duration-300 ease-in-out w-[260px] flex-shrink-0">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 px-2 cursor-pointer">
           <Image src={Flower} alt="Flower" width="24" height="24" />
@@ -157,7 +154,7 @@ export default function Sidebar() {
           </CommandList>
         </Command>
       </div>
-      {user && <UserFooter currentUser={user} />}
-    </div>
+      {user && <SidebarFooter currentUser={user} />}
+    </aside>
   );
 }
