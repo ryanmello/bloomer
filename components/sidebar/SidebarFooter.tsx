@@ -82,7 +82,26 @@ export default function UserFooter({
             </div>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="border p-2 rounded-lg bg-card/50">
+          <div className="flex items-center gap-3">
+            {/* Default Avatar */}
+            <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+              U
+            </div>
+
+            {/* No User Info */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-muted-foreground">
+                Not signed in
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Please sign in to continue
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
