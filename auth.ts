@@ -28,7 +28,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return {
             id: user.id.toString(),
             email: user.email,
-            name: user.name || user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+
           };
         } catch (error) {
           console.error('Auth error:', error);

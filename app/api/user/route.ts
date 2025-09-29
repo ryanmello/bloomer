@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       // Fetch all users with role "staff"
       const staffUsers = await db.user.findMany({
         where: { role: "staff" },
-        select: { name: true, email: true, role: true },
+        select: { firstName: true, lastName: true, email: true, role: true },
       });
       return NextResponse.json(staffUsers);
     }
