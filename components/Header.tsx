@@ -18,7 +18,7 @@ export default function Header() {
             <div className="flex items-center justify-center p-1 bg-red-400 rounded-md">
               <Flower className="w-5 h-5"/>
             </div>
-            <p className="font-medium text-sm text-muted-foreground">Chicky Blooms</p>
+            <p className="font-medium text-sm">Chicky Blooms</p>
             <ChevronDown className="text-muted-foreground w-3 h-3" />
           </div>
         </div>

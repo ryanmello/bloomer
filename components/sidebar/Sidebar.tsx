@@ -157,7 +157,7 @@ export default function Sidebar() {
           </CommandList>
         </Command>
       </div>
-      {user && <SidebarFooter currentUser={user} />}
+      <SidebarFooter isLoading={isLoading} currentUser={user} />
     </aside>
   );
 }
