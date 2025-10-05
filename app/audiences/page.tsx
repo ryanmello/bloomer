@@ -20,6 +20,7 @@ export default function Audiences() {
 
   const audiences = [
     {
+      id: "new-customers",
       name: "New Customers",
       description:
         "Customers who made their first purchase in the last 30 days",
@@ -32,6 +33,7 @@ export default function Audiences() {
       type: "predefined" as const,
     },
     {
+      id: "high-spenders",
       name: "High Spenders",
       description:
         "Top 20% of customers by lifetime value and purchase frequency",
@@ -44,6 +46,7 @@ export default function Audiences() {
       type: "predefined" as const,
     },
     {
+      id: "inactive-customers",
       name: "Inactive Customers",
       description:
         "Haven't made a purchase in the last 90 days - win them back!",
@@ -56,6 +59,7 @@ export default function Audiences() {
       type: "custom" as const,
     },
     {
+      id: "birthday-club",
       name: "Birthday Club",
       description:
         "Customers with birthdays in the next 30 days for special offers",
@@ -185,7 +189,7 @@ export default function Audiences() {
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-4">
           {filteredAudiences.length > 0 ? (
             filteredAudiences.map((audience) => (
-              <AudienceCard key={audience.name} {...audience} />
+              <AudienceCard key={audience.id} {...audience} />
             ))
           ) : (
             <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">

@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Users,
   Send,
@@ -6,11 +8,15 @@ import {
   Calendar,
   Mail,
   Sparkles,
+  Edit,
+  Pencil,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 type AudienceCardProps = {
+  id?: string;
   name: string;
   description: string;
   customerCount: number;
@@ -19,9 +25,11 @@ type AudienceCardProps = {
   lastCampaign?: string;
   status: "active" | "inactive" | "draft";
   engagementRate?: number;
+  type?: "custom" | "predefined";
 };
 
 export default function AudienceCard({
+  id,
   name,
   description,
   customerCount,
@@ -31,7 +39,14 @@ export default function AudienceCard({
   status,
   engagementRate,
 }: AudienceCardProps) {
+  const router = useRouter();
   const isPositiveGrowth = growthRate >= 0;
+
+  const handleViewDetails = () => {
+    if (id) {
+      router.push(`/audiences/${id}`);
+    }
+  };
 
   const getStatusColor = () => {
     switch (status) {
@@ -172,6 +187,14 @@ export default function AudienceCard({
       <div className="relative mt-4 pt-4 border-t border-border flex gap-2">
         <Button className="flex-1 shadow-md hover:shadow-lg transition-all duration-200">
           View Details
+        </Button>
+        <Button
+          onClick={handleViewDetails}
+          variant="outline"
+          size="icon"
+          className="shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <Pencil className="h-4 w-4" />
         </Button>
         <Button
           variant="outline"
