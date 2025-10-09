@@ -10,16 +10,19 @@ export default auth((req) => {
     nextUrl.pathname.startsWith("/sign-in") ||
     nextUrl.pathname.startsWith("/sign-up");
 
-  // Define protected pages (home page and others)
-  const isProtectedPage = nextUrl.pathname === "/";
+  // Define public pages that unauthenticated users can access
+  const isPublicPage =
+    nextUrl.pathname === "/" ||
+    nextUrl.pathname.startsWith("/sign-in") ||
+    nextUrl.pathname.startsWith("/sign-up");
 
-  // Redirect authenticated users away from auth pages
+  // Redirect authenticated users away from auth pages to dashboard
   if (isLoggedIn && isAuthPage) {
-    return NextResponse.redirect(new URL("/", nextUrl));
+    return NextResponse.redirect(new URL("/dashboard", nextUrl));
   }
 
-  // Redirect non-authenticated users away from protected pages
-  if (!isLoggedIn && isProtectedPage) {
+  // Redirect non-authenticated users to sign-in if trying to access protected pages
+  if (!isLoggedIn && !isPublicPage) {
     return NextResponse.redirect(new URL("/sign-in", nextUrl));
   }
 

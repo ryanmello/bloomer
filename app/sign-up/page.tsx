@@ -4,7 +4,14 @@ import React, { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -17,7 +24,7 @@ export default function SignUp() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  
+
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,7 +64,7 @@ export default function SignUp() {
 
       if (response.ok) {
         setSuccess("Account created successfully! Signing you in...");
-        
+
         // Auto sign-in after successful registration
         const result = await signIn("credentials", {
           email,
@@ -66,7 +73,9 @@ export default function SignUp() {
         });
 
         if (result?.error) {
-          setError("Account created but failed to sign in. Please try signing in manually.");
+          setError(
+            "Account created but failed to sign in. Please try signing in manually."
+          );
         } else {
           // Redirect to home page after successful registration and sign in
           router.replace("/");
@@ -85,7 +94,7 @@ export default function SignUp() {
   return (
     <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <Card>
+        <Card className="border-none">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">Sign Up</CardTitle>
             <CardDescription>
@@ -104,6 +113,7 @@ export default function SignUp() {
                   onChange={(e) => setName(e.target.value)}
                   required
                   disabled={isLoading}
+                  className="border-none"
                 />
               </div>
               <div className="space-y-2">
@@ -116,6 +126,7 @@ export default function SignUp() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading}
+                  className="border-none"
                 />
               </div>
               <div className="space-y-2">
@@ -128,6 +139,7 @@ export default function SignUp() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading}
+                  className="border-none"
                 />
               </div>
               <div className="space-y-2">
@@ -140,34 +152,30 @@ export default function SignUp() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   disabled={isLoading}
+                  className="border-none"
                 />
               </div>
               {error && (
-                <div className="text-red-600 text-sm text-center">
-                  {error}
-                </div>
+                <div className="text-red-600 text-sm text-center">{error}</div>
               )}
               {success && (
                 <div className="text-green-600 text-sm text-center">
                   {success}
                 </div>
               )}
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating account..." : "Sign Up"}
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{" "}
-              <Link href="/sign-in" className="font-medium text-primary hover:underline">
-                Sign in
-              </Link>
-            </p>
+          <CardFooter className="flex items-center justify-center text-sm gap-2">
+            <p className="text-zinc-600">Already have an account? </p>
+            <Link
+              href="/sign-in"
+              className="font-medium text-primary hover:underline"
+            >
+              Sign in
+            </Link>
           </CardFooter>
         </Card>
       </div>
