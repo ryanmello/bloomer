@@ -9,17 +9,17 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-gray-100 text-gray-700 ring-gray-300",
+          "bg-gray-100 text-gray-700 ring-gray-300 dark:bg-gray-900/20 dark:text-gray-300 dark:ring-gray-700",
         success:
-          "bg-emerald-50 text-emerald-700 ring-emerald-200",
+          "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:ring-emerald-700",
         danger:
-          "bg-rose-50 text-rose-700 ring-rose-200",
+          "bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:ring-rose-700",
         warning:
-          "bg-amber-50 text-amber-800 ring-amber-200",
+          "bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:ring-amber-700",
         info:
-          "bg-blue-50 text-blue-700 ring-blue-200",
+          "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:ring-blue-700",
         outline:
-          "text-gray-600 ring-gray-300 bg-transparent",
+          "text-gray-600 ring-gray-300 bg-transparent dark:text-gray-300 dark:ring-gray-700",
       },
     },
     defaultVariants: {

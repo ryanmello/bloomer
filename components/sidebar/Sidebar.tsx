@@ -16,6 +16,7 @@ import {
   UsersRound,
   Zap,
   X,
+  Route,
 } from "lucide-react";
 import { Command, CommandGroup, CommandList } from "../ui/command";
 import { Button } from "../ui/button";
@@ -98,6 +99,12 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           link: "/orders",
           icon: <ShoppingBag />,
           text: "Online Orders",
+          hidden: false,
+        },
+        {
+          link: "/deliveries",
+          icon: <Route />,
+          text: "Deliveries",
           hidden: false,
         },
         {
