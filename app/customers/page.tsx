@@ -33,7 +33,7 @@ export default function CustomersPage() {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/customers");
+      const res = await fetch("/api/customer");
       const data: Customer[] = await res.json();
       setCustomers(data);
     } catch (err) {
@@ -47,7 +47,7 @@ export default function CustomersPage() {
   const handleImport = async () => {
     setLoading(true);
     try {
-      await fetch("/api/customers/import", { method: "POST" });
+      await fetch("/api/customer/import", { method: "POST" });
       await fetchCustomers(); 
     } catch (err) {
       console.error(err);

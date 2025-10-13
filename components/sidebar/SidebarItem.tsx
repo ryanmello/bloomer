@@ -35,7 +35,7 @@ export default function SidebarItem({
       <CommandItem
         className={cn(
           "flex gap-4 cursor-pointer transition-all duration-200",
-          !disabled && "hover:bg-accent hover:text-accent-foreground hover:translate-x-1",
+          !disabled && "hover:bg-accent hover:text-accent-foreground",
           !disabled &&
             isActive &&
             "bg-accent text-accent-foreground font-medium",
