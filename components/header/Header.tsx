@@ -64,9 +64,9 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-12 items-center justify-between px-6">
-        {/* Left side - Page title */}
-        <div className="flex items-center gap-4">
+      <div className="grid grid-cols-3 h-12 items-center px-6 gap-4">
+        {/* Left side - Shop selector */}
+        <div className="flex items-center">
           {isLoading ? (
             <Skeleton className="h-8 w-40 border-[1px]" />
           ) : currentShop ? (
@@ -108,8 +108,8 @@ export default function Header() {
         </div>
 
         {/* Center - Search bar */}
-        <div className="flex-1 max-w-md mx-8">
-          <div className="relative">
+        <div className="flex justify-center">
+          <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search..."
@@ -119,7 +119,7 @@ export default function Header() {
         </div>
 
         {/* Right side - Notifications and user info */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-end gap-4">
           {/* <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
           </Button> */}
