@@ -86,13 +86,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         {
           link: "/broadcasts",
           icon: <Send />,
-          text: "Text Broadcast",
-          hidden: false,
-        },
-        {
-          link: "/broadcasts",
-          icon: <Mail />,
-          text: "Email Broadcast",
+          text: "Broadcasts",
           hidden: false,
         },
       ],

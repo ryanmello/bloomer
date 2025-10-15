@@ -1,5 +1,14 @@
-import { Users, Send, TrendingUp, TrendingDown, Calendar, Mail } from "lucide-react";
+import {
+  Users,
+  Send,
+  TrendingUp,
+  TrendingDown,
+  Calendar,
+  Mail,
+  Sparkles,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 type AudienceCardProps = {
   name: string;
@@ -35,37 +44,79 @@ export default function AudienceCard({
     }
   };
 
+  // Get gradient colors based on status
+  const getGradientColors = () => {
+    switch (status) {
+      case "active":
+        return "from-emerald-500/10 via-cyan-500/10 to-blue-500/10 dark:from-emerald-500/5 dark:via-cyan-500/5 dark:to-blue-500/5";
+      case "inactive":
+        return "from-slate-500/10 via-gray-500/10 to-zinc-500/10 dark:from-slate-500/5 dark:via-gray-500/5 dark:to-zinc-500/5";
+      case "draft":
+        return "from-amber-500/10 via-orange-500/10 to-yellow-500/10 dark:from-amber-500/5 dark:via-orange-500/5 dark:to-yellow-500/5";
+    }
+  };
+
+  // Get accent color for the top border
+  const getAccentBorder = () => {
+    switch (status) {
+      case "active":
+        return "border-t-emerald-500 dark:border-t-emerald-400";
+      case "inactive":
+        return "border-t-gray-500 dark:border-t-gray-400";
+      case "draft":
+        return "border-t-amber-500 dark:border-t-amber-400";
+    }
+  };
+
   return (
-    <div className="rounded-2xl border shadow-sm p-6 bg-card border-border hover:shadow-md transition-all duration-200 min-w-0">
+    <div
+      className={`group relative rounded-2xl border border-t-4 shadow-sm p-6 bg-gradient-to-br ${getGradientColors()} ${getAccentBorder()} bg-card hover:shadow-xl transition-all duration-300 min-w-0 overflow-hidden`}
+    >
+      {/* Decorative gradient orb */}
+      <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full blur-3xl transition-transform duration-500" />
+
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="relative flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-foreground truncate">{name}</h3>
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{description}</p>
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h3 className="text-lg font-bold text-foreground truncate">
+              {name}
+            </h3>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+            {description}
+          </p>
         </div>
-        <Badge className={`ml-2 capitalize ring-1 ring-inset ${getStatusColor()}`}>
+        <Badge
+          className={`ml-2 capitalize ring-1 ring-inset ${getStatusColor()} shadow-sm`}
+        >
           {status}
         </Badge>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="relative grid grid-cols-2 gap-4 mb-4">
         {/* Customer Count */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
+        <div className="space-y-1 p-3 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 dark:from-blue-500/5 dark:to-cyan-500/5 border border-blue-200/50 dark:border-blue-800/50">
+          <div className="flex items-center gap-1.5">
             <Users className="h-4 w-4" />
             <p className="text-xs font-medium">Customers</p>
           </div>
-          <p className="text-2xl font-semibold text-foreground">{customerCount.toLocaleString()}</p>
+          <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text">
+            {customerCount.toLocaleString()}
+          </p>
         </div>
 
         {/* Campaigns Sent */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
+        <div className="space-y-1 p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 dark:from-purple-500/5 dark:to-pink-500/5 border border-purple-200/50 dark:border-purple-800/50">
+          <div className="flex items-center gap-1.5">
             <Send className="h-4 w-4" />
             <p className="text-xs font-medium">Campaigns</p>
           </div>
-          <p className="text-2xl font-semibold text-foreground">{campaignsSent}</p>
+          <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text">
+            {campaignsSent}
+          </p>
         </div>
       </div>
 
@@ -80,8 +131,15 @@ export default function AudienceCard({
             ) : (
               <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
             )}
-            <span className={`text-sm font-medium ${isPositiveGrowth ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-              {isPositiveGrowth ? '+' : ''}{growthRate}%
+            <span
+              className={`text-sm font-medium ${
+                isPositiveGrowth
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-rose-600 dark:text-rose-400"
+              }`}
+            >
+              {isPositiveGrowth ? "+" : ""}
+              {growthRate}%
             </span>
           </div>
         </div>
@@ -90,7 +148,9 @@ export default function AudienceCard({
         {engagementRate !== undefined && (
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Engagement</span>
-            <span className="text-sm font-medium text-foreground">{engagementRate}%</span>
+            <span className="text-sm font-medium text-foreground">
+              {engagementRate}%
+            </span>
           </div>
         )}
 
@@ -101,21 +161,26 @@ export default function AudienceCard({
               <Calendar className="h-3.5 w-3.5" />
               <span className="text-sm">Last Campaign</span>
             </div>
-            <span className="text-sm font-medium text-foreground">{lastCampaign}</span>
+            <span className="text-sm font-medium text-foreground">
+              {lastCampaign}
+            </span>
           </div>
         )}
       </div>
 
       {/* Action Buttons */}
-      <div className="mt-4 pt-4 border-t border-border flex gap-2">
-        <button className="flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+      <div className="relative mt-4 pt-4 border-t border-border flex gap-2">
+        <Button className="flex-1 shadow-md hover:shadow-lg transition-all duration-200">
           View Details
-        </button>
-        <button className="px-3 py-2 text-sm font-medium rounded-lg border border-border hover:bg-muted transition-colors">
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="shadow-sm hover:shadow-md transition-all duration-200"
+        >
           <Mail className="h-4 w-4" />
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
-
