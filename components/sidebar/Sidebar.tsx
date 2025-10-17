@@ -128,7 +128,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="flex flex-col border-r min-h-screen p-4 transition-width duration-300 ease-in-out w-[260px] flex-shrink-0 space-y-4"
+      className="fixed left-0 top-0 flex flex-col border-r h-screen p-4 transition-width duration-300 ease-in-out w-[260px] flex-shrink-0 space-y-4 z-50"
       suppressHydrationWarning
     >
       <div className="flex items-center justify-between">
