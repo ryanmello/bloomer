@@ -4,26 +4,36 @@ import { CustomerGroupDropdown } from "./CustomerGroupDropdown";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
-const mockCustomerData = [
+/*
+This Customer interface and mock customer data is intended to
+mock customer entries, before we eventually import them from the square API
+*/
+interface Customer {
+  name: string;
+  email: string;
+  group: CustomerGroup;
+}
+
+const mockCustomerData: Customer[] = [
   {
     name: "Customer 1",
     email: "customer1@gmail.com",
-    group: "VIP"
+    group: "VIP",
   },
   {
     name: "Customer 2",
     email: "customer2@gmail.com",
-    group: "Repeat"
+    group: "Repeat",
   },
   {
     name: "Customer 3",
     email: "customer3@gmail.com",
-    group: "New"
+    group: "New",
   },
   {
     name: "Customer 4",
     email: "customer4@gmail.com",
-    group: "Potential"
+    group: "Potential",
   },
 ];
 
@@ -40,7 +50,17 @@ export default function Customers() {
             onSelectionChange={setSelectedGroups}
           />
         </div>
+
         <div>
+          {
+          mockCustomerData.map((customer) =>
+            <div key={customer.name}>
+              <p>{customer.name}</p>
+              <p>{customer.email}</p>
+              <p>{customer.group}</p>
+            </div>
+          )
+          }
 
         </div>
       </div>
