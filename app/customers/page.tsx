@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { CustomerGroupDropdown } from "./CustomerGroupDropdown";
+import { Card } from "@/components/ui/card";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
@@ -40,6 +41,10 @@ const mockCustomerData: Customer[] = [
 export default function Customers() {
   const [selectedGroups, setSelectedGroups] = useState<CustomerGroup[]>([]);
 
+  const selectedCustomers = mockCustomerData.filter((customer) => {
+    return selectedGroups.includes(customer.group);
+  })
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -53,12 +58,12 @@ export default function Customers() {
 
         <div>
           {
-          mockCustomerData.map((customer) =>
-            <div key={customer.name}>
+          selectedCustomers.map((customer) =>
+            <Card className={"flex-row"}key={customer.name}>
               <p>{customer.name}</p>
               <p>{customer.email}</p>
               <p>{customer.group}</p>
-            </div>
+            </Card>
           )
           }
 
