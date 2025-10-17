@@ -4,6 +4,29 @@ import { CustomerGroupDropdown } from "./CustomerGroupDropdown";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
+const mockCustomerData = [
+  {
+    name: "Customer 1",
+    email: "customer1@gmail.com",
+    group: "VIP"
+  },
+  {
+    name: "Customer 2",
+    email: "customer2@gmail.com",
+    group: "Repeat"
+  },
+  {
+    name: "Customer 3",
+    email: "customer3@gmail.com",
+    group: "New"
+  },
+  {
+    name: "Customer 4",
+    email: "customer4@gmail.com",
+    group: "Potential"
+  },
+];
+
 export default function Customers() {
   const [selectedGroups, setSelectedGroups] = useState<CustomerGroup[]>([]);
 
@@ -16,6 +39,9 @@ export default function Customers() {
             selectedGroups={selectedGroups}
             onSelectionChange={setSelectedGroups}
           />
+        </div>
+        <div>
+
         </div>
       </div>
     </div>
