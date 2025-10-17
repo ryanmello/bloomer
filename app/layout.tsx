@@ -4,7 +4,7 @@ import AuthContext from "../context/AuthContext";
 import { ThemeProvider } from "../context/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import Sidebar from "@/components/sidebar/Sidebar";
-import Header from "@/components/Header";
+import Header from "@/components/header/Header";
 
 export const metadata: Metadata = {
   title: "Bloomer",
