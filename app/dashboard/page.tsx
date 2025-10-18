@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   };
 
   return (
-    <main className="space-y-4 sm:space-y-6">
+    <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Top header with Square status + Sync All / Configure */}
       {/* <DashboardHeader
         connected={true}
@@ -24,7 +24,7 @@ export default async function DashboardPage() {
       /> */}
 
       {/* Metric cards */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 w-full">
         <MetricCard
           title="Total Revenue"
           value={metrics.revenue.value}
@@ -50,12 +50,12 @@ export default async function DashboardPage() {
           icon={Package}
         />
       </section>
-      <div className="w-full flex flex-col lg:flex-row gap-4">
+      <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
         <TrendGraph />
         <RecentActivity />
       </div>
 
-      <div className="w-full flex flex-col lg:flex-row gap-4">
+      <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
         <UpcomingEvents />
         <InventoryStatus />
       </div>

@@ -214,7 +214,7 @@ export default function CustomerOccasions() {
   };
 
   return (
-    <div className='w-full rounded-2xl border shadow-sm p-4 sm:p-6 bg-card border-border'>
+    <div className='w-full rounded-2xl border shadow-sm p-4 sm:p-6 bg-card border-border min-w-0'>
       <div className="mb-4 sm:mb-6">
         <h3 className="text-lg font-semibold text-foreground">Customer Occasions</h3>
         <p className="text-sm text-muted-foreground mt-1">Upcoming customer birthdays and anniversaries</p>

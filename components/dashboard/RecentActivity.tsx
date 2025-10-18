@@ -78,7 +78,7 @@ export default function RecentActivity() {
   };
 
   return (
-    <div className='w-full lg:w-1/3 rounded-2xl border shadow-sm p-6 bg-card border-border'>
+    <div className='w-full xl:w-1/3 rounded-2xl border shadow-sm p-6 bg-card border-border min-w-0'>
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-foreground">Recent Activity</h3>
         <p className="text-sm text-muted-foreground mt-1">Latest updates from your store</p>

@@ -23,7 +23,7 @@ export default function MetricCard({
     <div
       className="
         rounded-2xl border shadow-sm h-36 p-4
-        bg-card border-border
+        bg-card border-border min-w-0 w-full
       "
     >
       <div className="flex items-start justify-between">

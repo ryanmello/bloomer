@@ -8,8 +8,10 @@ import {
   Search,
   Plus,
   Settings,
+  Menu,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Separator } from "../ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -35,7 +37,11 @@ type Shop = {
   updatedAt: string;
 };
 
-export default function Header() {
+type HeaderProps = {
+  onMenuClick?: () => void;
+};
+
+export default function Header({ onMenuClick }: HeaderProps) {
   const { user } = useUser();
   const router = useRouter();
   const [shops, setShops] = useState<Shop[]>([]);
@@ -63,8 +69,19 @@ export default function Header() {
   }, [user]);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-12 items-center px-4 sm:px-6 gap-4 justify-between">
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 min-w-0">
+      <div className="flex h-12 items-center px-4 sm:px-6 gap-2 sm:gap-4 justify-between min-w-0">
+        {/* Hamburger menu for mobile */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onMenuClick}
+          className="xl:hidden transition-all duration-200 hover:scale-110 active:scale-95 -ml-2"
+          aria-label="Open menu"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
         {/* Left side - Shop selector */}
         <div className="flex items-center flex-shrink-0">
           {isLoading ? (
@@ -120,9 +137,13 @@ export default function Header() {
 
         {/* Right side - Search icon for mobile */}
         <div className="flex items-center gap-2">
-          <button className="md:hidden p-2 hover:bg-muted rounded-md">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+          >
             <Search className="h-4 w-4 text-muted-foreground" />
-          </button>
+          </Button>
         </div>
       </div>
     </header>
