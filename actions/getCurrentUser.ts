@@ -1,3 +1,4 @@
+'use server';
 import { db } from "@/lib/prisma";
 import { auth } from "@/auth";
 
@@ -21,3 +22,5 @@ export const getCurrentUser = async () => {
     return null;
   }
 };
+
+

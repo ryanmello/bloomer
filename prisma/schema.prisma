@@ -1,31 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
- 
-generator client {
-  provider = "prisma-client-js"
-}
- 
+
 model User {
-  id            String          @id @default(auto()) @map("_id") @db.ObjectId
-  name          String?
-  email         String?         @unique
-  password      String?
-  image         String?
-  sessions      Session[]
+  id       String    @id @default(auto()) @map("_id") @db.ObjectId
+  name     String?
+  email    String?   @unique
+  password String?
+  image    String?
+  sessions Session[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  Coupon Coupon[]
 }
- 
+
 model Session {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   sessionToken String   @unique
   userId       String   @db.ObjectId
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Coupon {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  codeName   String   @unique
+  discount   Float
+  validUntil DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Link coupon to the user who created it
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
