@@ -33,3 +33,12 @@ model Shop {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model Customers {
+  id        String  @id @map("_id") @default(auto()) @db.ObjectId
+  squareId  String? @unique
+  name      String
+  email     String?
+  phone     String?
+  location  String?
+}
