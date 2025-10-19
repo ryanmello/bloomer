@@ -23,13 +23,13 @@ export async function POST(req: Request) {
         lastName: body.lastName,
         email: body.email,
         phoneNumber: body.phoneNumber,
-        additionalNote: body.additionalNote,
-        address: {
-          create: body.address, // Prisma will create all addresses in array
+        location: body.location,
+        addresses: {
+          create: body.addresses, // Prisma will create all addresses in array
         },
       },
       include: {
-        address: true,
+        addresses: true,
       },
     });
 
