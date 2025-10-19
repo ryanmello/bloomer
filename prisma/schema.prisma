@@ -34,7 +34,7 @@ model Shop {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Customers {
+model Customer {
   id        String  @id @map("_id") @default(auto()) @db.ObjectId
   squareId  String? @unique
   name      String
