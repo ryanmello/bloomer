@@ -11,7 +11,11 @@ interface SidebarItemProps {
   disabled?: boolean;
 }
 
-export default function SidebarItem({ option, className, disabled = false }: SidebarItemProps) {
+export default function SidebarItem({
+  option,
+  className,
+  disabled = false,
+}: SidebarItemProps) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -21,16 +25,18 @@ export default function SidebarItem({ option, className, disabled = false }: Sid
     }
   };
 
+  const isActive = pathname === option.link;
+
   return (
-    <div
-      onClick={handleClick}
-      className={`sidebar-item ${className}`}
-    >
+    <div onClick={handleClick} className={`sidebar-item ${className}`}>
       <CommandItem
         className={cn(
-          "flex gap-4 cursor-pointer",
-          !disabled && "hover:bg-primary-foreground",
-          !disabled && pathname == option.link && "bg-primary-foreground"
+          "flex gap-4 cursor-pointer transition-colors",
+          !disabled && "hover:bg-accent hover:text-accent-foreground",
+          !disabled &&
+            isActive &&
+            "bg-accent text-accent-foreground font-medium",
+          disabled && "opacity-50 cursor-not-allowed"
         )}
       >
         {option.icon}
