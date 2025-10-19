@@ -30,17 +30,17 @@ export async function POST() {
 
 
       // Check if customer already exists by squareId
-      const existing = await db.customers.findFirst({ where: { squareId: c.id } });
+      const existing = await db.customer.findFirst({ where: { squareId: c.id } });
 
       if (existing) {
         // Update existing customer
-        await db.customers.update({
+        await db.customer.update({
           where: { id: existing.id },
           data: { name, email, phone, location },
         });
       } else {
         // Create new customer
-        await db.customers.create({
+        await db.customer.create({
           data: { squareId: c.id, name, email, phone, location },
         });
       }
