@@ -16,6 +16,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // create customer
     const newCustomer = await db.customer.create({
       data: {
         firstName: body.firstName,

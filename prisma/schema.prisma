@@ -42,7 +42,6 @@ model Customer {
   phoneNumber    String
   additionalNote String?
   address        Address[]
-  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
