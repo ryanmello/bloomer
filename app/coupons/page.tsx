@@ -1,3 +1,4 @@
+
 import CreateCouponForm from "@/components/ui/CreateCouponForm";
 import CouponList from "@/components/ui/CouponList";
 import { getCurrentUser } from "@/actions/getCurrentUser";
