@@ -30,6 +30,18 @@ export default function CustomersPage() {
     }
   };
 
+// Import customers from Square API
+  const handleImport = async () => {
+    setLoading(true);
+    try {
+      await fetch("/api/customers/import", { method: "POST" });
+      await fetchCustomers();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchCustomers();
@@ -38,7 +50,17 @@ export default function CustomersPage() {
   //UI components
   return (
     <div className="p-6 space-y-6">
-      
+       {/* Import From Square Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleImport}
+          disabled={loading} 
+          className="px-4 py-2 rounded border border-gray-600 text-white bg-transparent cursor-pointer"
+        >
+          {loading ? "Importing..." : "Import Customers"}
+        </button>
+      </div>
+
       {customers.length === 0 && !loading && <p>No customers found.</p>}
 
       {/* Customer Cards */}
