@@ -23,25 +23,26 @@ export async function POST() {
     for (const c of customers) {
       if (!c.id) continue;
 
-      const name = `${c.given_name || ""} ${c.family_name || ""}`.trim();
+      const firstName = c.given_name || "";
+      const lastName = c.family_name || "";
       const email = c.email_address || "";
-      const phone = c.phone_number || "";
+      const phoneNumber = c.phone_number || "";
       const location = c.address ? `${c.address.locality || ""}${c.address.locality && c.address.administrative_district_level_1 ? ", " : ""}${c.address.administrative_district_level_1 || ""}` : "";
 
 
       // Check if customer already exists by squareId
-      const existing = await db.customers.findFirst({ where: { squareId: c.id } });
+      const existing = await db.customer.findFirst({ where: { squareId: c.id } });
 
       if (existing) {
         // Update existing customer
-        await db.customers.update({
+        await db.customer.update({
           where: { id: existing.id },
-          data: { name, email, phone, location },
+          data: { firstName, lastName, email, phoneNumber, location },
         });
       } else {
         // Create new customer
-        await db.customers.create({
-          data: { squareId: c.id, name, email, phone, location },
+        await db.customer.create({
+          data: { squareId: c.id, firstName, lastName, email, phoneNumber, location },
         });
       }
     }
