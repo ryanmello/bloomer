@@ -58,3 +58,10 @@ model Address {
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId String   @db.ObjectId
 }
+  id        String  @id @map("_id") @default(auto()) @db.ObjectId
+  squareId  String? @unique
+  name      String
+  email     String?
+  phone     String?
+  location  String?
+}
