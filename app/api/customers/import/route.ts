@@ -23,9 +23,10 @@ export async function POST() {
     for (const c of customers) {
       if (!c.id) continue;
 
-      const name = `${c.given_name || ""} ${c.family_name || ""}`.trim();
+      const firstName = c.given_name || "";
+      const lastName = c.family_name || "";
       const email = c.email_address || "";
-      const phone = c.phone_number || "";
+      const phoneNumber = c.phone_number || "";
       const location = c.address ? `${c.address.locality || ""}${c.address.locality && c.address.administrative_district_level_1 ? ", " : ""}${c.address.administrative_district_level_1 || ""}` : "";
 
 
@@ -36,12 +37,12 @@ export async function POST() {
         // Update existing customer
         await db.customer.update({
           where: { id: existing.id },
-          data: { name, email, phone, location },
+          data: { firstName, lastName, email, phoneNumber, location },
         });
       } else {
         // Create new customer
         await db.customer.create({
-          data: { squareId: c.id, name, email, phone, location },
+          data: { squareId: c.id, firstName, lastName, email, phoneNumber, location },
         });
       }
     }
