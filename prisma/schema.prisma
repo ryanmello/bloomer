@@ -42,3 +42,13 @@ model Customer {
   phone     String?
   location  String?
 }
+
+model SquareIntegration {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  accessToken String?  // store securely in real apps
+  locationId  String?
+  connected   Boolean  @default(false)
+  lastSyncAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
