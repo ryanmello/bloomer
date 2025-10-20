@@ -49,24 +49,6 @@ model Shop {
 }
 
 model Customer {
-<<<<<<< HEAD
-  id        String  @id @map("_id") @default(auto()) @db.ObjectId
-  squareId  String? @unique
-  name      String
-  email     String?
-  phone     String?
-  location  String?
-}
-
-model SquareIntegration {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  accessToken String?  // store securely in real apps
-  locationId  String?
-  connected   Boolean  @default(false)
-  lastSyncAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-=======
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   squareId    String?   @unique
   firstName   String
@@ -91,5 +73,4 @@ model Address {
 
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId String   @db.ObjectId
->>>>>>> 4629d75306cceb79232d1decdc19beaa36d3a5ca
 }
