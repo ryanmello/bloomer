@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createCoupon } from "@/actions/getCoupons";
 
 export default function CreateCouponForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
+  const formRef = useRef<HTMLFormElement>(null); // Add this ref
+
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -19,7 +21,7 @@ export default function CreateCouponForm() {
       setMessage({ type: "error", text: result.error });
     } else {
       setMessage({ type: "success", text: "Coupon created successfully!" });
-      e.currentTarget.reset();
+      formRef.current?.reset();
     }
 
     setIsLoading(false);
