@@ -1,11 +1,18 @@
 // components/dashboard/DashboardHeader.tsx (Server Component)
-import { db } from "@/lib/prisma";
 import DashboardHeaderClient from "./DashboardHeader.client";
 
-export default async function DashboardHeader() {
-  const integ = await db.squareIntegration.findFirst();
-  const connected = integ?.connected ?? false;
-  const lastSyncIso = integ?.lastSyncAt?.toISOString() ?? null;
-
-  return <DashboardHeaderClient connected={connected} lastSyncIso={lastSyncIso} />;
+export default function DashboardHeader({
+  connected,
+  lastSyncIso,
+}: {
+  connected: boolean;
+  lastSyncIso: string;
+}) {
+  // This is a server component that forwards initial props to the client component.
+  return (
+    <DashboardHeaderClient
+      connected={connected}
+      lastSyncIso={lastSyncIso}
+    />
+  );
 }

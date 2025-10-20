@@ -13,9 +13,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "missing_fields" }, { status: 400 });
   }
 
-  const existing = await db.squareIntegration.findFirst();
+  const existing = await (db as any).squareIntegration.findFirst();
   if (existing) {
-    await db.squareIntegration.update({
+    await (db as any).squareIntegration.update({
       where: { id: existing.id },
       data: {
         accessToken,
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       },
     });
   } else {
-    await db.squareIntegration.create({
+    await (db as any).squareIntegration.create({
       data: {
         accessToken,
         locationId,

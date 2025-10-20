@@ -31,18 +31,31 @@ function formatAgo(iso: string | null): string {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
-export default function DashboardHeaderClient({ connected, lastSyncIso }: Props) {
+// Make props optional and provide defaults
+export default function DashboardHeaderClient(
+  { connected = false, lastSyncIso = null }: Partial<Props> = {}
+) {
   const [syncing, startSync] = React.useTransition();
   const [open, setOpen] = React.useState(false);
   const [form, setForm] = React.useState({ accessToken: "", locationId: "" });
   const [status, setStatus] = React.useState({ connected, lastSyncIso });
 
+  // (Optional) hydrate from API on mount
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const s = await fetch("/api/square/sync", { cache: "no-store" }).then((r) => r.json());
+        setStatus({ connected: !!s.connected, lastSyncIso: s.lastSyncIso ?? null });
+      } catch {}
+    })();
+  }, []);
+
   async function doSyncAll() {
     startSync(async () => {
       const res = await fetch("/api/square/sync", { method: "POST" });
       if (res.ok) {
-        const s = await fetch("/api/square/sync").then((r) => r.json());
-        setStatus(s);
+        const s = await fetch("/api/square/sync", { cache: "no-store" }).then((r) => r.json());
+        setStatus({ connected: !!s.connected, lastSyncIso: s.lastSyncIso ?? null });
       } else {
         alert("Sync failed. Please try again.");
       }
@@ -60,28 +73,39 @@ export default function DashboardHeaderClient({ connected, lastSyncIso }: Props)
       alert("Could not save settings.");
       return;
     }
-    const s = await fetch("/api/square/sync").then((r) => r.json());
-    setStatus(s);
+    const s = await fetch("/api/square/sync", { cache: "no-store" }).then((r) => r.json());
+    setStatus({ connected: !!s.connected, lastSyncIso: s.lastSyncIso ?? null });
     setOpen(false);
   }
 
   return (
-    <section className="w-full rounded-2xl border bg-white p-4 sm:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <section
+      className="relative w-full overflow-visible rounded-2xl border
+                 bg-white dark:bg-neutral-900
+                 border-gray-200 dark:border-neutral-800
+                 px-4 sm:px-6 py-4 sm:py-6"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Left — Title + status */}
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Dashboard</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
+            Dashboard
+          </h1>
+
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+            <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
               <span>Square Integration Status:</span>
               <Badge variant={status.connected ? "default" : "outline"}>
                 {status.connected ? "Connected" : "Disconnected"}
               </Badge>
             </div>
-            <div className="hidden h-4 w-px bg-gray-200 sm:block" />
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Last sync:</span>
-              <span className="font-medium text-gray-800">
+
+            {/* Divider */}
+            <div className="hidden h-4 w-px bg-gray-200 dark:bg-neutral-700 sm:block" />
+
+            <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
+              <span className="text-gray-500 dark:text-gray-400">Last sync:</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">
                 {formatAgo(status.lastSyncIso)}
               </span>
             </div>
@@ -89,51 +113,67 @@ export default function DashboardHeaderClient({ connected, lastSyncIso }: Props)
         </div>
 
         {/* Right — Actions */}
-        <div className="flex items-center gap-2">
-          <Button onClick={doSyncAll} disabled={syncing} aria-disabled={syncing}>
+        <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
+          <Button
+            onClick={doSyncAll}
+            disabled={syncing}
+            aria-disabled={syncing}
+            className="shrink-0"
+          >
             <RefreshCcw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Syncing…" : "Sync All"}
           </Button>
 
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline">
+              <Button variant="outline" className="shrink-0">
                 <Settings className="h-4 w-4" />
                 Configure
               </Button>
             </DialogTrigger>
-            <DialogContent>
+
+            <DialogContent className="dark:bg-neutral-900 dark:text-gray-100">
               <DialogHeader>
-                <DialogTitle>Square Integration Settings</DialogTitle>
+                <DialogTitle className="dark:text-white">Square Integration Settings</DialogTitle>
               </DialogHeader>
 
               <form className="space-y-4" onSubmit={saveConfig}>
                 <div className="grid gap-1">
-                  <Label htmlFor="accessToken">Access Token</Label>
+                  <Label htmlFor="accessToken" className="dark:text-gray-200">
+                    Access Token
+                  </Label>
                   <Input
                     id="accessToken"
                     type="password"
                     placeholder="sq0at-..."
+                    className="dark:bg-neutral-800 dark:text-gray-100 dark:placeholder:text-gray-400 dark:border-neutral-700"
                     value={form.accessToken}
                     onChange={(e) => setForm((f) => ({ ...f, accessToken: e.target.value }))}
                     required
                   />
                 </div>
+
                 <div className="grid gap-1">
-                  <Label htmlFor="locationId">Location ID</Label>
+                  <Label htmlFor="locationId" className="dark:text-gray-200">
+                    Location ID
+                  </Label>
                   <Input
                     id="locationId"
                     placeholder="L123ABCXYZ"
+                    className="dark:bg-neutral-800 dark:text-gray-100 dark:placeholder:text-gray-400 dark:border-neutral-700"
                     value={form.locationId}
                     onChange={(e) => setForm((f) => ({ ...f, locationId: e.target.value }))}
                     required
                   />
                 </div>
+
                 <div className="flex items-center justify-end gap-2 pt-2">
-                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)} className="shrink-0">
                     Cancel
                   </Button>
-                  <Button type="submit">Save</Button>
+                  <Button type="submit" className="shrink-0">
+                    Save
+                  </Button>
                 </div>
               </form>
             </DialogContent>

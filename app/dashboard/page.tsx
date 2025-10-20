@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   return (
     <main className="space-y-6">
       {/* Top header with Square status + Sync All / Configure */}
-      <DashboardHeader />
+      <DashboardHeader connected={true} lastSyncIso={new Date().toISOString()} />
 
       {/* Metric cards */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
