@@ -1,74 +1,85 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CustomerGroupDropdown } from "./CustomerGroupDropdown";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
-/*
-This Customer interface and mock customer data is intended to
-mock customer entries, before we eventually import them from the square API
-*/
 interface Customer {
+  id: string;
+  squareId?: string;
   name: string;
-  email: string;
-  group: CustomerGroup;
+  email?: string;
+  phone?: string;
+  location?: string;
 }
 
-const mockCustomerData: Customer[] = [
-  {
-    name: "Customer 1",
-    email: "customer1@gmail.com",
-    group: "VIP",
-  },
-  {
-    name: "Customer 2",
-    email: "customer2@gmail.com",
-    group: "Repeat",
-  },
-  {
-    name: "Customer 3",
-    email: "customer3@gmail.com",
-    group: "New",
-  },
-  {
-    name: "Customer 4",
-    email: "customer4@gmail.com",
-    group: "Potential",
-  },
-];
+export default function CustomersPage() {
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(false);
 
-export default function Customers() {
-  const [selectedGroups, setSelectedGroups] = useState<CustomerGroup[]>([]);
+  //Fetch customers from api
+  const fetchCustomers = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/customers");
+      const data: Customer[] = await res.json();
+      setCustomers(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const selectedCustomers = mockCustomerData.filter((customer) => {
-    return selectedGroups.includes(customer.group);
-  })
+// Import customers from Square API
+  const handleImport = async () => {
+    setLoading(true);
+    try {
+      await fetch("/api/customers/import", { method: "POST" });
+      await fetchCustomers();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  //UI components
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold mb-4">Customers</h1>
-        <div className="flex items-center gap-4">
-          <CustomerGroupDropdown
-            selectedGroups={selectedGroups}
-            onSelectionChange={setSelectedGroups}
-          />
-        </div>
-
-        <div>
-          {
-          selectedCustomers.map((customer) =>
-            <Card className={"flex-row"}key={customer.name}>
-              <p>{customer.name}</p>
-              <p>{customer.email}</p>
-              <p>{customer.group}</p>
-            </Card>
-          )
-          }
-
-        </div>
+    <div className="p-6 space-y-6">
+       {/* Import From Square Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleImport}
+          disabled={loading} 
+          className="px-4 py-2 rounded border border-gray-600 text-white bg-transparent cursor-pointer"
+        >
+          {loading ? "Importing..." : "Import Customers"}
+        </button>
       </div>
+
+      {customers.length === 0 && !loading && <p>No customers found.</p>}
+
+      {/* Customer Cards */}
+      {customers.map((customer) => (
+        <Card key={customer.id} className="w-full p-6 shadow-md">
+          <CardHeader>
+            <CardTitle>{customer.name}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-6 text-gray-300 text-sm md:text-base">
+              <div className="min-w-[150px]"><strong>Email:</strong> {customer.email || "-"}</div>
+              <div className="min-w-[150px]"><strong>Phone:</strong> {customer.phone || "-"}</div>
+              <div className="min-w-[150px]"><strong>Location:</strong> {customer.location || "-"}</div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
