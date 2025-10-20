@@ -36,18 +36,17 @@ model Shop {
 
 model Customer {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  squareId    String?   @unique
   firstName   String
   lastName    String
   email       String    @unique
   phoneNumber String?
-  location    String?
+  additionalNote String?
   addresses   Address[]
+  squareId  String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-
 model Address {
   id      String  @id @default(auto()) @map("_id") @db.ObjectId
   line1   String
@@ -60,3 +59,4 @@ model Address {
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId String   @db.ObjectId
 }
+
