@@ -21,7 +21,7 @@ interface Customer {
   lastName: string;
   email?: string;
   phoneNumber?: string;
-  addresses?: Address[];
+  address?: Address[];
 }
 
 export default function CustomersPage() {
@@ -92,9 +92,9 @@ export default function CustomersPage() {
               </div>
               <div className="min-w-[150px]">
                 <strong>Addresses:</strong>{" "}
-                {customer.addresses && customer.addresses.length > 0 ? (
+                {customer.address && customer.address.length > 0 ? (
                   <>
-                    {customer.addresses
+                    {customer.address
                       .map((addr) =>
                         [addr.line1, addr.line2, addr.city, addr.state, addr.zip, addr.country]
                           .filter(Boolean)

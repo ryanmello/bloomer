@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/actions/getCurrentUser";
 export async function GET() {
   try {
     const customers = await db.customer.findMany({
-      include: { addresses: true }, 
+      include: { address: true }, 
     })
 
     return NextResponse.json(customers || []); 

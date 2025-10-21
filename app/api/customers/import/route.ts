@@ -49,9 +49,9 @@ export async function POST() {
       if (existingCustomer) {
         // Update existing customer
         await db.customer.update({
-          where: { id: existing.id },
+          where: { id: existingCustomer.id },
           data: {  firstName: c.given_name || "",lastName: c.family_name || "", email, phoneNumber,  
-              addresses: {
+              address: {
               deleteMany: {},
               create: addressData,
             }, },
@@ -60,7 +60,7 @@ export async function POST() {
         // Create new customer with address
         await db.customer.create({
           data: { squareId: c.id, firstName: c.given_name || "",lastName: c.family_name || "", email, phoneNumber,
-            addresses: {
+            address: {
               create: addressData,
             },}
         });
