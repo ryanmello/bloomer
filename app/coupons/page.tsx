@@ -1,44 +1,56 @@
 
-import CreateCouponForm from "@/components/ui/CreateCouponForm";
-import CouponList from "@/components/ui/CouponList";
+import CreateCouponForm from "@/components/coupons/CreateCouponForm";
+import CouponList from "@/components/coupons/CouponList";
 import { getCurrentUser } from "@/actions/getCurrentUser";
 import { getUserCoupons } from "@/actions/getCoupons";
 import { redirect } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function CouponsPage() {
   const user = await getCurrentUser();
   
   if (!user) {
-    redirect("/login"); // Change this to your login route
+    redirect("/login");
   }
 
   const result = await getUserCoupons();
   const coupons = result.success ? result.coupons : [];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-6xl">
-        <h1 className="text-4xl font-bold mb-8">My Coupons</h1>
+    <div className="container mx-auto px-4 py-8 max-w-6xl space-y-8">
+      <div>
+        <h1 className="text-4xl font-bold tracking-tight">My Coupons</h1>
+        <p className="text-muted-foreground mt-2">
+          Create and manage discount codes for your customers
+        </p>
+      </div>
+      
+      <div className="grid md:grid-cols-2 gap-6">
+        <CreateCouponForm />
         
-        <div className="grid md:grid-cols-2 gap-8 mb-8">
-          <CreateCouponForm />
-          
-          <div className="bg-blue-50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-2">📋 Instructions</h3>
-            <ul className="space-y-2 text-sm text-gray-700">
+        <Card className="bg-primary/5 border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-lg">📋 Instructions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm text-muted-foreground">
               <li>• Create unique coupon codes for your customers</li>
               <li>• Set discount percentages (0-100%)</li>
               <li>• Choose expiration dates for time-limited offers</li>
               <li>• Manage all your coupons in one place</li>
             </ul>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-bold mb-4">Your Coupons ({coupons.length})</h2>
-          <CouponList coupons={coupons} />
-        </div>
+          </CardContent>
+        </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Coupons ({coupons.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CouponList coupons={coupons} />
+        </CardContent>
+      </Card>
     </div>
   );
 }
