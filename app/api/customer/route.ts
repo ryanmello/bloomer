@@ -23,12 +23,12 @@ export async function POST(req: Request) {
         lastName: body.lastName,
         email: body.email,
         phoneNumber: body.phoneNumber,
-         addresses: {
-          create: body.addresses?.length ? body.addresses : [], // Prisma will create all addresses in array
+         address: {
+          create: body.address,
         },
       },
       include: {
-        addresses: true,
+        address: true,
       },
     });
 

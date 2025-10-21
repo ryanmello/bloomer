@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/prisma";
-import { getCurrentUser } from "@/actions/getCurrentUser";
+import {NextResponse} from "next/server";
+import {db} from "@/lib/prisma";
+import {getCurrentUser} from "@/actions/getCurrentUser";
 
 const SQUARE_ACCESS_TOKEN = process.env.SQUARE_SANDBOX_TOKEN!;
 
@@ -8,16 +8,19 @@ export async function POST() {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+      return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
-    const res = await fetch("https://connect.squareupsandbox.com/v2/customers", {
-      headers: {
-        Authorization: `Bearer ${SQUARE_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-    });
-     const data = await res.json();
+    const res = await fetch(
+      "https://connect.squareupsandbox.com/v2/customers",
+      {
+        headers: {
+          Authorization: `Bearer ${SQUARE_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    const data = await res.json();
     const customers = Array.isArray(data.customers) ? data.customers : [];
 
     for (const c of customers) {
@@ -38,34 +41,37 @@ export async function POST() {
         : [];
 
       // Check if customer already exists by squareId
-      const existing = await db.customer.findFirst({ where: { squareId: c.id } });
+      const existingCustomer = await db.customer.findFirst({
+        where: {squareId: c.id},
+        include: {address: true},
+      });
 
-      if (existing) {
+      if (existingCustomer) {
         // Update existing customer
         await db.customer.update({
-          where: { id: existing.id },
+          where: { id: existingCustomer.id },
           data: {  firstName: c.given_name || "",lastName: c.family_name || "", email, phoneNumber,  
-              addresses: {
+              address: {
               deleteMany: {},
               create: addressData,
             }, },
         });
       } else {
-        // Create new customer
+        // Create new customer with address
         await db.customer.create({
           data: { squareId: c.id, firstName: c.given_name || "",lastName: c.family_name || "", email, phoneNumber,
-            addresses: {
+            address: {
               create: addressData,
             },}
         });
       }
     }
-    return NextResponse.json({ message: "Customers imported successfully." });
+    return NextResponse.json({message: "Customers imported successfully."});
   } catch (err) {
     console.error("Error importing customers:", err);
     return NextResponse.json(
-      { error: "Failed to import customers" },
-      { status: 500 }
+      {error: "Failed to import customers"},
+      {status: 500}
     );
   }
 }
