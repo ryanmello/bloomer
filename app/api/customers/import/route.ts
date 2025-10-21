@@ -26,20 +26,19 @@ export async function POST() {
     for (const c of customers) {
       if (!c.id) continue;
 
-      const firstName = c.given_name || "";
-      const lastName = c.family_name || "";
+      const name = `${c.given_name || ""} ${c.family_name || ""}`.trim();
       const email = c.email_address || "";
       const phoneNumber = c.phone_number || "";
       const addressData = c.address
-        ? {
+        ? [{
             line1: c.address.address_line_1 || "",
             line2: c.address.address_line_2 || "",
             city: c.address.locality || "",
             state: c.address.administrative_district_level_1 || "",
             zip: c.address.postal_code || "",
             country: c.address.country || "",
-          }
-        : null;
+          }]
+        : [];
 
       // Check if customer already exists by squareId
       const existingCustomer = await db.customer.findFirst({
@@ -50,31 +49,20 @@ export async function POST() {
       if (existingCustomer) {
         // Update existing customer
         await db.customer.update({
-          where: {id: existingCustomer.id},
-          data: {
-            firstName,
-            lastName,
-            email,
-            phoneNumber,
-            address: addressData
-              ? {
-                  deleteMany: {}, // clear old address(es)
-                  create: [addressData], // insert new one
-                }
-              : undefined,
-          },
+          where: { id: existing.id },
+          data: {  firstName: c.given_name || "",lastName: c.family_name || "", email, phoneNumber,  
+              addresses: {
+              deleteMany: {},
+              create: addressData,
+            }, },
         });
       } else {
         // Create new customer with address
         await db.customer.create({
-          data: {
-            squareId: c.id,
-            firstName,
-            lastName,
-            email,
-            phoneNumber,
-            address: addressData ? {create: [addressData]} : undefined,
-          },
+          data: { squareId: c.id, firstName: c.given_name || "",lastName: c.family_name || "", email, phoneNumber,
+            addresses: {
+              create: addressData,
+            },}
         });
       }
     }
