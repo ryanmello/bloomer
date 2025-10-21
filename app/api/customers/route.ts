@@ -4,7 +4,10 @@ import { getCurrentUser } from "@/actions/getCurrentUser";
 
 export async function GET() {
   try {
-    const customers = await db.customer.findMany();
+    const customers = await db.customer.findMany({
+      include: { addresses: true }, 
+    })
+
     return NextResponse.json(customers || []); 
   } catch (err) {
     console.error("Error fetching customers:", err);

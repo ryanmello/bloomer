@@ -51,7 +51,7 @@ model Shop {
 }
 
 model Customer {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  ddid          String    @id @default(auto()) @map("_id") @db.ObjectId
   squareId    String?   @unique
   firstName   String
   lastName    String
