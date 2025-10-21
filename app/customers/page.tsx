@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CustomerGroupDropdown } from "./CustomerGroupDropdown";
+
+type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
 interface Address {
   line1: string;
@@ -25,6 +28,7 @@ interface Customer {
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedGroups, setSelectedGroups] = useState<CustomerGroup[]>([]);
 
   // Fetch customers from API
   const fetchCustomers = async () => {
@@ -107,6 +111,19 @@ export default function CustomersPage() {
           </CardContent>
         </Card>
       ))}
+
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold mb-4">Customers</h1>
+        <div className="flex items-center gap-4">
+          <CustomerGroupDropdown
+            selectedGroups={selectedGroups}
+            onSelectionChange={setSelectedGroups}
+          />
+        </div>
+      </div>
+    </div>
     </div>
   );
+  
 }
