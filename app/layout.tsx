@@ -28,9 +28,9 @@ export default function RootLayout({
           <AuthContext>
             <div className="flex min-h-screen">
               <Sidebar />
-              <main className="flex-1 flex flex-col ml-[260px]">
+              <main className="flex-1 flex flex-col ml-0 lg:ml-[260px]">
                 <Header />
-                <div className="flex-1 p-6">
+                <div className="flex-1 p-4 sm:p-6">
                   {children}
                 </div>
               </main>

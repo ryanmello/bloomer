@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   };
 
   return (
-    <main className="space-y-6">
+    <main className="space-y-4 sm:space-y-6">
       {/* Top header with Square status + Sync All / Configure */}
       {/* <DashboardHeader
         connected={true}
@@ -50,12 +50,12 @@ export default async function DashboardPage() {
           icon={Package}
         />
       </section>
-      <div className="w-full flex gap-4">
+      <div className="w-full flex flex-col lg:flex-row gap-4">
         <TrendGraph />
         <RecentActivity />
       </div>
 
-      <div className="w-full flex gap-4">
+      <div className="w-full flex flex-col lg:flex-row gap-4">
         <UpcomingEvents />
         <InventoryStatus />
       </div>

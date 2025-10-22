@@ -109,7 +109,7 @@ export default function TrendGraph() {
   };
 
   return (
-    <div className='w-2/3 rounded-2xl border shadow-sm p-6 bg-card border-border'>
+    <div className='w-full lg:w-2/3 rounded-2xl border shadow-sm p-6 bg-card border-border'>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-semibold text-foreground">Revenue Trend</h3>

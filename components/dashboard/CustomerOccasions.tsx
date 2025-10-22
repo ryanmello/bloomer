@@ -214,22 +214,22 @@ export default function CustomerOccasions() {
   };
 
   return (
-    <div className='w-full rounded-2xl border shadow-sm p-6 bg-card border-border'>
-      <div className="mb-6">
+    <div className='w-full rounded-2xl border shadow-sm p-4 sm:p-6 bg-card border-border'>
+      <div className="mb-4 sm:mb-6">
         <h3 className="text-lg font-semibold text-foreground">Customer Occasions</h3>
         <p className="text-sm text-muted-foreground mt-1">Upcoming customer birthdays and anniversaries</p>
       </div>
       
-      <div className="overflow-auto max-h-[500px] scrollbar-thin">
-        <table className="w-full">
+      <div className="overflow-auto max-h-[500px] scrollbar-thin -mx-4 sm:mx-0 px-4 sm:px-0">
+        <table className="w-full min-w-[800px]">
           <thead>
             <tr className="border-b border-border">
-              <th className="text-left py-3 px-4 text-sm font-semibold text-foreground">Customer</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-foreground">Contact</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-foreground">Occasion</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-foreground">Date</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-foreground">Time Until</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-foreground">Notes</th>
+              <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-foreground whitespace-nowrap">Customer</th>
+              <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-foreground whitespace-nowrap">Contact</th>
+              <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-foreground whitespace-nowrap">Occasion</th>
+              <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-foreground whitespace-nowrap">Date</th>
+              <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-foreground whitespace-nowrap">Time Until</th>
+              <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-foreground whitespace-nowrap">Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -240,35 +240,36 @@ export default function CustomerOccasions() {
                   key={occasion.id} 
                   className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
                 >
-                  <td className="py-4 px-4">
-                    <p className="text-sm font-medium text-foreground">{occasion.customerName}</p>
+                  <td className="py-3 sm:py-4 px-2 sm:px-4">
+                    <p className="text-xs sm:text-sm font-medium text-foreground whitespace-nowrap">{occasion.customerName}</p>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Mail className="h-3 w-3" />
-                        <span>{occasion.email}</span>
+                  <td className="py-3 sm:py-4 px-2 sm:px-4">
+                    <div className="flex flex-col gap-0.5 sm:gap-1">
+                      <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
+                        <Mail className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                        <span className="truncate max-w-[120px] sm:max-w-none">{occasion.email}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Phone className="h-3 w-3" />
-                        <span>{occasion.phone}</span>
+                      <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
+                        <Phone className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                        <span className="whitespace-nowrap">{occasion.phone}</span>
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${getOccasionColor(occasion.occasionType)}`}>
-                      <IconComponent className="h-3 w-3" />
-                      {occasion.occasionType === 'anniversary' ? 'Anniversary' : 'Birthday'}
+                  <td className="py-3 sm:py-4 px-2 sm:px-4">
+                    <div className={`inline-flex items-center gap-1 sm:gap-1.5 rounded-full px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium whitespace-nowrap ${getOccasionColor(occasion.occasionType)}`}>
+                      <IconComponent className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                      <span className="hidden sm:inline">{occasion.occasionType === 'anniversary' ? 'Anniversary' : 'Birthday'}</span>
+                      <span className="sm:hidden">{occasion.occasionType === 'anniversary' ? 'Anniv.' : 'B-day'}</span>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <p className="text-sm text-foreground">{occasion.occasionDate}</p>
+                  <td className="py-3 sm:py-4 px-2 sm:px-4">
+                    <p className="text-xs sm:text-sm text-foreground whitespace-nowrap">{occasion.occasionDate}</p>
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-3 sm:py-4 px-2 sm:px-4">
                     {getUrgencyBadge(occasion.daysUntil)}
                   </td>
-                  <td className="py-4 px-4">
-                    <p className="text-sm text-muted-foreground max-w-xs truncate">
+                  <td className="py-3 sm:py-4 px-2 sm:px-4">
+                    <p className="text-xs sm:text-sm text-muted-foreground max-w-[150px] sm:max-w-xs truncate">
                       {occasion.notes || '-'}
                     </p>
                   </td>

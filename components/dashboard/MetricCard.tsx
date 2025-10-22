@@ -22,19 +22,18 @@ export default function MetricCard({
   return (
     <div
       className="
-        rounded-2xl border shadow-sm h-36 min-w-[260px] p-4
-        bg-white border-gray-200
-        dark:bg-neutral-900 dark:border-neutral-800
+        rounded-2xl border shadow-sm h-36 p-4
+        bg-card border-border
       "
     >
       <div className="flex items-start justify-between">
-        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</div>
-        <div className="rounded-xl p-2 bg-gray-50 dark:bg-neutral-800 text-gray-600 dark:text-gray-300">
-          <Icon className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+        <div className="text-sm font-medium text-muted-foreground">{title}</div>
+        <div className="rounded-xl p-2 bg-muted">
+          <Icon className="w-5 h-5 text-muted-foreground" />
         </div>
       </div>
 
-      <div className="mt-3 text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-gray-100">
+      <div className="mt-3 text-2xl font-semibold tabular-nums tracking-tight text-foreground">
         {value}
       </div>
 
@@ -52,7 +51,7 @@ export default function MetricCard({
             {up ? "+" : ""}
             {changePct.toFixed(1)}%
           </span>
-          <span className="text-gray-500 dark:text-gray-400">{caption}</span>
+          <span className="text-muted-foreground">{caption}</span>
         </div>
       )}
     </div>

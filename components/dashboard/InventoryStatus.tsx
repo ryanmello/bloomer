@@ -111,7 +111,7 @@ export default function InventoryStatus() {
   };
 
   return (
-    <div className='w-1/2 rounded-2xl border shadow-sm p-6 bg-card border-border h-[550px] flex flex-col'>
+    <div className='w-full lg:w-1/2 rounded-2xl border shadow-sm p-6 bg-card border-border h-[550px] flex flex-col'>
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-foreground">Inventory Status</h3>
         <p className="text-sm text-muted-foreground mt-1">Current stock levels</p>
