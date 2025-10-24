@@ -23,10 +23,12 @@ export async function POST(req: Request) {
         lastName: body.lastName,
         email: body.email,
         phoneNumber: body.phoneNumber,
-         address: {
-          create: body.address,
-        },
+        additionalNote: body.additionalNote,
+        squareId: body.squareId || null,
+        address: body.address ? {create: body.address} : undefined,
       },
+      // After creating the customer, also return their related records.
+      // Otherwise, Prisma would only return the customer fields
       include: {
         address: true,
       },
