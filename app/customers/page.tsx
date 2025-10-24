@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CustomerGroupDropdown } from "./CustomerGroupDropdown";
+import { CustomerGroupDropdown } from "../../components/customers/CustomerGroupDropdown";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 

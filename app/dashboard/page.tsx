@@ -1,6 +1,6 @@
 // app/(app)/dashboard/page.tsx
-import DashboardHeader from "@/app/dashboard/DashboardHeader";
-import MetricCard from "@/app/dashboard/MetricCard";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import MetricCard from "@/components/dashboard/MetricCard";
 import { DollarSign, ShoppingBag, Users, Package } from "lucide-react";
 
 
