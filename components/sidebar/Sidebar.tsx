@@ -137,7 +137,7 @@ export default function Sidebar() {
           <h1 className="font-bold">Bloomer</h1>
         </div>
       </div>
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto scrollbar-thin">
         <Command className="h-full">
           <CommandList className="h-full max-h-none">
             {menuList.map((menu: any, key: number) => (

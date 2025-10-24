@@ -1,8 +1,8 @@
-// app/(app)/dashboard/page.tsx
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import MetricCard from "@/components/dashboard/MetricCard";
-import { DollarSign, ShoppingBag, Users, Package } from "lucide-react";
-
+import RecentActivity from "@/components/dashboard/RecentActivity";
+import TrendGraph from "@/components/dashboard/TrendGraph";
+import { DollarSign, ShoppingBag, Users, Package, User } from "lucide-react";
 
 export default async function DashboardPage() {
   const metrics = {
@@ -15,7 +15,10 @@ export default async function DashboardPage() {
   return (
     <main className="space-y-6">
       {/* Top header with Square status + Sync All / Configure */}
-      <DashboardHeader connected={true} lastSyncIso={new Date().toISOString()} />
+      <DashboardHeader
+        connected={true}
+        lastSyncIso={new Date().toISOString()}
+      />
 
       {/* Metric cards */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -23,27 +26,31 @@ export default async function DashboardPage() {
           title="Total Revenue"
           value={metrics.revenue.value}
           changePct={metrics.revenue.change}
-          icon={<DollarSign className="h-5 w-5 text-gray-600" />}
+          icon={DollarSign}
         />
         <MetricCard
           title="Orders"
           value={metrics.orders.value}
           changePct={metrics.orders.change}
-          icon={<ShoppingBag className="h-5 w-5 text-gray-600" />}
+          icon={ShoppingBag}
         />
         <MetricCard
           title="Customers"
           value={metrics.customers.value}
           changePct={metrics.customers.change}
-          icon={<Users className="h-5 w-5 text-gray-600" />}
+          icon={Users}
         />
         <MetricCard
           title="Inventory Items"
           value={metrics.inventory.value}
           changePct={metrics.inventory.change}
-          icon={<Package className="h-5 w-5 text-gray-600" />}
+          icon={Package}
         />
       </section>
+      <div className="w-full flex gap-4">
+        <TrendGraph />
+        <RecentActivity />
+      </div>
 
       {/* ...rest of your dashboard sections (tables, charts, etc.) */}
     </main>

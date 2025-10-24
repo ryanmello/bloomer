@@ -1,11 +1,11 @@
 // components/dashboard/MetricCard.tsx
 import * as React from "react";
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Icon, LucideIcon } from "lucide-react";
 
 type Props = {
   title: string;
   value: string | number;
-  icon: React.ReactNode;
+  icon: LucideIcon;
   changePct?: number;   // e.g. 12.5 means +12.5%
   caption?: string;     // e.g. "from last month"
 };
@@ -13,7 +13,7 @@ type Props = {
 export default function MetricCard({
   title,
   value,
-  icon,
+  icon: Icon,
   changePct,
   caption = "from last month",
 }: Props) {
@@ -30,7 +30,7 @@ export default function MetricCard({
       <div className="flex items-start justify-between">
         <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</div>
         <div className="rounded-xl p-2 bg-gray-50 dark:bg-neutral-800 text-gray-600 dark:text-gray-300">
-          {icon}
+          <Icon className="w-5 h-5 text-gray-400 dark:text-gray-500" />
         </div>
       </div>
 
