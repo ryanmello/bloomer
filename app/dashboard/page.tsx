@@ -2,7 +2,9 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import MetricCard from "@/components/dashboard/MetricCard";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import TrendGraph from "@/components/dashboard/TrendGraph";
-import { DollarSign, ShoppingBag, Users, Package, User } from "lucide-react";
+import InventoryStatus from "@/components/dashboard/InventoryStatus";
+import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
+import { DollarSign, ShoppingBag, Users, Package } from "lucide-react";
 
 export default async function DashboardPage() {
   const metrics = {
@@ -50,6 +52,11 @@ export default async function DashboardPage() {
       <div className="w-full flex gap-4">
         <TrendGraph />
         <RecentActivity />
+      </div>
+
+      <div className="w-full flex gap-4">
+        <UpcomingEvents />
+        <InventoryStatus />
       </div>
 
       {/* ...rest of your dashboard sections (tables, charts, etc.) */}
