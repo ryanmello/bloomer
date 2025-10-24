@@ -5,6 +5,7 @@ import TrendGraph from "@/components/dashboard/TrendGraph";
 import InventoryStatus from "@/components/dashboard/InventoryStatus";
 import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import { DollarSign, ShoppingBag, Users, Package } from "lucide-react";
+import CustomerOccasions from "@/components/dashboard/CustomerOccasions";
 
 export default async function DashboardPage() {
   const metrics = {
@@ -17,10 +18,10 @@ export default async function DashboardPage() {
   return (
     <main className="space-y-6">
       {/* Top header with Square status + Sync All / Configure */}
-      <DashboardHeader
+      {/* <DashboardHeader
         connected={true}
         lastSyncIso={new Date().toISOString()}
-      />
+      /> */}
 
       {/* Metric cards */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -58,6 +59,8 @@ export default async function DashboardPage() {
         <UpcomingEvents />
         <InventoryStatus />
       </div>
+
+      <CustomerOccasions />
 
       {/* ...rest of your dashboard sections (tables, charts, etc.) */}
     </main>

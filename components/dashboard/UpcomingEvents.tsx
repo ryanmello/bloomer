@@ -20,26 +20,26 @@ export default function UpcomingEvents() {
     },
     {
       id: '2',
-      title: "Sarah & Michael's Anniversary",
+      title: "Johnson Wedding",
       date: 'Feb 18, 2025',
-      type: 'anniversary',
-      customer: 'Sarah Mitchell',
+      type: 'wedding',
+      customer: 'Rebecca & James Johnson',
       daysUntil: 7,
     },
     {
       id: '3',
-      title: "Emma's Birthday",
+      title: "Chen Memorial Service",
       date: 'Feb 22, 2025',
-      type: 'birthday',
-      customer: 'Emma Johnson',
+      type: 'other',
+      customer: 'Chen Family',
       daysUntil: 11,
     },
     {
       id: '4',
-      title: "Johnson Wedding",
+      title: "Martinez Wedding",
       date: 'Mar 5, 2025',
       type: 'wedding',
-      customer: 'Rebecca Johnson',
+      customer: 'Sofia & Carlos Martinez',
       daysUntil: 22,
     },
     {
@@ -51,11 +51,18 @@ export default function UpcomingEvents() {
     },
     {
       id: '6',
-      title: "David & Lisa's Anniversary",
-      date: 'Mar 15, 2025',
-      type: 'anniversary',
-      customer: 'David Chen',
-      daysUntil: 32,
+      title: "Easter Sunday",
+      date: 'Apr 20, 2025',
+      type: 'holiday',
+      daysUntil: 68,
+    },
+    {
+      id: '7',
+      title: "Thompson Wedding",
+      date: 'Jun 14, 2025',
+      type: 'wedding',
+      customer: 'Emily & Michael Thompson',
+      daysUntil: 123,
     },
   ];
 
@@ -76,16 +83,12 @@ export default function UpcomingEvents() {
 
   const getEventColor = (type: Event['type']) => {
     switch (type) {
-      case 'anniversary':
-        return 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400';
-      case 'birthday':
-        return 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400';
       case 'holiday':
         return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400';
       case 'wedding':
         return 'bg-pink-50 text-pink-600 dark:bg-pink-900/20 dark:text-pink-400';
       default:
-        return 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400';
+        return 'bg-gray-50 text-gray-600 dark:bg-gray-900/20 dark:text-gray-400';
     }
   };
 
@@ -115,7 +118,7 @@ export default function UpcomingEvents() {
     <div className='w-1/2 rounded-2xl border shadow-sm p-6 bg-card border-border h-[550px] flex flex-col'>
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-foreground">Upcoming Events</h3>
-        <p className="text-sm text-muted-foreground mt-1">Important dates to remember</p>
+        <p className="text-sm text-muted-foreground mt-1">Holidays, weddings, and memorial services</p>
       </div>
       
       <div className="space-y-3 overflow-y-auto flex-1 pr-2 scrollbar-thin">
