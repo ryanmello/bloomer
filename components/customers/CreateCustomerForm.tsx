@@ -143,115 +143,107 @@ export default function CreateCustomerForm() {
   }
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus /> Add Customer
-        </Button>
-      </DialogTrigger>
+    <DialogPortal>
+      <DialogOverlay />
 
-      <DialogPortal>
-        <DialogOverlay />
+      <DialogContent className="top-[6%] left-[33%] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add New Customer</DialogTitle>
+          <DialogDescription>
+            Fill in the customer details below.
+          </DialogDescription>
+        </DialogHeader>
 
-        <DialogContent className="top-[6%] left-[33%] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add New Customer</DialogTitle>
-            <DialogDescription>
-              Fill in the customer details below.
-            </DialogDescription>
-          </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            name="firstName"
+            placeholder="First Name"
+            value={formData.firstName}
+            onChange={handleInputChange}
+            required
+          />
+          <Input
+            name="lastName"
+            placeholder="Last Name"
+            value={formData.lastName}
+            onChange={handleInputChange}
+            required
+          />
+          <Input
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleInputChange}
+            required
+          />
+          <Input
+            name="phoneNumber"
+            placeholder="Phone Number"
+            value={formData.phoneNumber}
+            onChange={handleInputChange}
+            required
+          />
+          <Textarea
+            name="additionalNote"
+            placeholder="Additional Note"
+            value={formData.additionalNote}
+            onChange={handleInputChange}
+          />
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              name="firstName"
-              placeholder="First Name"
-              value={formData.firstName}
-              onChange={handleInputChange}
-              required
-            />
-            <Input
-              name="lastName"
-              placeholder="Last Name"
-              value={formData.lastName}
-              onChange={handleInputChange}
-              required
-            />
-            <Input
-              name="email"
-              placeholder="Email"
-              value={formData.email}
-              onChange={handleInputChange}
-              required
-            />
-            <Input
-              name="phoneNumber"
-              placeholder="Phone Number"
-              value={formData.phoneNumber}
-              onChange={handleInputChange}
-              required
-            />
-            <Textarea
-              name="additionalNote"
-              placeholder="Additional Note"
-              value={formData.additionalNote}
-              onChange={handleInputChange}
-            />
-
-            <Label>Address</Label>
-            <Input
-              name="line1"
-              placeholder="Line 1"
-              value={formData.address.line1}
-              onChange={handleAddressChange}
-              required
-            />
-            <Input
-              name="line2"
-              placeholder="Line 2"
-              value={formData.address.line2}
-              onChange={handleAddressChange}
-            />
-            <Input
-              name="city"
-              placeholder="City"
-              value={formData.address.city}
-              onChange={handleAddressChange}
-              required
-            />
-            <Input
-              name="state"
-              placeholder="State"
-              value={formData.address.state}
-              onChange={handleAddressChange}
-              required
-            />
-            <Input
-              name="zip"
-              placeholder="ZIP"
-              value={formData.address.zip}
-              onChange={handleAddressChange}
-              required
-            />
-            <Input
-              name="country"
-              placeholder="Country"
-              value={formData.address.country}
-              onChange={handleAddressChange}
-              required
-            />
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="destructive" onClick={handleResetForm}>
-                  Cancel
-                </Button>
-              </DialogClose>
-              <Button variant="default" type="submit" disabled={isLoading}>
-                {isLoading ? "Saving..." : "Create Customer"}
+          <Label>Address</Label>
+          <Input
+            name="line1"
+            placeholder="Line 1"
+            value={formData.address.line1}
+            onChange={handleAddressChange}
+            required
+          />
+          <Input
+            name="line2"
+            placeholder="Line 2"
+            value={formData.address.line2}
+            onChange={handleAddressChange}
+          />
+          <Input
+            name="city"
+            placeholder="City"
+            value={formData.address.city}
+            onChange={handleAddressChange}
+            required
+          />
+          <Input
+            name="state"
+            placeholder="State"
+            value={formData.address.state}
+            onChange={handleAddressChange}
+            required
+          />
+          <Input
+            name="zip"
+            placeholder="ZIP"
+            value={formData.address.zip}
+            onChange={handleAddressChange}
+            required
+          />
+          <Input
+            name="country"
+            placeholder="Country"
+            value={formData.address.country}
+            onChange={handleAddressChange}
+            required
+          />
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="destructive" onClick={handleResetForm}>
+                Cancel
               </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </DialogPortal>
-    </Dialog>
+            </DialogClose>
+            <Button variant="default" type="submit" disabled={isLoading}>
+              {isLoading ? "Saving..." : "Create Customer"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </DialogPortal>
   );
 }

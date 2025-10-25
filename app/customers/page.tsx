@@ -3,6 +3,20 @@ import {useEffect, useState} from "react";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {CustomerGroupDropdown} from "./CustomerGroupDropdown";
 import CreateCustomerForm from "@/components/customers/CreateCustomerForm";
+import {Button} from "@/components/ui/button";
+import {Plus} from "lucide-react";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
@@ -71,7 +85,16 @@ export default function CustomersPage() {
           className="px-4 py-2 rounded border border-gray-600 text-white bg-transparent cursor-pointer">
           {loading ? "Importing..." : "Import Customers"}
         </button>
-        <CreateCustomerForm />
+
+        {/* Add Customer Button */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus /> Add Customer
+            </Button>
+          </DialogTrigger>
+          <CreateCustomerForm />
+        </Dialog>
       </div>
 
       {customers.length === 0 && !loading && <p>No customers found.</p>}
