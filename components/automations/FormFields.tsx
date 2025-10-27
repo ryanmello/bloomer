@@ -60,7 +60,7 @@ export function FormFields({ data, setData }: FormFieldsProps) {
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                     id="description"
-                    placeholder="Describe what this automation will do..."
+                    placeholder="Describe what this automation will do"
                     value={data.description}
                     onChange={(e) => handleDataChange("description", e.target.value)}
                 />
@@ -71,7 +71,7 @@ export function FormFields({ data, setData }: FormFieldsProps) {
                 <Label htmlFor="additionalConditions">Additional Conditions (optional)</Label>
                 <Input
                     id="additionalConditions"
-                    placeholder="e.g. Customer group = VIP, Total spent > $100"
+                    placeholder="TBD"
                     value={data.additionalConditions}
                     onChange={(e) =>
                         handleDataChange("additionalConditions", e.target.value)

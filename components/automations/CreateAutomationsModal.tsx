@@ -1,16 +1,13 @@
 "use client";
 
-import { useState } from 'react'; // <-- Import useState
+import { useState } from 'react';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
-    // DialogFooter removed, we'll use ModalFooter now
 } from "@/components/ui/dialog";
-// Button is used inside ModalFooter, not directly here anymore
-
-// Import the new components
+import { TriggerConfiguration } from "./TriggerConfigurations";
 import { FormFields } from "./FormFields";
 
 interface CreateAutomationModalProps {
@@ -74,8 +71,8 @@ export function CreateAutomationModal({ isOpen, onClose }: CreateAutomationModal
                     <DialogTitle>Create New Automation</DialogTitle>
                 </DialogHeader>
                 <div className="flex flex-col gap-6 py-4 max-h-[70vh] overflow-y-auto pr-2">
-                    {/* FormFields: UN-62, UN-63, UN-64, UN-67 */}
                     <FormFields data={formData} setData={setFormData} />
+                    <TriggerConfiguration data={formData} setData={setFormData} />
                 </div>
             </DialogContent>
         </Dialog>
