@@ -43,12 +43,12 @@ export function PreviewDisplay({ data }: PreviewDisplayProps) {
     const actionText = `Send ${data.actionType === 'sendEmail' ? 'email' : 'SMS'} with "${friendlyTemplate}" template`;
 
     return (
-        <div className="space-y-2 rounded-lg bg-muted p-4">
+        <div className="space-y-3 rounded-lg border bg-primary/5 p-5">
             <h3 className="text-sm font-semibold flex items-center">
                 <Wand className="w-4 h-4 mr-2" />
                 Preview: {data.automationName || "New Automation"}
             </h3>
-            <div className="text-sm text-muted-foreground space-y-1">
+            <div className="text-sm text-muted-foreground space-y-2">
                 <p>
                     <strong>Trigger:</strong> <span className="text-primary">{triggerText}</span>
                 </p>

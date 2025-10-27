@@ -1,7 +1,6 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -10,74 +9,95 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
+import { useFormContext } from "react-hook-form";
 import { AutomationFormData } from "./CreateAutomationsModal";
 
-interface FormFieldsProps {
-    data: AutomationFormData;
-    setData: React.Dispatch<React.SetStateAction<AutomationFormData>>;
-}
-
-export function FormFields({ data, setData }: FormFieldsProps) {
-    const handleDataChange = (key: string, value: string) => {
-        setData((prev) => ({ ...prev, [key]: value }));
-    };
+export function FormFields() {
+    const form = useFormContext<AutomationFormData>();
 
     return (
-        <div className="grid grid-cols-2 gap-4">
-            {/*Automation Name */}
-            <div className="col-span-1">
-                <Label htmlFor="automationName">Automation Name</Label>
-                <Input
-                    id="automationName"
-                    placeholder="e.g. Mother's Day Reminder"
-                    value={data.automationName}
-                    onChange={(e) => handleDataChange("automationName", e.target.value)}
+        <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+                {/* Automation Name */}
+                <FormField
+                    control={form.control}
+                    name="automationName"
+                    render={({ field }) => (
+                        <FormItem className="col-span-1">
+                            <FormLabel>Automation Name</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g. Mother's Day Reminder" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                {/* Category */}
+                <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                        <FormItem className="col-span-1">
+                            <FormLabel>Category</FormLabel>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="lifecycle">Lifecycle</SelectItem>
+                                    <SelectItem value="follow-up">Follow-up</SelectItem>
+                                    <SelectItem value="birthday">Birthday</SelectItem>
+                                    <SelectItem value="anniversary">Anniversary</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
                 />
             </div>
 
-            {/*Category */}
-            <div className="col-span-1">
-                <Label htmlFor="category">Category</Label>
-                <Select
-                    value={data.category}
-                    onValueChange={(value) => handleDataChange("category", value)}
-                >
-                    <SelectTrigger id="category">
-                        <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {/* These would eventually come from your API */}
-                        <SelectItem value="lifecycle">Lifecycle</SelectItem>
-                        <SelectItem value="follow-up">Follow-up</SelectItem>
-                        <SelectItem value="birthday">Birthday</SelectItem>
-                        <SelectItem value="anniversary">Anniversary</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-
-            {/*Description */}
-            <div className="col-span-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                    id="description"
-                    placeholder="Describe what this automation will do"
-                    value={data.description}
-                    onChange={(e) => handleDataChange("description", e.target.value)}
-                />
-            </div>
+            {/* Description */}
+            <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                            <Textarea
+                                placeholder="Describe what this automation will do"
+                                {...field}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
 
             {/* Additional Conditions */}
-            <div className="col-span-2">
-                <Label htmlFor="additionalConditions">Additional Conditions (optional)</Label>
-                <Input
-                    id="additionalConditions"
-                    placeholder="TBD"
-                    value={data.additionalConditions}
-                    onChange={(e) =>
-                        handleDataChange("additionalConditions", e.target.value)
-                    }
-                />
-            </div>
+            <FormField
+                control={form.control}
+                name="additionalConditions"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Additional Conditions (optional)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="TBD" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
         </div>
     );
 }
