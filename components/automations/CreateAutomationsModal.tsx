@@ -13,6 +13,8 @@ import { FormFields } from "./FormFields";
 import { ActionConfiguration } from "./ActionConfiguration";
 import { Button } from '@/components/ui/button';
 import { PreviewDisplay } from './PreviewDisplay';
+import { Plus, Zap } from 'lucide-react';
+import { AutomationSettings } from './AutomationSettings';
 
 interface CreateAutomationModalProps {
     isOpen: boolean;
@@ -79,6 +81,17 @@ export function CreateAutomationModal({ isOpen, onClose }: CreateAutomationModal
                     <TriggerConfiguration data={formData} setData={setFormData} />
                     <ActionConfiguration data={formData} setData={setFormData} />
                     <PreviewDisplay data={formData} />
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-fit" // Makes it fit the content
+                        onClick={() => console.log("TODO: Add another action")}
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Another Action
+                    </Button>
+
+                    <AutomationSettings data={formData} setData={setFormData} />
                 </div>
                 <DialogFooter>
                     <Button variant="ghost" onClick={handleClose}>

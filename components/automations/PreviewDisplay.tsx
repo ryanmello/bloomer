@@ -17,6 +17,15 @@ const templateNames: Record<string, string> = {
     welcomeEmail: "New Customer Welcome",
 };
 
+const recipientNames: Record<string, string> = {
+    triggeredCustomer: "Triggered Customer",
+    vipCustomers: "VIP Customers",
+    newCustomers: "New Customers",
+    recurringCustomers: "Recurring Customers",
+    allCustomers: "All Customers",
+    customAudience: "Custom Audience",
+};
+
 interface PreviewDisplayProps {
     data: AutomationFormData;
 }
@@ -29,11 +38,9 @@ export function PreviewDisplay({ data }: PreviewDisplayProps) {
 
     const friendlyTrigger = triggerNames[data.triggerType] || data.triggerType;
     const friendlyTemplate = templateNames[data.messageTemplate] || data.messageTemplate;
+    const recipientText = recipientNames[data.sendTo] || data.sendTo;
     const triggerText = `${data.timing || '...'} ${friendlyTrigger}`;
     const actionText = `Send ${data.actionType === 'sendEmail' ? 'email' : 'SMS'} with "${friendlyTemplate}" template`;
-
-
-    const recipientText = data.sendTo === 'triggeredCustomer' ? 'Triggered customer' : 'A specific group';
 
     return (
         <div className="space-y-2 rounded-lg bg-muted p-4">
