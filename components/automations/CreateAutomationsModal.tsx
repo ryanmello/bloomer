@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { TriggerConfiguration } from "./TriggerConfigurations";
 import { FormFields } from "./FormFields";
+import { ActionConfiguration } from "./ActionConfiguration";
 
 interface CreateAutomationModalProps {
     isOpen: boolean;
@@ -73,6 +74,7 @@ export function CreateAutomationModal({ isOpen, onClose }: CreateAutomationModal
                 <div className="flex flex-col gap-6 py-4 max-h-[70vh] overflow-y-auto pr-2">
                     <FormFields data={formData} setData={setFormData} />
                     <TriggerConfiguration data={formData} setData={setFormData} />
+                    <ActionConfiguration data={formData} setData={setFormData} />
                 </div>
             </DialogContent>
         </Dialog>
