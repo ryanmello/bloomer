@@ -8,8 +8,10 @@ import {
   Search,
   Plus,
   Settings,
+  Menu,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Separator } from "../ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -35,7 +37,11 @@ type Shop = {
   updatedAt: string;
 };
 
-export default function Header() {
+type HeaderProps = {
+  onMenuClick?: () => void;
+};
+
+export default function Header({ onMenuClick }: HeaderProps) {
   const { user } = useUser();
   const router = useRouter();
   const [shops, setShops] = useState<Shop[]>([]);
@@ -63,10 +69,21 @@ export default function Header() {
   }, [user]);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="grid grid-cols-3 h-12 items-center px-6 gap-4">
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 min-w-0">
+      <div className="flex h-12 items-center px-4 sm:px-6 gap-2 sm:gap-4 justify-between min-w-0">
+        {/* Hamburger menu for mobile */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onMenuClick}
+          className="xl:hidden transition-all duration-200 hover:scale-110 active:scale-95 -ml-2"
+          aria-label="Open menu"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
         {/* Left side - Shop selector */}
-        <div className="flex items-center">
+        <div className="flex items-center flex-shrink-0">
           {isLoading ? (
             <Skeleton className="h-8 w-40 border-[1px]" />
           ) : currentShop ? (
@@ -107,9 +124,9 @@ export default function Header() {
           ) : null}
         </div>
 
-        {/* Center - Search bar */}
-        <div className="flex justify-center">
-          <div className="relative w-full max-w-md">
+        {/* Center - Search bar (hidden on mobile) */}
+        <div className="hidden md:flex flex-1 justify-center max-w-md mx-4">
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search..."
@@ -118,11 +135,15 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Right side - Notifications and user info */}
-        <div className="flex items-center justify-end gap-4">
-          {/* <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-          </Button> */}
+        {/* Right side - Search icon for mobile */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+          >
+            <Search className="h-4 w-4 text-muted-foreground" />
+          </Button>
         </div>
       </div>
     </header>

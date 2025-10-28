@@ -1,22 +1,7 @@
 "use client";
-import {useEffect, useState} from "react";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {CustomerGroupDropdown} from "./CustomerGroupDropdown";
-import CreateCustomerForm from "@/components/customers/CreateCustomerForm";
-import {Button} from "@/components/ui/button";
-import {Plus} from "lucide-react";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogOverlay,
-  DialogPortal,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CustomerGroupDropdown } from "../../components/customers/CustomerGroupDropdown";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
@@ -48,7 +33,7 @@ export default function CustomersPage() {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/customers");
+      const res = await fetch("/api/customer");
       const data: Customer[] = await res.json();
       setCustomers(data);
     } catch (err) {
@@ -62,8 +47,8 @@ export default function CustomersPage() {
   const handleImport = async () => {
     setLoading(true);
     try {
-      await fetch("/api/customers/import", {method: "POST"});
-      await fetchCustomers();
+      await fetch("/api/customer/import", { method: "POST" });
+      await fetchCustomers(); 
     } catch (err) {
       console.error(err);
     } finally {

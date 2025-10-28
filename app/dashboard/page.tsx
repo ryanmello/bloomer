@@ -1,8 +1,11 @@
-// app/(app)/dashboard/page.tsx
-import DashboardHeader from "@/app/dashboard/DashboardHeader";
-import MetricCard from "@/app/dashboard/MetricCard";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import MetricCard from "@/components/dashboard/MetricCard";
+import RecentActivity from "@/components/dashboard/RecentActivity";
+import TrendGraph from "@/components/dashboard/TrendGraph";
+import InventoryStatus from "@/components/dashboard/InventoryStatus";
+import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import { DollarSign, ShoppingBag, Users, Package } from "lucide-react";
-
+import CustomerOccasions from "@/components/dashboard/CustomerOccasions";
 
 export default async function DashboardPage() {
   const metrics = {
@@ -13,37 +16,51 @@ export default async function DashboardPage() {
   };
 
   return (
-    <main className="space-y-6">
+    <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Top header with Square status + Sync All / Configure */}
-      <DashboardHeader connected={true} lastSyncIso={new Date().toISOString()} />
+      {/* <DashboardHeader
+        connected={true}
+        lastSyncIso={new Date().toISOString()}
+      /> */}
 
       {/* Metric cards */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 w-full">
         <MetricCard
           title="Total Revenue"
           value={metrics.revenue.value}
           changePct={metrics.revenue.change}
-          icon={<DollarSign className="h-5 w-5 text-gray-600" />}
+          icon={DollarSign}
         />
         <MetricCard
           title="Orders"
           value={metrics.orders.value}
           changePct={metrics.orders.change}
-          icon={<ShoppingBag className="h-5 w-5 text-gray-600" />}
+          icon={ShoppingBag}
         />
         <MetricCard
           title="Customers"
           value={metrics.customers.value}
           changePct={metrics.customers.change}
-          icon={<Users className="h-5 w-5 text-gray-600" />}
+          icon={Users}
         />
         <MetricCard
           title="Inventory Items"
           value={metrics.inventory.value}
           changePct={metrics.inventory.change}
-          icon={<Package className="h-5 w-5 text-gray-600" />}
+          icon={Package}
         />
       </section>
+      <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
+        <TrendGraph />
+        <RecentActivity />
+      </div>
+
+      <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
+        <UpcomingEvents />
+        <InventoryStatus />
+      </div>
+
+      <CustomerOccasions />
 
       {/* ...rest of your dashboard sections (tables, charts, etc.) */}
     </main>

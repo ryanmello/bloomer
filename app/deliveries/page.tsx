@@ -1,0 +1,562 @@
+"use client";
+
+/// <reference types="google.maps" />
+
+// Extend Window interface for Google Maps
+declare global {
+  interface Window {
+    google: typeof google;
+  }
+}
+
+import { useEffect, useState, useRef } from "react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "lucide-react";
+import DeliveryCard from "@/components/deliveries/DeliveryCard";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface Delivery {
+  id: string;
+  customerName: string;
+  address: string;
+  phoneNumber: string;
+  orderDetails: string;
+  deliveryTime: string;
+  status: "pending" | "completed";
+  lat: number;
+  lng: number;
+}
+
+// Mock data for Fremont, CA deliveries
+const MOCK_DELIVERIES: Delivery[] = [
+  {
+    id: "1",
+    customerName: "Sarah Johnson",
+    address: "39650 Liberty St, Fremont, CA 94538",
+    phoneNumber: "(510) 555-0123",
+    orderDetails: "1x Rose Bouquet, 1x Lily Arrangement",
+    deliveryTime: "9:00 AM - 11:00 AM",
+    status: "pending",
+    lat: 37.5485,
+    lng: -121.9886,
+  },
+  {
+    id: "2",
+    customerName: "Michael Chen",
+    address: "43831 Mission Blvd, Fremont, CA 94539",
+    phoneNumber: "(510) 555-0234",
+    orderDetails: "1x Sunflower Bouquet",
+    deliveryTime: "10:00 AM - 12:00 PM",
+    status: "pending",
+    lat: 37.5593,
+    lng: -121.9732,
+  },
+  {
+    id: "3",
+    customerName: "Emily Rodriguez",
+    address: "3555 Walnut Ave, Fremont, CA 94536",
+    phoneNumber: "(510) 555-0345",
+    orderDetails: "1x Orchid Plant, 1x Tulip Bouquet",
+    deliveryTime: "11:00 AM - 1:00 PM",
+    status: "pending",
+    lat: 37.5577,
+    lng: -122.0391,
+  },
+  {
+    id: "4",
+    customerName: "James Wilson",
+    address: "40580 Fremont Blvd, Fremont, CA 94538",
+    phoneNumber: "(510) 555-0456",
+    orderDetails: "1x Mixed Flower Arrangement",
+    deliveryTime: "12:00 PM - 2:00 PM",
+    status: "pending",
+    lat: 37.5324,
+    lng: -121.9897,
+  },
+  {
+    id: "5",
+    customerName: "Lisa Martinez",
+    address: "4260 Central Ave, Fremont, CA 94536",
+    phoneNumber: "(510) 555-0567",
+    orderDetails: "2x Rose Bouquet, 1x Carnation Arrangement",
+    deliveryTime: "1:00 PM - 3:00 PM",
+    status: "pending",
+    lat: 37.5438,
+    lng: -122.0711,
+  },
+  {
+    id: "6",
+    customerName: "David Kim",
+    address: "4555 Peralta Blvd, Fremont, CA 94536",
+    phoneNumber: "(510) 555-0678",
+    orderDetails: "1x Daisy Bouquet",
+    deliveryTime: "2:00 PM - 4:00 PM",
+    status: "pending",
+    lat: 37.5272,
+    lng: -122.0585,
+  },
+];
+
+// Light mode map styles - pure grayscale theme
+const LIGHT_MODE_MAP_STYLES: google.maps.MapTypeStyle[] = [
+  // All features - base grayscale
+  {
+    elementType: "geometry",
+    stylers: [{ saturation: -100 }, { lightness: 0 }],
+  },
+  {
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#2b2b2b" }],
+  },
+  {
+    elementType: "labels.text.stroke",
+    stylers: [{ color: "#ffffff" }, { weight: 2 }],
+  },
+  // Water - medium gray
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#b8b8b8" }, { saturation: -100 }],
+  },
+  {
+    featureType: "water",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  // Landscape - light gray
+  {
+    featureType: "landscape",
+    elementType: "geometry",
+    stylers: [{ color: "#efefef" }, { saturation: -100 }],
+  },
+  // Parks - slightly darker than landscape
+  {
+    featureType: "poi.park",
+    elementType: "geometry",
+    stylers: [{ color: "#dbdbdb" }, { saturation: -100 }],
+  },
+  // Roads - white with gray strokes
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#ffffff" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#cccccc" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry",
+    stylers: [{ color: "#e8e8e8" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#b8b8b8" }, { saturation: -100 }],
+  },
+  // Hide POIs
+  {
+    featureType: "poi",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "poi.business",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "poi.park",
+    elementType: "labels.text",
+    stylers: [{ visibility: "off" }],
+  },
+  // Hide neighborhoods
+  {
+    featureType: "administrative.neighborhood",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  // Transit
+  {
+    featureType: "transit",
+    elementType: "geometry",
+    stylers: [{ color: "#dbdbdb" }, { saturation: -100 }],
+  },
+  {
+    featureType: "transit.station",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+];
+
+// Dark mode map styles - pure black and gray theme
+const DARK_MODE_MAP_STYLES: google.maps.MapTypeStyle[] = [
+  // All features - base grayscale
+  {
+    elementType: "geometry",
+    stylers: [{ saturation: -100 }, { lightness: -10 }],
+  },
+  {
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#999999" }],
+  },
+  {
+    elementType: "labels.text.stroke",
+    stylers: [{ color: "#1a1a1a" }, { weight: 2 }],
+  },
+  // Water - dark gray
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#2b2b2b" }, { saturation: -100 }],
+  },
+  {
+    featureType: "water",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  // Landscape - very dark gray
+  {
+    featureType: "landscape",
+    elementType: "geometry",
+    stylers: [{ color: "#1a1a1a" }, { saturation: -100 }],
+  },
+  // Parks - slightly lighter dark gray
+  {
+    featureType: "poi.park",
+    elementType: "geometry",
+    stylers: [{ color: "#242424" }, { saturation: -100 }],
+  },
+  {
+    featureType: "poi.park",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  // Roads - medium gray
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#3d3d3d" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#2b2b2b" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry",
+    stylers: [{ color: "#525252" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#3d3d3d" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  // City labels - light gray
+  {
+    featureType: "administrative.locality",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#cccccc" }],
+  },
+  // Hide neighborhoods
+  {
+    featureType: "administrative.neighborhood",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  // Hide POIs
+  {
+    featureType: "poi",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "poi.business",
+    stylers: [{ visibility: "off" }],
+  },
+  // Transit - dark gray
+  {
+    featureType: "transit",
+    elementType: "geometry",
+    stylers: [{ color: "#2b2b2b" }, { saturation: -100 }],
+  },
+  {
+    featureType: "transit.station",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+];
+
+export default function DeliveriesPage() {
+  const [deliveries, setDeliveries] = useState<Delivery[]>(MOCK_DELIVERIES);
+  const [selectedDate, setSelectedDate] = useState<string>("today");
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [directionsRenderer, setDirectionsRenderer] =
+    useState<google.maps.DirectionsRenderer | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Detect and watch for theme changes
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains("dark"));
+    };
+
+    // Check initially
+    checkDarkMode();
+
+    // Watch for theme changes
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Hide Google Maps branding elements
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.innerHTML = `
+      .gm-style-cc,
+      .gm-style a[href^="https://maps.google.com/maps"] {
+        display: none !important;
+      }
+      .gmnoprint a,
+      .gmnoprint span,
+      .gm-style-cc {
+        display: none;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Check if Google Maps script is already loaded
+    if (window.google && window.google.maps) {
+      setIsLoaded(true);
+      return;
+    }
+
+    // Check if script is already being loaded
+    const existingScript = document.querySelector(
+      'script[src*="maps.googleapis.com"]'
+    );
+    if (existingScript) {
+      existingScript.addEventListener("load", () => setIsLoaded(true));
+      return;
+    }
+
+    // Load the script
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const script = document.createElement("script");
+    script.id = "google-maps-script";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${
+      apiKey || ""
+    }&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setIsLoaded(true);
+    document.head.appendChild(script);
+  }, []);
+
+  // Initialize map
+  useEffect(() => {
+    if (!isLoaded || !mapRef.current || map) return;
+
+    const googleMap = new google.maps.Map(mapRef.current, {
+      zoom: 12,
+      center: { lat: 37.5897, lng: -121.9799 }, // Flower shop location
+      mapTypeControl: false, // Hide map/satellite button
+      streetViewControl: false, // Hide street view person button
+      disableDefaultUI: true,
+      styles: isDarkMode ? DARK_MODE_MAP_STYLES : LIGHT_MODE_MAP_STYLES,
+    });
+
+    const renderer = new google.maps.DirectionsRenderer({
+      map: googleMap,
+      suppressMarkers: false,
+      polylineOptions: {
+        strokeColor: isDarkMode ? "#cccccc" : "#1a1a1a",
+        strokeWeight: 5,
+      },
+    });
+
+    setMap(googleMap);
+    setDirectionsRenderer(renderer);
+  }, [isLoaded, map, isDarkMode]);
+
+  // Update map styles when theme changes
+  useEffect(() => {
+    if (!map) return;
+
+    map.setOptions({
+      styles: isDarkMode ? DARK_MODE_MAP_STYLES : LIGHT_MODE_MAP_STYLES,
+    });
+
+    if (directionsRenderer) {
+      directionsRenderer.setOptions({
+        polylineOptions: {
+          strokeColor: isDarkMode ? "#cccccc" : "#1a1a1a",
+          strokeWeight: 5,
+        },
+      });
+    }
+  }, [isDarkMode, map, directionsRenderer]);
+
+  // Calculate and display optimal route
+  useEffect(() => {
+    if (!map || !directionsRenderer || deliveries.length === 0) return;
+
+    const pendingDeliveries = deliveries.filter((d) => d.status === "pending");
+    if (pendingDeliveries.length === 0) return;
+
+    const directionsService = new google.maps.DirectionsService();
+
+    // Starting point (flower shop location)
+    const origin = "37364 Niles Blvd., Fremont, CA 94536";
+
+    // Waypoints (all but the last delivery)
+    const waypoints = pendingDeliveries.slice(0, -1).map((delivery) => ({
+      location: { lat: delivery.lat, lng: delivery.lng },
+      stopover: true,
+    }));
+
+    // Destination (last delivery)
+    const destination = {
+      lat: pendingDeliveries[pendingDeliveries.length - 1].lat,
+      lng: pendingDeliveries[pendingDeliveries.length - 1].lng,
+    };
+
+    directionsService.route(
+      {
+        origin: origin,
+        destination: destination,
+        waypoints: waypoints,
+        optimizeWaypoints: true,
+        travelMode: google.maps.TravelMode.DRIVING,
+      },
+      (
+        result: google.maps.DirectionsResult | null,
+        status: google.maps.DirectionsStatus
+      ) => {
+        if (status === google.maps.DirectionsStatus.OK && result) {
+          directionsRenderer.setDirections(result);
+        } else {
+          console.error("Directions request failed:", status);
+        }
+      }
+    );
+  }, [map, directionsRenderer, deliveries]);
+
+  const toggleDeliveryStatus = (id: string) => {
+    setDeliveries((prev) =>
+      prev.map((delivery) =>
+        delivery.id === id
+          ? {
+              ...delivery,
+              status: delivery.status === "pending" ? "completed" : "pending",
+            }
+          : delivery
+      )
+    );
+  };
+
+  const pendingCount = deliveries.filter((d) => d.status === "pending").length;
+  const completedCount = deliveries.filter(
+    (d) => d.status === "completed"
+  ).length;
+
+  return (
+    <div className="h-[calc(100vh-6rem)] flex gap-4">
+      {/* Left Side - Delivery List */}
+      <div className="w-full md:w-1/3 lg:w-1/3 overflow-y-auto space-y-4 pr-2 scrollbar-thin">
+        {/* Header with Date Selector and Status Badges */}
+        <div className="flex items-start justify-between gap-4 mb-6">
+          {/* Date Selector Dropdown - Grouped */}
+          <div className="flex items-start gap-2">
+            <div className="rounded-xl p-2 bg-muted">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">
+                Viewing
+              </div>
+              <Select value={selectedDate} onValueChange={setSelectedDate}>
+                <SelectTrigger className="w-[160px] h-8">
+                  <SelectValue placeholder="Select date" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yesterday">Yesterday</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="tomorrow">Tomorrow</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Status Badges - Grouped */}
+          <div className="flex items-start gap-2">
+            <Badge variant="info" className="px-3 py-1 font-medium">
+              {pendingCount} Pending
+            </Badge>
+            <Badge variant="success" className="px-3 py-1 font-medium">
+              {completedCount} Completed
+            </Badge>
+          </div>
+        </div>
+
+        {deliveries.map((delivery) => (
+          <DeliveryCard
+            key={delivery.id}
+            id={delivery.id}
+            customerName={delivery.customerName}
+            address={delivery.address}
+            phoneNumber={delivery.phoneNumber}
+            orderDetails={delivery.orderDetails}
+            deliveryTime={delivery.deliveryTime}
+            status={delivery.status}
+            onClick={() => toggleDeliveryStatus(delivery.id)}
+          />
+        ))}
+      </div>
+
+      {/* Right Side - Google Maps */}
+      <div className="hidden md:block md:w-2/3 lg:w-2/3">
+        {!isLoaded ? (
+          <Skeleton className="w-full h-full rounded-lg border-[1px]" />
+        ) : (
+          <div ref={mapRef} className="w-full h-full rounded-lg" />
+        )}
+      </div>
+    </div>
+  );
+}
