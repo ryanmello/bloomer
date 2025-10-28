@@ -6,10 +6,13 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogFooter,
 } from "@/components/ui/dialog";
 import { TriggerConfiguration } from "./TriggerConfigurations";
 import { FormFields } from "./FormFields";
 import { ActionConfiguration } from "./ActionConfiguration";
+import { Button } from '@/components/ui/button';
+import { PreviewDisplay } from './PreviewDisplay';
 
 interface CreateAutomationModalProps {
     isOpen: boolean;
@@ -75,7 +78,16 @@ export function CreateAutomationModal({ isOpen, onClose }: CreateAutomationModal
                     <FormFields data={formData} setData={setFormData} />
                     <TriggerConfiguration data={formData} setData={setFormData} />
                     <ActionConfiguration data={formData} setData={setFormData} />
+                    <PreviewDisplay data={formData} />
                 </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={handleClose}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSave}>
+                        Create Automation
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );

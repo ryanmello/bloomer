@@ -74,7 +74,6 @@ export function ActionConfiguration({ data, setData }: ActionConfigurationProps)
                     </Select>
                 </div>
 
-                {/*Send To  TODO: Need to add like the audiences that it will be sent to*/}
                 <div>
                     <Label htmlFor="sendTo">Send To</Label>
                     <Select
@@ -86,8 +85,12 @@ export function ActionConfiguration({ data, setData }: ActionConfigurationProps)
                             <SelectValue placeholder="Choose audience" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="triggeredCustomer">Triggered customer</SelectItem>
-                            <SelectItem value="specificGroup">A specific customer group</SelectItem>
+                            <SelectItem value="triggeredCustomer">Triggered Customer</SelectItem>
+                            <SelectItem value="vipCustomers">VIP Customers</SelectItem>
+                            <SelectItem value="newCustomers">New Customers</SelectItem>
+                            <SelectItem value="recurringCustomers">Recurring Customers</SelectItem>
+                            <SelectItem value="allCustomers">All Customers</SelectItem>
+                            <SelectItem value="customAudience">Custom Audience</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
