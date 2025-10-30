@@ -1,23 +1,22 @@
-"use client";
-
-import React from 'react';
+'use client';
+import { useState } from 'react';
 import { Mail, Search, MoreVertical } from 'lucide-react';
 
 interface Campaign {
   id: string;
   campaignName: string;
   audience: string;
-  status: 'Sent' | 'Scheduled' | 'Draft';
+  status: string;
   sent: string;
 }
 
 interface CampaignsTableProps {
   campaigns: Campaign[];
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
 }
 
-function CampaignsTable({ campaigns, searchTerm, setSearchTerm }: CampaignsTableProps) {
+export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Sent':
