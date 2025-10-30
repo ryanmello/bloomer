@@ -95,14 +95,13 @@ export async function POST(req: NextRequest) {
     };
 
     if (audienceType === 'vip') {
-      whereClause.customerType = 'VIP';
+      whereClause.group = 'VIP';
     } else if (audienceType === 'new') {
-      whereClause.customerType = 'New';
+      whereClause.group = 'New';
     } else if (audienceType === 'potential') {
-      whereClause.customerType = 'Potential';
-    } else if (audienceType === 'newsletter') {
-      whereClause.isNewsletter = true;
+      whereClause.group = 'Potential';
     }
+    // Newsletter feature not yet implemented, so it will return no customers
     // 'all' means no additional filter
 
     const targetCustomers = await db.customer.findMany({

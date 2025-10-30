@@ -28,12 +28,12 @@ export async function GET(req: NextRequest) {
     const shopId = shops[0].id;
 
     // Get counts for each audience type
-    const [allCount, vipCount, newCount, potentialCount, newsletterCount] = await Promise.all([
+    // Note: Using 'group' field for customer segmentation
+    const [allCount, vipCount, newCount, potentialCount] = await Promise.all([
       db.customer.count({ where: { shopId } }),
-      db.customer.count({ where: { shopId, customerType: 'VIP' } }),
-      db.customer.count({ where: { shopId, customerType: 'New' } }),
-      db.customer.count({ where: { shopId, customerType: 'Potential' } }),
-      db.customer.count({ where: { shopId, isNewsletter: true } }),
+      db.customer.count({ where: { shopId, group: 'VIP' } }),
+      db.customer.count({ where: { shopId, group: 'New' } }),
+      db.customer.count({ where: { shopId, group: 'Potential' } }),
     ]);
 
     const audiences = [
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       { id: 'vip', name: 'VIP Customers', count: vipCount },
       { id: 'new', name: 'New Customers', count: newCount },
       { id: 'potential', name: 'Potential Customers', count: potentialCount },
-      { id: 'newsletter', name: 'Newsletter Subscribers', count: newsletterCount },
+      { id: 'newsletter', name: 'Newsletter Subscribers', count: 0 }, // Newsletter feature not yet implemented
     ];
 
     return NextResponse.json(audiences);

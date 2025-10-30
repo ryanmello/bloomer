@@ -121,7 +121,7 @@ export default function CustomersPage() {
           <CardHeader className="flex items-center">
             <CardTitle>
               {`${customer.firstName} ${customer.lastName}`.trim()}
-              <CustomerGroupPanel group={customer.group} />
+              {/* TODO: Add CustomerGroupPanel component to display group badge */}
             </CardTitle>
             {customer.squareId !== null && <div className="inline-flex items-center px-2 py-1.5 rounded-md border border-border bg-muted/50 text-muted-foreground text-sm font-medium">Square</div>}
           </CardHeader>

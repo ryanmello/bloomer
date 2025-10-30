@@ -14,6 +14,18 @@ export async function POST() {
       );
     }
 
+    // Get the user's shop
+    const shop = await db.shop.findFirst({
+      where: { userId: user.id }
+    });
+
+    if (!shop) {
+      return NextResponse.json(
+        { message: "No shop found for user" },
+        { status: 404 }
+      );
+    }
+
     const res = await fetch(
       "https://connect.squareupsandbox.com/v2/customers",
       {
@@ -75,6 +87,7 @@ export async function POST() {
             lastName: c.family_name || "",
             email,
             phoneNumber,
+            shopId: shop.id,
             address: {
               create: addressData,
             },

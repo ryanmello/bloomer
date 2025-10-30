@@ -1,9 +1,27 @@
 import { NextResponse } from "next/server";
 import { db } from "../../../lib/prisma";
+import { getCurrentUser } from "@/actions/getCurrentUser";
 
 export async function GET() {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { message: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    const shop = await db.shop.findFirst({
+      where: { userId: user.id }
+    });
+
+    if (!shop) {
+      return NextResponse.json([]);
+    }
+
     const customers = await db.customer.findMany({
+      where: { shopId: shop.id },
       include: { address: true },
     });
 
@@ -16,6 +34,25 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { message: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    const shop = await db.shop.findFirst({
+      where: { userId: user.id }
+    });
+
+    if (!shop) {
+      return NextResponse.json(
+        { message: "No shop found for user" },
+        { status: 404 }
+      );
+    }
+
     const body = await req.json();
 
     // check if email already exists
@@ -38,6 +75,7 @@ export async function POST(req: Request) {
         phoneNumber: body.phoneNumber,
         additionalNote: body.additionalNote,
         squareId: body.squareId || null,
+        shopId: shop.id,
         address: body.address ? { create: body.address } : undefined,
         group: body.group || "new"
       },

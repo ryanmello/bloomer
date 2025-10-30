@@ -45,27 +45,23 @@ async function getAudiences(shopId: string) {
       db.customer.count({ 
         where: { 
           shopId, 
-          customerType: 'VIP' 
+          group: 'VIP' 
         } 
       }),
       db.customer.count({ 
         where: { 
           shopId, 
-          customerType: 'New' 
+          group: 'New' 
         } 
       }),
       db.customer.count({ 
         where: { 
           shopId, 
-          customerType: 'Potential' 
+          group: 'Potential' 
         } 
       }),
-      db.customer.count({ 
-        where: { 
-          shopId, 
-          isNewsletter: true 
-        } 
-      })
+      // Newsletter subscribers count - feature not yet implemented
+      Promise.resolve(0)
     ]);
 
     return [

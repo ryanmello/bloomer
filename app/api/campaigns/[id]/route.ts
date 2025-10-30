@@ -5,7 +5,7 @@ import { db } from "@/lib/prisma";
 // GET - Fetch a single campaign
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -17,8 +17,10 @@ export async function GET(
       );
     }
 
+    const { id } = await params;
+
     const campaign = await db.campaign.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         recipients: {
           include: {
@@ -48,7 +50,7 @@ export async function GET(
 // PATCH - Update campaign (e.g., mark as sent)
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -60,11 +62,12 @@ export async function PATCH(
       );
     }
 
+    const { id } = await params;
     const body = await req.json();
     const { status, sentAt } = body;
 
     const campaign = await db.campaign.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status,
         sentAt: sentAt ? new Date(sentAt) : null
@@ -87,7 +90,7 @@ export async function PATCH(
 // DELETE - Delete campaign
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -99,8 +102,10 @@ export async function DELETE(
       );
     }
 
+    const { id } = await params;
+
     await db.campaign.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json(
