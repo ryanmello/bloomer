@@ -1,93 +1,145 @@
-"use client";
+import { redirect } from 'next/navigation';
+import { db } from '@/lib/prisma';
+import { getCurrentUser } from '@/actions/getCurrentUser';
+import BroadcastsClient from '@/components/broadcasts/BroadcastsClient';
 
-import React, { useState } from 'react';
-import HeaderSection from '@/components/broadcasts/HeaderSection';
-import CampaignsTable from '@/components/broadcasts/CampaignsTable';
-import CreateCampaignModal from '@/components/broadcasts/CreateCampaignModal';
-
-export default function EmailBroadcastsPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [campaignName, setCampaignName] = useState('');
-  const [selectedAudience, setSelectedAudience] = useState('');
-  const [subject, setSubject] = useState('');
-  const [emailBody, setEmailBody] = useState('');
-
-  // Sample audiences matching your system
-  const audiences = [
-    { id: 'potential', name: 'Potential Customers', count: 850 },
-    { id: 'all', name: 'All Customers', count: 1250 },
-    { id: 'vip', name: 'VIP Customers', count: 85 },
-    { id: 'new', name: 'New Customers', count: 320 },
-    { id: 'newsletter', name: 'Newsletter Subscribers', count: 2100 },
-  ];
-
-  // Sample past campaigns
-  const campaigns = [
-    {
-      id: '1',
-      campaignName: 'Spring Sale',
-      audience: 'Potential Customers',
-      status: 'Sent',
-      sent: 'Mar 15/24',
-    },
-    {
-      id: '2',
-      campaignName: 'Holiday Offer',
-      audience: 'All Customers',
-      status: 'Scheduled',
-      sent: 'Dec 1 2022',
-    },
-    {
-      id: '3',
-      campaignName: 'Newsletter #1',
-      audience: 'Newsletter Subscribers',
-      status: 'Draft',
-      sent: '...',
-    },
-  ];
-
-  const handleSend = () => {
-    if (!campaignName || !selectedAudience || !subject || !emailBody) {
-      alert('Please fill in all fields');
-      return;
-    }
-
-    console.log('Sending campaign:', {
-      campaignName,
-      selectedAudience,
-      subject,
-      emailBody,
+// Fetch campaigns for a shop
+async function getCampaigns(shopId: string) {
+  try {
+    const campaigns = await db.campaign.findMany({
+      where: { shopId },
+      include: {
+        recipients: {
+          select: {
+            id: true,
+            status: true,
+            customerId: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
     });
 
-    // Reset and close
-    setCampaignName('');
-    setSelectedAudience('');
-    setSubject('');
-    setEmailBody('');
-    setIsModalOpen(false);
-  };
+    return campaigns;
+  } catch (error) {
+    console.error('Error fetching campaigns:', error);
+    return [];
+  }
+}
+
+// Get audience segments with counts
+async function getAudiences(shopId: string) {
+  try {
+    const [
+      allCustomers,
+      vipCustomers,
+      newCustomers,
+      potentialCustomers,
+      newsletterSubscribers
+    ] = await Promise.all([
+      db.customer.count({ 
+        where: { shopId } 
+      }),
+      db.customer.count({ 
+        where: { 
+          shopId, 
+          customerType: 'VIP' 
+        } 
+      }),
+      db.customer.count({ 
+        where: { 
+          shopId, 
+          customerType: 'New' 
+        } 
+      }),
+      db.customer.count({ 
+        where: { 
+          shopId, 
+          customerType: 'Potential' 
+        } 
+      }),
+      db.customer.count({ 
+        where: { 
+          shopId, 
+          isNewsletter: true 
+        } 
+      })
+    ]);
+
+    return [
+      { id: 'all', name: 'All Customers', count: allCustomers },
+      { id: 'vip', name: 'VIP Customers', count: vipCustomers },
+      { id: 'new', name: 'New Customers', count: newCustomers },
+      { id: 'potential', name: 'Potential Customers', count: potentialCustomers },
+      { id: 'newsletter', name: 'Newsletter Subscribers', count: newsletterSubscribers }
+    ];
+  } catch (error) {
+    console.error('Error fetching audiences:', error);
+    return [];
+  }
+}
+
+export default async function BroadcastsPage() {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect('/sign-in');
+  }
+
+  // Get user's primary shop
+  const shop = await db.shop.findFirst({
+    where: { userId: user.id },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  if (!shop) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-card rounded-2xl border border-border shadow-sm p-8 text-center">
+            <h2 className="text-2xl font-bold text-foreground mb-2">No Shop Found</h2>
+            <p className="text-muted-foreground mb-4">
+              Please create a shop first to manage email campaigns.
+            </p>
+            <a 
+              href="/settings" 
+              className="inline-flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+            >
+              Create Shop
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Fetch campaigns and audiences in parallel
+  const [rawCampaigns, audiences] = await Promise.all([
+    getCampaigns(shop.id),
+    getAudiences(shop.id)
+  ]);
+
+  // Transform campaigns to match the component interface
+  const campaigns = rawCampaigns.map(campaign => ({
+    id: campaign.id,
+    campaignName: campaign.campaignName,
+    audienceType: campaign.audienceType,
+    status: campaign.status as "Draft" | "Scheduled" | "Sent" | "Failed",
+    sentAt: campaign.sentAt ? new Date(campaign.sentAt).toISOString() : null,
+    createdAt: new Date(campaign.createdAt).toISOString(),
+    recipients: campaign.recipients.map(r => ({
+      id: r.id,
+      status: r.status,
+      customerId: r.customerId
+    }))
+  }));
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <HeaderSection onNewCampaign={() => setIsModalOpen(true)} />
-        <CampaignsTable campaigns={campaigns} />
-        
-        <CreateCampaignModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          campaignName={campaignName}
-          setCampaignName={setCampaignName}
-          selectedAudience={selectedAudience}
-          setSelectedAudience={setSelectedAudience}
-          subject={subject}
-          setSubject={setSubject}
-          emailBody={emailBody}
-          setEmailBody={setEmailBody}
-          onSend={handleSend}
-          audiences={audiences}
-        />
-      </div>
-    </div>
+    <BroadcastsClient 
+      campaigns={campaigns} 
+      audiences={audiences}
+    />
   );
 }
