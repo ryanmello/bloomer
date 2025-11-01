@@ -32,14 +32,14 @@ export async function POST(request: Request) {
       // Update the existing shop
       const updatedShop = await db.shop.update({
         where: { id: existingShop.id },
-        data: { name, phone, email, address },
+        data: { name, phone, email, address } as any,
       });
       return NextResponse.json(updatedShop, { status: 200 });
     }
 
     // Create a new shop if none exists
     const shop = await db.shop.create({
-      data: { userId: user.id, name, phone, email, address },
+      data: { userId: user.id, name, phone, email, address } as any,
     });
 
     return NextResponse.json(shop, { status: 201 });
@@ -71,7 +71,7 @@ export async function GET() {
         email: true,
         phone: true,
         address: true,
-      },
+      } as any,
     });
 
     // Return empty object if no shop exists
