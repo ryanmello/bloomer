@@ -18,6 +18,8 @@ const badgeVariants = cva(
           "bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:ring-amber-700",
         info:
           "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:ring-blue-700",
+        purple:
+          "bg-purple-50 text-purple-700 ring-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:ring-purple-700",
         outline:
           "text-gray-600 ring-gray-300 bg-transparent dark:text-gray-300 dark:ring-gray-700",
       },

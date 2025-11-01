@@ -2,6 +2,7 @@
 import {useEffect, useState} from "react";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {CustomerGroupDropdown} from "../../components/customers/CustomerGroupDropdown";
+import {CustomerGroupPanel} from "../../components/customers/CustomerGroupPanel";
 import CreateCustomerForm from "@/components/customers/CreateCustomerForm";
 import {Button} from "@/components/ui/button";
 import {Plus} from "lucide-react";
@@ -26,6 +27,7 @@ interface Customer {
   email?: string;
   phoneNumber?: string;
   address?: Address[];
+  group?: CustomerGroup;
 }
 
 export default function CustomersPage() {
@@ -94,6 +96,7 @@ export default function CustomersPage() {
           <CardHeader>
             <CardTitle>
               {`${customer.firstName} ${customer.lastName}`.trim()}
+              <CustomerGroupPanel group={customer.group} />
             </CardTitle>
           </CardHeader>
           <CardContent>
