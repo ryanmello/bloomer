@@ -26,12 +26,25 @@ interface Customer {
   email?: string;
   phoneNumber?: string;
   address?: Address[];
+  group?: CustomerGroup;
 }
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<CustomerGroup[]>([]);
+
+  //Filter customers algorithm to display selected groups
+  let filteredCustomers;
+  if(selectedGroups.length === 0) {
+    filteredCustomers = customers;
+  } else {
+    filteredCustomers = customers.filter((customer) => 
+      selectedGroups.some(group => 
+        group?.toLowerCase() === customer.group?.toLowerCase()
+      )
+    );
+  }
 
   // Fetch customers from API
   const fetchCustomers = async () => {
@@ -89,48 +102,52 @@ export default function CustomersPage() {
       {customers.length === 0 && !loading && <p>No customers found.</p>}
 
       {/* Customer Cards */}
-      {customers.map((customer) => (
-        <Card key={customer.id} className="w-full p-6 shadow-md">
-          <CardHeader>
-            <CardTitle>
-              {`${customer.firstName} ${customer.lastName}`.trim()}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-6 text-gray-300 text-sm md:text-base">
-              <div className="min-w-[150px]">
-                <strong>Email:</strong> {customer.email || "-"}
+      {
+      filteredCustomers.map((customer) => {
+        return (
+          <Card key={customer.id} className="w-full p-6 shadow-md">
+            <CardHeader>
+              <CardTitle>
+                {`${customer.firstName} ${customer.lastName}`.trim()}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-6 text-gray-300 text-sm md:text-base">
+                <div className="min-w-[150px]">
+                  <strong>Email:</strong> {customer.email || "-"}
+                </div>
+                <div className="min-w-[150px]">
+                  <strong>Phone:</strong> {customer.phoneNumber || "-"}
+                </div>
+                <div className="min-w-[150px]">
+                  <strong>Addresses:</strong>{" "}
+                  {customer.address && customer.address.length > 0 ? (
+                    <>
+                      {customer.address
+                        .map((addr) =>
+                          [
+                            addr.line1,
+                            addr.line2,
+                            addr.city,
+                            addr.state,
+                            addr.zip,
+                            addr.country,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")
+                        )
+                        .join(", ")}
+                    </>
+                  ) : (
+                    "-"
+                  )}
+                </div>
               </div>
-              <div className="min-w-[150px]">
-                <strong>Phone:</strong> {customer.phoneNumber || "-"}
-              </div>
-              <div className="min-w-[150px]">
-                <strong>Addresses:</strong>{" "}
-                {customer.address && customer.address.length > 0 ? (
-                  <>
-                    {customer.address
-                      .map((addr) =>
-                        [
-                          addr.line1,
-                          addr.line2,
-                          addr.city,
-                          addr.state,
-                          addr.zip,
-                          addr.country,
-                        ]
-                          .filter(Boolean)
-                          .join(" ")
-                      )
-                      .join(", ")}
-                  </>
-                ) : (
-                  "-"
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+          </Card>
+        );
+      })
+      }
 
       <div className="p-6">
         <div className="mb-6">

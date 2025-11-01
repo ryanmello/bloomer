@@ -39,6 +39,7 @@ export async function POST(req: Request) {
         additionalNote: body.additionalNote,
         squareId: body.squareId || null,
         address: body.address ? { create: body.address } : undefined,
+        group: body.group || "new"
       },
       // After creating the customer, also return their related records.
       // Otherwise, Prisma would only return the customer fields
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating customer:", error);
+    console.error("Error creating customer:", error);``
     return NextResponse.json(
       { error: "Failed to create customer" },
       { status: 500 }
