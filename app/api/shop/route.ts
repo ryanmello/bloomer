@@ -14,29 +14,38 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, phone, email } = body;
+    const { name, phone, email, address } = body;
 
-    // Validate required fields
-    if (!name || !phone || !email) {
+    if (!name || !phone || !email || !address) {
       return NextResponse.json(
-        { message: "Name, phone, and email are required" },
+        { message: "All fields are required" },
         { status: 400 }
       );
     }
 
-    // Create the shop
+    // Check if a shop already exists for this user
+    const existingShop = await db.shop.findFirst({
+      where: { userId: user.id }
+    });
+
+    if (existingShop) {
+      // Update the existing shop
+      const updatedShop = await db.shop.update({
+        where: { id: existingShop.id },
+        data: { name, phone, email, address },
+      });
+      return NextResponse.json(updatedShop, { status: 200 });
+    }
+
+    // Create a new shop if none exists
     const shop = await db.shop.create({
-      data: {
-        name,
-        phone,
-        email,
-        userId: user.id,
-      },
+      data: { userId: user.id, name, phone, email, address },
     });
 
     return NextResponse.json(shop, { status: 201 });
+
   } catch (error) {
-    console.error("Create shop error:", error);
+    console.error("Create/update shop error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }
@@ -55,23 +64,24 @@ export async function GET() {
       );
     }
 
-    // Get all shops for the current user
-    const shops = await db.shop.findMany({
-      where: {
-        userId: user.id,
-      },
-      orderBy: {
-        createdAt: "desc",
+    const shop = await db.shop.findFirst({
+      where: { userId: user.id },
+      select: {
+        name: true,
+        email: true,
+        phone: true,
+        address: true,
       },
     });
 
-    return NextResponse.json(shops);
+    // Return empty object if no shop exists
+    return NextResponse.json(shop || {});
+
   } catch (error) {
-    console.error("Get shops error:", error);
+    console.error("Get shop error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }
     );
   }
 }
-
