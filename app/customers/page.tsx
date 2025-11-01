@@ -51,8 +51,8 @@ export default function CustomersPage() {
   const handleImport = async () => {
     setLoading(true);
     try {
-      await fetch("/api/customer/import", { method: "POST" });
-      await fetchCustomers(); 
+      await fetch("/api/customer/import", {method: "POST"});
+      await fetchCustomers();
     } catch (err) {
       console.error(err);
     } finally {
