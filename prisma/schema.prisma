@@ -37,7 +37,7 @@ model User {
 
 model Shop {
   id     String @id @default(auto()) @map("_id") @db.ObjectId
-  userId String @db.ObjectId
+  userId String @db.ObjectId @unique
   name   String
   phone  String
   email  String
