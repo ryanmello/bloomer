@@ -62,7 +62,10 @@ export default function Settings() {
               <Input
                 id="name"
                 placeholder="Enter shop name"
-                {...register("name", { required: "Shop name is required" })}
+                {...register("name", {
+                  required: "Shop name is required",
+                  minLength: { value: 2, message: "Shop name must be at least 2 characters" },
+                })}
               />
               {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
@@ -73,7 +76,13 @@ export default function Settings() {
                 id="email"
                 type="email"
                 placeholder="Enter contact email"
-                {...register("email", { required: "Email is required" })}
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: { 
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Please enter a valid email address"
+                  },
+                })}
               />
               {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
             </div>
@@ -84,7 +93,13 @@ export default function Settings() {
                 id="phone"
                 type="tel"
                 placeholder="Enter phone number"
-                {...register("phone", { required: "Phone number is required" })}
+                {...register("phone", {
+                  required: "Phone number is required",
+                  pattern: {
+                    value: /^[0-9+\-\s()]+$/,
+                    message: "Please enter a valid phone number",
+                  },
+                })}
               />
               {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
             </div>
@@ -94,7 +109,10 @@ export default function Settings() {
               <Input
                 id="address"
                 placeholder="Enter store address"
-                {...register("address", { required: "Store address is required" })}
+                {...register("address", {
+                  required: "Store address is required",
+                  minLength: { value: 5, message: "Address must be at least 5 characters" },
+                })}
               />
               {errors.address && <p className="text-sm text-destructive">{errors.address.message}</p>}
             </div>
