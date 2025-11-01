@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating customer:", error);``
+    console.error("Error creating customer:", error);
     return NextResponse.json(
       { error: "Failed to create customer" },
       { status: 500 }
