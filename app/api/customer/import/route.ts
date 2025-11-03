@@ -48,7 +48,7 @@ export async function POST() {
       // Check if customer already exists by squareId
       const existingCustomer = await db.customer.findFirst({
         where: { squareId: c.id },
-        include: { address: true },
+        include: { addresses: true },
       });
 
       if (existingCustomer) {
@@ -60,7 +60,7 @@ export async function POST() {
             lastName: c.family_name || "",
             email,
             phoneNumber,
-            address: {
+            addresses: {
               deleteMany: {},
               create: addressData,
             },
@@ -75,7 +75,7 @@ export async function POST() {
             lastName: c.family_name || "",
             email,
             phoneNumber,
-            address: {
+            addresses: {
               create: addressData,
             },
           },

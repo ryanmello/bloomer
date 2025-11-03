@@ -135,11 +135,16 @@ export default function CustomersPage() {
       <div className="p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold mb-4">Customers</h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between rounded border border-gray-600 p-4">
             <CustomerGroupDropdown
               selectedGroups={selectedGroups}
               onSelectionChange={setSelectedGroups}
             />
+            <span className="px-4 py-2 text-white bg-transparent">
+               {loading
+                 ? "Loading..."
+                 : `${customers.length} Customer${customers.length === 1 ? "" : "s"}`}
+            </span>
           </div>
         </div>
       </div>

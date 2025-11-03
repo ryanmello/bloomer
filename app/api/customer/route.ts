@@ -4,7 +4,7 @@ import { db } from "../../../lib/prisma";
 export async function GET() {
   try {
     const customers = await db.customer.findMany({
-      include: { address: true },
+      include: { addresses: true },
     });
 
     return NextResponse.json(customers || []);
@@ -38,12 +38,12 @@ export async function POST(req: Request) {
         phoneNumber: body.phoneNumber,
         additionalNote: body.additionalNote,
         squareId: body.squareId || null,
-        address: body.address ? { create: body.address } : undefined,
+        addresses: body.address ? { create: body.address } : undefined,
       },
       // After creating the customer, also return their related records.
       // Otherwise, Prisma would only return the customer fields
       include: {
-        address: true,
+        addresses: true,
       },
     });
 

@@ -57,7 +57,7 @@ model Customer {
   email          String    @unique
   phoneNumber    String?
   additionalNote String?
-  address        Address[]
+  addresses      Address[]
   squareId       String?   
 
   createdAt DateTime @default(now())
