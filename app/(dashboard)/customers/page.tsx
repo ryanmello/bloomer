@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CustomerGroupDropdown } from "../../components/customers/CustomerGroupDropdown";
+import { CustomerGroupDropdown } from "@/components/customers/CustomerGroupDropdown";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
