@@ -58,11 +58,8 @@ model Customer {
   phoneNumber    String?
   additionalNote String?
   address        Address[]
-  squareId       String?
-
-  // Customer classification for targeting
-  customerType String? // "VIP", "New", "Repeat", "Potential"
-  isNewsletter Boolean @default(false)
+  squareId       String?   
+  group          String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
