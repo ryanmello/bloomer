@@ -6,6 +6,8 @@ import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import CreateCustomerForm from "@/components/customers/CreateCustomerForm";
+import { Trash2 } from "lucide-react";
+import EditCustomerForm from "@/components/customers/EditCustomerForm";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
@@ -26,6 +28,9 @@ interface Customer {
   email?: string;
   phoneNumber?: string;
   address?: Address[];
+  orderCount?: number;
+  occasionsCount?: number;
+  spendAmount?: number; 
   group?: CustomerGroup;
 }
 
@@ -33,6 +38,8 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<CustomerGroup[]>([]);
+  const [editingCustomerIds, setEditingCustomerIds] = useState<Set<string>>(new Set());
+
 
   //Filter customers algorithm to display selected groups
   let filteredCustomers;
@@ -77,7 +84,32 @@ export default function CustomersPage() {
     fetchCustomers();
   }, []);
 
-  console.log(customers);
+
+const handleDelete = async (id: string) => {
+  const confirmed = confirm("Are you sure you want to delete this customer?");
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`/api/customer`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }), 
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error("Failed to delete customer");
+    }
+
+   alert(data.message);
+    fetchCustomers();
+  } catch (err) {
+    console.error(err);
+    alert("Error deleting customer.");
+  }
+};
+
+
+
   return (
     <div className="p-6 space-y-6">
       {/* Import From Square Button */}
@@ -101,13 +133,19 @@ export default function CustomersPage() {
         </Dialog>
       </div>
 
-      <div className="p-6">
+    <div className="p-6">
         <div className="mb-6">
-          <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-semibold mb-4">Customers</h1>
+          <div className="flex items-center justify-between rounded border border-gray-600 p-4">
             <CustomerGroupDropdown
               selectedGroups={selectedGroups}
               onSelectionChange={setSelectedGroups}
             />
+            <span className="px-4 py-2 text-white bg-transparent">
+               {loading
+                 ? "Loading..."
+                 : `${customers.length} Customer${customers.length === 1 ? "" : "s"}`}
+            </span>
           </div>
         </div>
       </div>
@@ -118,9 +156,18 @@ export default function CustomersPage() {
       {/* Customer Cards */}
       {customers.map((customer) => (
         <Card key={customer.id} className="w-full p-6 shadow-md">
-          <CardHeader className="flex items-center">
-            <CardTitle>
+          <CardHeader>
+            <CardTitle className ="flex justify-between items-center w-full pr-40">
               {`${customer.firstName} ${customer.lastName}`.trim()}
+          
+               <div className="flex gap-17 text-lg font-semibold text-white">
+                <span>{customer.orderCount ?? 0}</span>
+                <span> {new Intl.NumberFormat("en-US", {
+                       style: "currency",
+                       currency: "USD",
+                       }).format(customer.spendAmount ?? 0)}</span>
+                <span>{customer.occasionsCount ?? 0}</span>
+               </div>
               {/* TODO: Add CustomerGroupPanel component to display group badge */}
             </CardTitle>
             {customer.squareId !== null && <div className="inline-flex items-center px-2 py-1.5 rounded-md border border-border bg-muted/50 text-muted-foreground text-sm font-medium">Square</div>}
@@ -156,10 +203,57 @@ export default function CustomersPage() {
                   "-"
                 )}
               </div>
+              
+             <div className="flex gap-10 text-gray-400 text-sm md:text-base font-semibold ml-auto">
+              <div>Orders</div>
+              <div>Spend</div>
+             <div>Occasions</div>
+              </div>
+             <button
+               onClick={() => {
+               const newSet = new Set(editingCustomerIds);
+               if (newSet.has(customer.id)) newSet.delete(customer.id);
+               else newSet.add(customer.id);
+               setEditingCustomerIds(newSet);
+               }}
+               className="p-2 rounded border border-gray-400 hover:bg-blue-200 bg-transparent cursor-pointer"
+               title="Edit Customer"
+             >
+             Edit
+            </button>
+            <button
+            className="p-2 rounded border border-gray-400 hover:bg-red-200 bg-transparent cursor-pointer"
+            onClick={() => handleDelete(customer.id)}
+            title="Delete Customer"
+             >
+             <Trash2 size={16} className="text-red-600" />
+           </button>
             </div>
+                 {editingCustomerIds.has(customer.id) && (
+              <div className="mt-4 border-t pt-4">
+                <EditCustomerForm
+                  customer={customer}
+                  onSave={() => {
+                    const newSet = new Set(editingCustomerIds);
+                    newSet.delete(customer.id);
+                    setEditingCustomerIds(newSet);
+                    fetchCustomers();
+                  }}
+                  onCancel={() => {
+                    const newSet = new Set(editingCustomerIds);
+                    newSet.delete(customer.id);
+                    setEditingCustomerIds(newSet);
+                  }}
+                />
+              </div>
+            )}      
+
           </CardContent>
-        </Card>
+         </Card>
+        
       ))}
+
+      
     </div>
   );
 }
