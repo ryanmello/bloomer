@@ -22,7 +22,7 @@ export async function GET() {
 
     const customers = await db.customer.findMany({
       where: { shopId: shop.id },
-      include: { address: true },
+      include: { addresses: true },
     });
 
     return NextResponse.json(customers || []);
@@ -31,6 +31,62 @@ export async function GET() {
     return NextResponse.json([]);
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const body = await req.json(); 
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "Customer ID is required" }, { status: 400 });
+    }
+
+    await db.customer.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: "Customer deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting customer:", err);
+    return NextResponse.json({ error: "Failed to delete customer" }, { status: 500 });
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    const { id, firstName, lastName, email, phoneNumber, additionalNote, addresses } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "Customer ID is required" }, { status: 400 });
+    }
+
+    const updatedCustomer = await db.customer.update({
+      where: { id },
+      data: {
+        firstName,
+        lastName,
+        email,
+        phoneNumber,
+        additionalNote,
+        addresses: addresses
+          ? {
+              deleteMany: {}, 
+              create: addresses, 
+            }
+          : undefined,
+      },
+      include: { addresses: true }, 
+    });
+
+    return NextResponse.json({ message: "Customer updated successfully", customer: updatedCustomer });
+  } catch (err) {
+    console.error("Error updating customer:", err);
+    return NextResponse.json({ error: "Failed to update customer" }, { status: 500 });
+  }
+}
+
+
 
 export async function POST(req: Request) {
   try {
@@ -66,6 +122,8 @@ export async function POST(req: Request) {
       );
     }
 
+
+    
     // create customer
     const newCustomer = await db.customer.create({
       data: {
@@ -76,13 +134,13 @@ export async function POST(req: Request) {
         additionalNote: body.additionalNote,
         squareId: body.squareId || null,
         shopId: shop.id,
-        address: body.address ? { create: body.address } : undefined,
+        addresses: body.address ? { create: body.address } : undefined,
         group: body.group || "new"
       },
       // After creating the customer, also return their related records.
       // Otherwise, Prisma would only return the customer fields
       include: {
-        address: true,
+        addresses: true,
       },
     });
 
