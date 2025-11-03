@@ -27,7 +27,22 @@ export async function POST() {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+      return NextResponse.json(
+        { message: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    // Get the user's shop
+    const shop = await db.shop.findFirst({
+      where: { userId: user.id }
+    });
+
+    if (!shop) {
+      return NextResponse.json(
+        { message: "No shop found for user" },
+        { status: 404 }
+      );
     }
 
     // Fetch customers from Square
@@ -95,7 +110,8 @@ export async function POST() {
             lastName: c.family_name || "",
             email,
             phoneNumber,
-            addresses: {
+            shopId: shop.id,
+            address: {
               create: addressData,
             },
           },
