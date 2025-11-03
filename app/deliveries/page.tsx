@@ -2,6 +2,13 @@
 
 /// <reference types="google.maps" />
 
+// Extend Window interface for Google Maps
+declare global {
+  interface Window {
+    google: typeof google;
+  }
+}
+
 import { useEffect, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "lucide-react";
 import DeliveryCard from "@/components/deliveries/DeliveryCard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Delivery {
   id: string;
@@ -96,8 +104,71 @@ const MOCK_DELIVERIES: Delivery[] = [
   },
 ];
 
-// Light mode map styles - hide POIs, streets, and neighborhoods (but keep city names)
+// Light mode map styles - pure grayscale theme
 const LIGHT_MODE_MAP_STYLES: google.maps.MapTypeStyle[] = [
+  // All features - base grayscale
+  {
+    elementType: "geometry",
+    stylers: [{ saturation: -100 }, { lightness: 0 }],
+  },
+  {
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#2b2b2b" }],
+  },
+  {
+    elementType: "labels.text.stroke",
+    stylers: [{ color: "#ffffff" }, { weight: 2 }],
+  },
+  // Water - medium gray
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#b8b8b8" }, { saturation: -100 }],
+  },
+  {
+    featureType: "water",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  // Landscape - light gray
+  {
+    featureType: "landscape",
+    elementType: "geometry",
+    stylers: [{ color: "#efefef" }, { saturation: -100 }],
+  },
+  // Parks - slightly darker than landscape
+  {
+    featureType: "poi.park",
+    elementType: "geometry",
+    stylers: [{ color: "#dbdbdb" }, { saturation: -100 }],
+  },
+  // Roads - white with gray strokes
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#ffffff" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#cccccc" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry",
+    stylers: [{ color: "#e8e8e8" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#b8b8b8" }, { saturation: -100 }],
+  },
+  // Hide POIs
   {
     featureType: "poi",
     elementType: "labels",
@@ -112,43 +183,112 @@ const LIGHT_MODE_MAP_STYLES: google.maps.MapTypeStyle[] = [
     elementType: "labels.text",
     stylers: [{ visibility: "off" }],
   },
-  {
-    featureType: "road",
-    elementType: "labels",
-    stylers: [{ visibility: "off" }],
-  },
+  // Hide neighborhoods
   {
     featureType: "administrative.neighborhood",
     elementType: "labels",
     stylers: [{ visibility: "off" }],
+  },
+  // Transit
+  {
+    featureType: "transit",
+    elementType: "geometry",
+    stylers: [{ color: "#dbdbdb" }, { saturation: -100 }],
   },
   {
     featureType: "transit.station",
     elementType: "labels",
     stylers: [{ visibility: "off" }],
   },
+];
+
+// Dark mode map styles - pure black and gray theme
+const DARK_MODE_MAP_STYLES: google.maps.MapTypeStyle[] = [
+  // All features - base grayscale
+  {
+    elementType: "geometry",
+    stylers: [{ saturation: -100 }, { lightness: -10 }],
+  },
+  {
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#999999" }],
+  },
+  {
+    elementType: "labels.text.stroke",
+    stylers: [{ color: "#1a1a1a" }, { weight: 2 }],
+  },
+  // Water - dark gray
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#2b2b2b" }, { saturation: -100 }],
+  },
   {
     featureType: "water",
     elementType: "labels",
     stylers: [{ visibility: "off" }],
   },
-];
-
-// Dark mode map styles
-const DARK_MODE_MAP_STYLES: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+  // Landscape - very dark gray
+  {
+    featureType: "landscape",
+    elementType: "geometry",
+    stylers: [{ color: "#1a1a1a" }, { saturation: -100 }],
+  },
+  // Parks - slightly lighter dark gray
+  {
+    featureType: "poi.park",
+    elementType: "geometry",
+    stylers: [{ color: "#242424" }, { saturation: -100 }],
+  },
+  {
+    featureType: "poi.park",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  // Roads - medium gray
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#3d3d3d" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#2b2b2b" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry",
+    stylers: [{ color: "#525252" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#3d3d3d" }, { saturation: -100 }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  // City labels - light gray
   {
     featureType: "administrative.locality",
     elementType: "labels.text.fill",
-    stylers: [{ color: "#d59563" }],
+    stylers: [{ color: "#cccccc" }],
   },
+  // Hide neighborhoods
   {
     featureType: "administrative.neighborhood",
     elementType: "labels",
     stylers: [{ visibility: "off" }],
   },
+  // Hide POIs
   {
     featureType: "poi",
     stylers: [{ visibility: "off" }],
@@ -157,63 +297,14 @@ const DARK_MODE_MAP_STYLES: google.maps.MapTypeStyle[] = [
     featureType: "poi.business",
     stylers: [{ visibility: "off" }],
   },
-  {
-    featureType: "poi.park",
-    elementType: "geometry",
-    stylers: [{ color: "#263c3f" }],
-  },
-  {
-    featureType: "poi.park",
-    elementType: "labels",
-    stylers: [{ visibility: "off" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry",
-    stylers: [{ color: "#38414e" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#212a37" }],
-  },
-  {
-    featureType: "road",
-    elementType: "labels",
-    stylers: [{ visibility: "off" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry",
-    stylers: [{ color: "#746855" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#1f2835" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "labels",
-    stylers: [{ visibility: "off" }],
-  },
+  // Transit - dark gray
   {
     featureType: "transit",
     elementType: "geometry",
-    stylers: [{ color: "#2f3948" }],
+    stylers: [{ color: "#2b2b2b" }, { saturation: -100 }],
   },
   {
     featureType: "transit.station",
-    elementType: "labels",
-    stylers: [{ visibility: "off" }],
-  },
-  {
-    featureType: "water",
-    elementType: "geometry",
-    stylers: [{ color: "#17263c" }],
-  },
-  {
-    featureType: "water",
     elementType: "labels",
     stylers: [{ visibility: "off" }],
   },
@@ -269,9 +360,25 @@ export default function DeliveriesPage() {
   }, []);
 
   useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    // Check if Google Maps script is already loaded
+    if (window.google && window.google.maps) {
+      setIsLoaded(true);
+      return;
+    }
 
+    // Check if script is already being loaded
+    const existingScript = document.querySelector(
+      'script[src*="maps.googleapis.com"]'
+    );
+    if (existingScript) {
+      existingScript.addEventListener("load", () => setIsLoaded(true));
+      return;
+    }
+
+    // Load the script
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     const script = document.createElement("script");
+    script.id = "google-maps-script";
     script.src = `https://maps.googleapis.com/maps/api/js?key=${
       apiKey || ""
     }&libraries=places`;
@@ -279,10 +386,6 @@ export default function DeliveriesPage() {
     script.defer = true;
     script.onload = () => setIsLoaded(true);
     document.head.appendChild(script);
-
-    return () => {
-      document.head.removeChild(script);
-    };
   }, []);
 
   // Initialize map
@@ -291,9 +394,10 @@ export default function DeliveriesPage() {
 
     const googleMap = new google.maps.Map(mapRef.current, {
       zoom: 12,
-      center: { lat: 37.5485, lng: -121.9886 }, // Center of Fremont
+      center: { lat: 37.5897, lng: -121.9799 }, // Flower shop location
       mapTypeControl: false, // Hide map/satellite button
       streetViewControl: false, // Hide street view person button
+      disableDefaultUI: true,
       styles: isDarkMode ? DARK_MODE_MAP_STYLES : LIGHT_MODE_MAP_STYLES,
     });
 
@@ -301,8 +405,8 @@ export default function DeliveriesPage() {
       map: googleMap,
       suppressMarkers: false,
       polylineOptions: {
-        strokeColor: isDarkMode ? "#60A5FA" : "#4F46E5",
-        strokeWeight: 4,
+        strokeColor: isDarkMode ? "#cccccc" : "#1a1a1a",
+        strokeWeight: 5,
       },
     });
 
@@ -321,8 +425,8 @@ export default function DeliveriesPage() {
     if (directionsRenderer) {
       directionsRenderer.setOptions({
         polylineOptions: {
-          strokeColor: isDarkMode ? "#60A5FA" : "#4F46E5",
-          strokeWeight: 4,
+          strokeColor: isDarkMode ? "#cccccc" : "#1a1a1a",
+          strokeWeight: 5,
         },
       });
     }
@@ -337,8 +441,8 @@ export default function DeliveriesPage() {
 
     const directionsService = new google.maps.DirectionsService();
 
-    // Starting point (shop location in Fremont)
-    const origin = { lat: 37.5485, lng: -121.9886 };
+    // Starting point (flower shop location)
+    const origin = "37364 Niles Blvd., Fremont, CA 94536";
 
     // Waypoints (all but the last delivery)
     const waypoints = pendingDeliveries.slice(0, -1).map((delivery) => ({
@@ -448,12 +552,7 @@ export default function DeliveriesPage() {
       {/* Right Side - Google Maps */}
       <div className="hidden md:block md:w-2/3 lg:w-2/3">
         {!isLoaded ? (
-          <div className="w-full h-full flex items-center justify-center bg-gray-800 rounded-lg">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-400">Loading map...</p>
-            </div>
-          </div>
+          <Skeleton className="w-full h-full rounded-lg border-[1px]" />
         ) : (
           <div ref={mapRef} className="w-full h-full rounded-lg" />
         )}

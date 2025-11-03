@@ -1,7 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CustomerGroupDropdown } from "../../components/customers/CustomerGroupDropdown";
+import {useEffect, useState} from "react";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {CustomerGroupDropdown} from "../../components/customers/CustomerGroupDropdown";
+import CreateCustomerForm from "@/components/customers/CreateCustomerForm";
+import {Button} from "@/components/ui/button";
+import {Plus} from "lucide-react";
+import {Dialog, DialogTrigger} from "@/components/ui/dialog";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
@@ -47,8 +51,8 @@ export default function CustomersPage() {
   const handleImport = async () => {
     setLoading(true);
     try {
-      await fetch("/api/customer/import", { method: "POST" });
-      await fetchCustomers(); 
+      await fetch("/api/customer/import", {method: "POST"});
+      await fetchCustomers();
     } catch (err) {
       console.error(err);
     } finally {
@@ -60,7 +64,6 @@ export default function CustomersPage() {
     fetchCustomers();
   }, []);
 
-
   return (
     <div className="p-6 space-y-6">
       {/* Import From Square Button */}
@@ -68,10 +71,19 @@ export default function CustomersPage() {
         <button
           onClick={handleImport}
           disabled={loading}
-          className="px-4 py-2 rounded border border-gray-600 text-white bg-transparent cursor-pointer"
-        >
+          className="px-4 py-2 rounded border border-gray-600 text-white bg-transparent cursor-pointer">
           {loading ? "Importing..." : "Import Customers"}
         </button>
+
+        {/* Add Customer Button */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus /> Add Customer
+            </Button>
+          </DialogTrigger>
+          <CreateCustomerForm />
+        </Dialog>
       </div>
 
       {customers.length === 0 && !loading && <p>No customers found.</p>}
@@ -80,7 +92,9 @@ export default function CustomersPage() {
       {customers.map((customer) => (
         <Card key={customer.id} className="w-full p-6 shadow-md">
           <CardHeader>
-            <CardTitle>{`${customer.firstName} ${customer.lastName}`.trim()}</CardTitle>
+            <CardTitle>
+              {`${customer.firstName} ${customer.lastName}`.trim()}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-6 text-gray-300 text-sm md:text-base">
@@ -96,7 +110,14 @@ export default function CustomersPage() {
                   <>
                     {customer.address
                       .map((addr) =>
-                        [addr.line1, addr.line2, addr.city, addr.state, addr.zip, addr.country]
+                        [
+                          addr.line1,
+                          addr.line2,
+                          addr.city,
+                          addr.state,
+                          addr.zip,
+                          addr.country,
+                        ]
                           .filter(Boolean)
                           .join(" ")
                       )
@@ -111,18 +132,17 @@ export default function CustomersPage() {
         </Card>
       ))}
 
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold mb-4">Customers</h1>
-        <div className="flex items-center gap-4">
-          <CustomerGroupDropdown
-            selectedGroups={selectedGroups}
-            onSelectionChange={setSelectedGroups}
-          />
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold mb-4">Customers</h1>
+          <div className="flex items-center gap-4">
+            <CustomerGroupDropdown
+              selectedGroups={selectedGroups}
+              onSelectionChange={setSelectedGroups}
+            />
+          </div>
         </div>
       </div>
     </div>
-    </div>
   );
-  
 }
