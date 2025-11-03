@@ -1,11 +1,11 @@
 "use client";
-import {useEffect, useState} from "react";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {CustomerGroupDropdown} from "../../components/customers/CustomerGroupDropdown";
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CustomerGroupDropdown } from "../../components/customers/CustomerGroupDropdown";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import CreateCustomerForm from "@/components/customers/CreateCustomerForm";
-import {Button} from "@/components/ui/button";
-import {Plus} from "lucide-react";
-import {Dialog, DialogTrigger} from "@/components/ui/dialog";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
@@ -77,10 +77,12 @@ export default function CustomersPage() {
     fetchCustomers();
   }, []);
 
+  console.log(customers);
   return (
     <div className="p-6 space-y-6">
       {/* Import From Square Button */}
       <div className="flex justify-end">
+      <h1 className="text-2xl font-semibold mr-auto">Customers</h1>
         <button
           onClick={handleImport}
           disabled={loading}
@@ -99,59 +101,8 @@ export default function CustomersPage() {
         </Dialog>
       </div>
 
-      {customers.length === 0 && !loading && <p>No customers found.</p>}
-
-      {/* Customer Cards */}
-      {
-      filteredCustomers.map((customer) => {
-        return (
-          <Card key={customer.id} className="w-full p-6 shadow-md">
-            <CardHeader>
-              <CardTitle>
-                {`${customer.firstName} ${customer.lastName}`.trim()}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-6 text-gray-300 text-sm md:text-base">
-                <div className="min-w-[150px]">
-                  <strong>Email:</strong> {customer.email || "-"}
-                </div>
-                <div className="min-w-[150px]">
-                  <strong>Phone:</strong> {customer.phoneNumber || "-"}
-                </div>
-                <div className="min-w-[150px]">
-                  <strong>Addresses:</strong>{" "}
-                  {customer.address && customer.address.length > 0 ? (
-                    <>
-                      {customer.address
-                        .map((addr) =>
-                          [
-                            addr.line1,
-                            addr.line2,
-                            addr.city,
-                            addr.state,
-                            addr.zip,
-                            addr.country,
-                          ]
-                            .filter(Boolean)
-                            .join(" ")
-                        )
-                        .join(", ")}
-                    </>
-                  ) : (
-                    "-"
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })
-      }
-
       <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold mb-4">Customers</h1>
           <div className="flex items-center gap-4">
             <CustomerGroupDropdown
               selectedGroups={selectedGroups}
@@ -160,6 +111,54 @@ export default function CustomersPage() {
           </div>
         </div>
       </div>
+
+
+      {customers.length === 0 && !loading && <p>No customers found.</p>}
+
+      {/* Customer Cards */}
+      {customers.map((customer) => (
+        <Card key={customer.id} className="w-full p-6 shadow-md">
+          <CardHeader className="flex items-center">
+            <CardTitle>
+              {`${customer.firstName} ${customer.lastName}`.trim()}
+            </CardTitle>
+            {customer.squareId !== null && <div className="inline-flex items-center px-2 py-1.5 rounded-md border border-border bg-muted/50 text-muted-foreground text-sm font-medium">Square</div>}
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-6 text-gray-300 text-sm md:text-base">
+              <div className="min-w-[150px]">
+                <strong>Email:</strong> {customer.email || "-"}
+              </div>
+              <div className="min-w-[150px]">
+                <strong>Phone:</strong> {customer.phoneNumber || "-"}
+              </div>
+              <div className="min-w-[150px]">
+                <strong>Addresses:</strong>{" "}
+                {customer.address && customer.address.length > 0 ? (
+                  <>
+                    {customer.address
+                      .map((addr) =>
+                        [
+                          addr.line1,
+                          addr.line2,
+                          addr.city,
+                          addr.state,
+                          addr.zip,
+                          addr.country,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
+                      )
+                      .join(", ")}
+                  </>
+                ) : (
+                  "-"
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
