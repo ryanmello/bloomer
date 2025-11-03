@@ -68,8 +68,8 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shopId String @db.ObjectId
-  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId String? @db.ObjectId
+  shop   Shop?   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   campaignRecipients CampaignRecipient[]
 }
