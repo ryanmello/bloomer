@@ -6,6 +6,7 @@ import CreateCustomerForm from "@/components/customers/CreateCustomerForm";
 import {Button} from "@/components/ui/button";
 import {Plus} from "lucide-react";
 import {Dialog, DialogTrigger} from "@/components/ui/dialog";
+import { Trash2 } from "lucide-react";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
@@ -67,6 +68,32 @@ export default function CustomersPage() {
     fetchCustomers();
   }, []);
 
+
+const handleDelete = async (id: string) => {
+  const confirmed = confirm("Are you sure you want to delete this customer?");
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`/api/customer`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }), // send id in body
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error("Failed to delete customer");
+    }
+
+   alert(data.message);
+    fetchCustomers();
+  } catch (err) {
+    console.error(err);
+    alert("Error deleting customer.");
+  }
+};
+
+
+
   return (
     <div className="p-6 space-y-6">
       {/* Import From Square Button */}
@@ -95,7 +122,7 @@ export default function CustomersPage() {
       {customers.map((customer) => (
         <Card key={customer.id} className="w-full p-6 shadow-md">
           <CardHeader>
-            <CardTitle className ="flex justify-between items-center w-full pr-9">
+            <CardTitle className ="flex justify-between items-center w-full pr-23">
               {`${customer.firstName} ${customer.lastName}`.trim()}
           
                <div className="flex gap-17 text-lg font-semibold text-white">
@@ -144,8 +171,14 @@ export default function CustomersPage() {
               <div>Orders</div>
               <div>Spend</div>
              <div>Occasions</div>
-            </div>
-
+              </div>
+            <button
+            className="p-2 rounded border border-gray-400 hover:bg-red-200 bg-transparent cursor-pointer"
+            onClick={() => handleDelete(customer.id)}
+            title="Delete Customer"
+             >
+             <Trash2 size={16} className="text-red-600" />
+           </button>
             </div>
           </CardContent>
          </Card>

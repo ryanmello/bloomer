@@ -14,6 +14,28 @@ export async function GET() {
   }
 }
 
+export async function DELETE(req: Request) {
+  try {
+    const body = await req.json(); 
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "Customer ID is required" }, { status: 400 });
+    }
+
+    await db.customer.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: "Customer deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting customer:", err);
+    return NextResponse.json({ error: "Failed to delete customer" }, { status: 500 });
+  }
+}
+
+
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -29,6 +51,8 @@ export async function POST(req: Request) {
       );
     }
 
+
+    
     // create customer
     const newCustomer = await db.customer.create({
       data: {
