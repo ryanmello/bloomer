@@ -26,6 +26,9 @@ interface Customer {
   email?: string;
   phoneNumber?: string;
   address?: Address[];
+  orderCount?: number;
+  occasionsCount?: number;
+  spendAmount?: number; 
 }
 
 export default function CustomersPage() {
@@ -92,8 +95,17 @@ export default function CustomersPage() {
       {customers.map((customer) => (
         <Card key={customer.id} className="w-full p-6 shadow-md">
           <CardHeader>
-            <CardTitle>
+            <CardTitle className ="flex justify-between items-center w-full pr-9">
               {`${customer.firstName} ${customer.lastName}`.trim()}
+          
+               <div className="flex gap-17 text-lg font-semibold text-white">
+                <span>{customer.orderCount ?? 0}</span>
+                <span> {new Intl.NumberFormat("en-US", {
+                       style: "currency",
+                       currency: "USD",
+                       }).format(customer.spendAmount ?? 0)}</span>
+                <span>{customer.occasionsCount ?? 0}</span>
+               </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -127,9 +139,17 @@ export default function CustomersPage() {
                   "-"
                 )}
               </div>
+              
+             <div className="flex gap-10 text-gray-400 text-sm md:text-base font-semibold ml-auto">
+              <div>Orders</div>
+              <div>Spend</div>
+             <div>Occasions</div>
+            </div>
+
             </div>
           </CardContent>
-        </Card>
+         </Card>
+        
       ))}
 
       <div className="p-6">
