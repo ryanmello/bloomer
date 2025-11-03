@@ -1,13 +1,19 @@
 'use client';
-import { useState } from 'react';
 import { Mail, Search, MoreVertical } from 'lucide-react';
+import { useState } from 'react';
 
 interface Campaign {
   id: string;
   campaignName: string;
-  audience: string;
-  status: string;
-  sent: string;
+  audienceType: string;
+  status: "Draft" | "Scheduled" | "Sent" | "Failed";
+  sentAt: string | null;
+  createdAt: string;
+  recipients: Array<{
+    id: string;
+    status: string;
+    customerId: string;
+  }>;
 }
 
 interface CampaignsTableProps {
@@ -30,14 +36,34 @@ export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
     }
   };
 
+  const getAudienceName = (audienceType: string) => {
+    const audienceMap: { [key: string]: string } = {
+      all: 'All Customers',
+      vip: 'VIP Customers',
+      new: 'New Customers',
+      potential: 'Potential Customers',
+      newsletter: 'Newsletter Subscribers',
+    };
+    return audienceMap[audienceType] || audienceType;
+  };
+
+  const formatDate = (date: string | null) => {
+    if (!date) return '...';
+    const dateObj = new Date(date);
+    return dateObj.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: '2-digit'
+    });
+  };
+
   const filteredCampaigns = campaigns.filter(campaign =>
     campaign.campaignName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    campaign.audience.toLowerCase().includes(searchTerm.toLowerCase())
+    getAudienceName(campaign.audienceType).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-      {/* Table Header with Search */}
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -57,7 +83,6 @@ export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
         </div>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-muted/30">
@@ -90,7 +115,7 @@ export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
                 </td>
                 <td className="py-4 px-6">
                   <span className="text-sm text-muted-foreground">
-                    {campaign.audience}
+                    {getAudienceName(campaign.audienceType)}
                   </span>
                 </td>
                 <td className="py-4 px-6">
@@ -104,7 +129,7 @@ export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
                 </td>
                 <td className="py-4 px-6">
                   <span className="text-sm text-muted-foreground">
-                    {campaign.sent}
+                    {formatDate(campaign.sentAt || campaign.createdAt)}
                   </span>
                 </td>
                 <td className="py-4 px-6">
@@ -120,7 +145,7 @@ export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
 
       {filteredCampaigns.length === 0 && (
         <div className="py-12 text-center text-muted-foreground">
-          No campaigns found
+          {campaigns.length === 0 ? 'No campaigns yet. Create your first one!' : 'No campaigns found'}
         </div>
       )}
     </div>

@@ -15,7 +15,6 @@ model Coupon {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  // Link coupon to the user who created it
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -31,23 +30,25 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shops   Shop[]
-  coupons Coupon[]
+  shops     Shop[]
+  coupons   Coupon[]
+  campaigns Campaign[]
 }
 
 model Shop {
   id     String @id @default(auto()) @map("_id") @db.ObjectId
-  userId String @db.ObjectId
+  userId String @db.ObjectId @unique
   name   String
   phone  String
   email  String
+  address String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  Customer   Customer? @relation(fields: [customerId], references: [id])
-  customerId String?   @db.ObjectId
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customers Customer[]
+  campaigns Campaign[]
 }
 
 model Customer {
@@ -64,7 +65,10 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shops Shop[]
+  shopId String @db.ObjectId
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  campaignRecipients CampaignRecipient[]
 }
 
 model Address {
@@ -78,4 +82,54 @@ model Address {
 
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId String   @db.ObjectId
+}
+
+model Campaign {
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  campaignName String
+  subject      String
+  emailBody    String
+
+  // Status: Draft, Scheduled, Sent, Failed
+  status String @default("Draft")
+
+  // Target audience type: All, VIP, New, Potential, Newsletter, Custom
+  audienceType String
+
+  // For scheduled campaigns
+  scheduledFor DateTime?
+  sentAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  shopId String @db.ObjectId
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  recipients CampaignRecipient[]
+}
+
+model CampaignRecipient {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Email delivery status: Pending, Sent, Failed, Opened, Clicked
+  status    String    @default("Pending")
+  sentAt    DateTime?
+  openedAt  DateTime?
+  clickedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaignId String   @db.ObjectId
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  customerId String   @db.ObjectId
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, customerId])
 }
