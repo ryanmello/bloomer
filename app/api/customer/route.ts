@@ -34,6 +34,40 @@ export async function DELETE(req: Request) {
   }
 }
 
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    const { id, firstName, lastName, email, phoneNumber, additionalNote, addresses } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "Customer ID is required" }, { status: 400 });
+    }
+
+    const updatedCustomer = await db.customer.update({
+      where: { id },
+      data: {
+        firstName,
+        lastName,
+        email,
+        phoneNumber,
+        additionalNote,
+        addresses: addresses
+          ? {
+              deleteMany: {}, 
+              create: addresses, 
+            }
+          : undefined,
+      },
+      include: { addresses: true }, 
+    });
+
+    return NextResponse.json({ message: "Customer updated successfully", customer: updatedCustomer });
+  } catch (err) {
+    console.error("Error updating customer:", err);
+    return NextResponse.json({ error: "Failed to update customer" }, { status: 500 });
+  }
+}
+
 
 
 export async function POST(req: Request) {

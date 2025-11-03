@@ -7,6 +7,7 @@ import {Button} from "@/components/ui/button";
 import {Plus} from "lucide-react";
 import {Dialog, DialogTrigger} from "@/components/ui/dialog";
 import { Trash2 } from "lucide-react";
+import EditCustomerForm from "@/components/customers/EditCustomerForm";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
@@ -36,6 +37,8 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<CustomerGroup[]>([]);
+  const [editingCustomerIds, setEditingCustomerIds] = useState<Set<string>>(new Set());
+
 
   // Fetch customers from API
   const fetchCustomers = async () => {
@@ -77,7 +80,7 @@ const handleDelete = async (id: string) => {
     const res = await fetch(`/api/customer`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }), // send id in body
+      body: JSON.stringify({ id }), 
     });
     const data = await res.json();
     if (!res.ok) {
@@ -122,7 +125,7 @@ const handleDelete = async (id: string) => {
       {customers.map((customer) => (
         <Card key={customer.id} className="w-full p-6 shadow-md">
           <CardHeader>
-            <CardTitle className ="flex justify-between items-center w-full pr-23">
+            <CardTitle className ="flex justify-between items-center w-full pr-40">
               {`${customer.firstName} ${customer.lastName}`.trim()}
           
                <div className="flex gap-17 text-lg font-semibold text-white">
@@ -172,6 +175,18 @@ const handleDelete = async (id: string) => {
               <div>Spend</div>
              <div>Occasions</div>
               </div>
+             <button
+               onClick={() => {
+               const newSet = new Set(editingCustomerIds);
+               if (newSet.has(customer.id)) newSet.delete(customer.id);
+               else newSet.add(customer.id);
+               setEditingCustomerIds(newSet);
+               }}
+               className="p-2 rounded border border-gray-400 hover:bg-blue-200 bg-transparent cursor-pointer"
+               title="Edit Customer"
+             >
+             Edit
+            </button>
             <button
             className="p-2 rounded border border-gray-400 hover:bg-red-200 bg-transparent cursor-pointer"
             onClick={() => handleDelete(customer.id)}
@@ -180,6 +195,25 @@ const handleDelete = async (id: string) => {
              <Trash2 size={16} className="text-red-600" />
            </button>
             </div>
+                 {editingCustomerIds.has(customer.id) && (
+              <div className="mt-4 border-t pt-4">
+                <EditCustomerForm
+                  customer={customer}
+                  onSave={() => {
+                    const newSet = new Set(editingCustomerIds);
+                    newSet.delete(customer.id);
+                    setEditingCustomerIds(newSet);
+                    fetchCustomers();
+                  }}
+                  onCancel={() => {
+                    const newSet = new Set(editingCustomerIds);
+                    newSet.delete(customer.id);
+                    setEditingCustomerIds(newSet);
+                  }}
+                />
+              </div>
+            )}      
+
           </CardContent>
          </Card>
         
