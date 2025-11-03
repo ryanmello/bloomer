@@ -22,7 +22,7 @@ export async function GET() {
 
     const customers = await db.customer.findMany({
       where: { shopId: shop.id },
-      include: { address: true },
+      include: { addresses: true },
     });
 
     return NextResponse.json(customers || []);
@@ -134,7 +134,7 @@ export async function POST(req: Request) {
         additionalNote: body.additionalNote,
         squareId: body.squareId || null,
         shopId: shop.id,
-        address: body.address ? { create: body.address } : undefined,
+        addresses: body.address ? { create: body.address } : undefined,
         group: body.group || "new"
       },
       // After creating the customer, also return their related records.

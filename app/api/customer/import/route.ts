@@ -111,7 +111,7 @@ export async function POST() {
             email,
             phoneNumber,
             shopId: shop.id,
-            address: {
+            addresses: {
               create: addressData,
             },
           },
