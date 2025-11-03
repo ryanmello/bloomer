@@ -26,12 +26,25 @@ interface Customer {
   email?: string;
   phoneNumber?: string;
   address?: Address[];
+  group?: CustomerGroup;
 }
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<CustomerGroup[]>([]);
+
+  //Filter customers algorithm to display selected groups
+  let filteredCustomers;
+  if(selectedGroups.length === 0) {
+    filteredCustomers = customers;
+  } else {
+    filteredCustomers = customers.filter((customer) => 
+      selectedGroups.some(group => 
+        group?.toLowerCase() === customer.group?.toLowerCase()
+      )
+    );
+  }
 
   // Fetch customers from API
   const fetchCustomers = async () => {
