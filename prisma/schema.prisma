@@ -60,10 +60,16 @@ model Customer {
   address        Address[]
   squareId       String?   
 
+  birthday       DateTime?
+  anniversary    DateTime?
+  firstOrderDate DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   shops Shop[]
+  
+  automationExecutions AutomationExecution[]
 }
 
 model Address {
@@ -77,4 +83,49 @@ model Address {
 
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId String   @db.ObjectId
+}
+
+model Automation {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  description   String?
+  active        Boolean   @default(true)
+  triggerType   String
+  triggerTiming String
+  actionType    String
+  emailTemplateId String  @db.ObjectId
+  emailTemplate EmailTemplate @relation(fields: [emailTemplateId], references: [id])
+  sendTo        String
+
+  executions AutomationExecution[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EmailTemplate {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  name    String   @unique
+  subject String
+  body    String // This will hold the HTML/text of the email
+
+  automations Automation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AutomationExecution {
+  id     String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  automationId String     @db.ObjectId
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  
+  customerId String     @db.ObjectId
+customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade) 
+  sentAt     DateTime   @default(now())
+  status     String
+  error      String?
+
+  @@unique([automationId, customerId])
 }
