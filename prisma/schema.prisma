@@ -58,15 +58,18 @@ model Customer {
   email          String    @unique
   phoneNumber    String?
   additionalNote String?
-  address        Address[]
-  squareId       String?   @unique
+  addresses      Address[]
+  squareId       String?   
+  orderCount     Int        @default(0)
+  spendAmount     Float     @default(0)   
+  occasionsCount  Int       @default(0)
   group          String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shopId String @db.ObjectId
-  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId String? @db.ObjectId
+  shop   Shop?   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   campaignRecipients CampaignRecipient[]
 }
