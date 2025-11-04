@@ -22,7 +22,7 @@ export default function MetricCard({
   return (
     <div
       className="
-        rounded-2xl border shadow-sm h-36 p-4
+        rounded-2xl border shadow-sm h-44 p-4
         bg-card border-border min-w-0 w-full
       "
     >

@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
+export const runtime = 'nodejs'; // Use Node.js runtime instead of Edge to avoid Prisma WASM issues
+
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
