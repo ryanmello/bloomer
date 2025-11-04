@@ -5,8 +5,6 @@ import { getUserFromDb } from "@/lib/auth-utils"
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
-      // You can specify which fields should be submitted, by adding keys to the `credentials` object.
-      // e.g. domain, username, password, 2FA token, etc.
       credentials: {
         email: {},
         password: {},
@@ -23,14 +21,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             credentials.password as string
           );
 
-          if (!user) {
+          if (!user || !user.id) {
             return null;
           }
           
           return {
-            id: user.id,
+            id: user.id.toString(),
             email: user.email,
-            name: user.name,
+            name: user.name || user.email,
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -39,10 +37,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-  // Configure for Edge Runtime compatibility
-  trustHost: true,
-  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: '/sign-in',
+    error: '/sign-in',
   },
+  session: {
+    strategy: 'jwt',
+  },
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+  // Configure for Edge Runtime compatibility
+  trustHost: true,
 })

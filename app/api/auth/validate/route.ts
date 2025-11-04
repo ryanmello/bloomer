@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromDb } from "@/lib/auth-utils";
 
-// Ensure this runs in Node.js runtime for Prisma compatibility
-export const runtime = 'nodejs'
+export const runtime = 'nodejs'; // Use Node.js runtime for database access
 
 export async function POST(request: NextRequest) {
   try {

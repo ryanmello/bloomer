@@ -2,5 +2,5 @@ import { handlers } from "@/auth"
 
 export const { GET, POST } = handlers
 
-// Ensure this runs in Node.js runtime for Prisma compatibility
+// Use Node.js runtime for Auth.js
 export const runtime = 'nodejs'
