@@ -1,5 +1,6 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import { getUserFromDb } from "@/lib/auth-utils"
  
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -16,24 +17,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         try {
-          // Call our API endpoint instead of directly accessing the database
-          // This avoids Prisma issues in Edge Runtime
-          const response = await fetch(new URL('/api/auth/validate', process.env.NEXTAUTH_URL || 'http://localhost:3000'), {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
-            }),
-          });
+          // Directly validate user credentials using the database
+          const user = await getUserFromDb(
+            credentials.email as string,
+            credentials.password as string
+          );
 
-          if (!response.ok) {
+          if (!user) {
             return null;
           }
-
-          const user = await response.json();
           
           return {
             id: user.id,
@@ -49,4 +41,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   // Configure for Edge Runtime compatibility
   trustHost: true,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  pages: {
+    signIn: '/sign-in',
+  },
 })
