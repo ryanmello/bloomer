@@ -215,43 +215,6 @@ npm run build
 npm start
 ```
 
----
-
-## 🔐 Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
-
-```env
-# Database
-DATABASE_URL="mongodb+srv://username:password@cluster.mongodb.net/bloomer?retryWrites=true&w=majority"
-
-# NextAuth
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key-here-generate-with-openssl"
-
-# Square API (Optional)
-SQUARE_ACCESS_TOKEN="your-square-access-token"
-SQUARE_ENVIRONMENT="sandbox" # or "production"
-SQUARE_APPLICATION_ID="your-square-app-id"
-SQUARE_LOCATION_ID="your-square-location-id"
-
-# Email Service (Optional - for campaigns)
-SMTP_HOST="smtp.example.com"
-SMTP_PORT="587"
-SMTP_USER="your-email@example.com"
-SMTP_PASSWORD="your-email-password"
-SMTP_FROM="noreply@yourdomain.com"
-```
-
-### Generating Secrets
-
-Generate a secure NextAuth secret:
-```bash
-openssl rand -base64 32
-```
-
----
-
 ## 📁 Project Structure
 
 ```
