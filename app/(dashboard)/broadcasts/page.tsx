@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { db } from '@/lib/prisma';
+import db from '@/lib/prisma';
 import { getCurrentUser } from '@/actions/getCurrentUser';
 import BroadcastsClient from '@/components/broadcasts/BroadcastsClient';
 

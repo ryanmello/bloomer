@@ -1,6 +1,6 @@
 // app/api/square/sync/route.ts
 import { NextResponse } from "next/server";
-import { db } from "@/lib/prisma";
+import db from "@/lib/prisma";
 
 export async function GET() {
   // Return current status for the header (connected + lastSyncAt)

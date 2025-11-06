@@ -1,4 +1,4 @@
-import { db } from "@/lib/prisma";
+import db from "@/lib/prisma";
 import { User } from "@prisma/client";
 import { verifyPassword } from "@/utils/password";
 
