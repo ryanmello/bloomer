@@ -20,12 +20,20 @@ model Coupon {
 }
 
 model User {
-  id       String  @id @default(auto()) @map("_id") @db.ObjectId
-  name     String?
-  email    String  @unique
-  password String
-  image    String?
-  role     String?
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  firstName String?
+  lastName  String?
+  email     String  @unique
+  password  String
+  image     String?
+  role      String?
+  address1  String?
+  address2  String?
+  city      String?
+  state     String?
+  country   String?
+  postal    String?
+  phone     String?
 
   // Two-Factor Authentication
   twoFactorEnabled Boolean  @default(false)
@@ -79,20 +87,20 @@ model Customer {
 
   campaignRecipients CampaignRecipient[]
 
-  orders Order[] 
+  orders Order[]
 }
 
 model Order {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  customerId  String    @db.ObjectId
-  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  status      OrderStatus   
-  totalAmount Float         @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  customerId String   @db.ObjectId
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
-  notes       String?
+  status      OrderStatus
+  totalAmount Float       @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  notes String?
 }
 
 enum OrderStatus {
@@ -217,9 +225,9 @@ enum AudienceType {
 }
 
 model Audience {
-  id              String           @id @default(auto()) @map("_id") @db.ObjectId
-  name            String
-  description     String?
-  status          AudienceStatus   @default(draft)
-  type            AudienceType     @default(custom)
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  status      AudienceStatus @default(draft)
+  type        AudienceType   @default(custom)
 }

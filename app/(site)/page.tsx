@@ -20,7 +20,9 @@ export default function LandingPage() {
             <div className="flex items-center justify-between px-6 py-2 rounded-full border border-blue-400 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer">
               <span className="text-sm text-blue-800">
                 Welcome back,{" "}
-                <span className="font-medium text-blue-600">{user.name}</span>
+                <span className="font-medium text-blue-600">
+                  {user.firstName} {user.lastName}
+                </span>
               </span>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-semibold text-blue-700">

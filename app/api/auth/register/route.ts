@@ -7,7 +7,7 @@ export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password } = await request.json();
+    const { firstName, lastName, email, password } = await request.json();
 
     // Validate input
     if (!email || !password) {
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = saltAndHashPassword(password);
 
     // Create the user
-    const user = await createUser(email, hashedPassword, name);
+    const user = await createUser(email, hashedPassword, firstName, lastName);
 
     if (!user) {
       return NextResponse.json(
@@ -52,7 +52,8 @@ export async function POST(request: NextRequest) {
         message: "User created successfully",
         user: {
           id: user.id,
-          name: user.name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email,
         },
       },

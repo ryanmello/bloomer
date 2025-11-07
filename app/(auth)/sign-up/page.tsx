@@ -68,9 +68,6 @@ export default function SignUp() {
     setSuccess("");
 
     try {
-      // Combine first and last name
-      const fullName = `${values.firstName} ${values.lastName}`.trim();
-
       // Call the sign-up API
       const response = await fetch("/api/auth/register", {
         method: "POST",
@@ -78,7 +75,8 @@ export default function SignUp() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: fullName,
+          firstName: values.firstName,
+          lastName: values.lastName,
           email: values.email,
           password: values.password,
         }),
