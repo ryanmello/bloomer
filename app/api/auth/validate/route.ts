@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromDb } from "@/lib/auth-utils";
 
-export const runtime = 'nodejs'; // Use Node.js runtime for database access
+export const runtime = "nodejs"; // Use Node.js runtime for database access
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +28,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       id: user.id,
       email: user.email,
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
     });
   } catch (error) {
     console.error("Validation error:", error);
