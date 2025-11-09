@@ -27,14 +27,13 @@ export default function Settings() {
         const response = await axios.get("/api/shop");
         const data = response.data;
 
-        // Only include fields that exist
         const defaultValues: Partial<ShopFormData> = {};
         if (data?.name) defaultValues.name = data.name;
         if (data?.email) defaultValues.email = data.email;
         if (data?.phone) defaultValues.phone = data.phone;
         if (data?.address) defaultValues.address = data.address;
 
-        reset(defaultValues); // prefill the form
+        reset(defaultValues);
       } catch (error: any) {
         toast.error(error.response?.data?.message || "Failed to fetch shop info");
       }
@@ -42,7 +41,6 @@ export default function Settings() {
 
     fetchShopData();
   }, [reset]);
-
 
   const onSubmit = async (data: ShopFormData) => {
     setIsLoading(true);
@@ -57,18 +55,26 @@ export default function Settings() {
     }
   };
 
+  // Handler for Add User button
+  const handleAddUser = () => {
+    toast("Add User button clicked"); // Replace with modal or API integration later
+  };
+
   return (
     <div className="container max-w-2xl py-8 space-y-6">
+      {/* Page header */}
       <div>
         <h1 className="text-3xl font-bold">Settings</h1>
         <p className="text-muted-foreground">Manage your account settings and preferences</p>
       </div>
 
+      {/* Theme section */}
       <div>
         <h2 className="text-xl font-semibold mb-2">Theme</h2>
         <ThemeToggle />
       </div>
 
+      {/* Business Info Card */}
       <div className="border rounded-lg p-6">
         <h2 className="text-xl font-bold mb-4">Business Info</h2>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
@@ -117,9 +123,18 @@ export default function Settings() {
           </div>
 
           <div className="flex justify-end mt-4">
-            <Button type="submit" disabled={isLoading}>{isLoading ? "Saving..." : "Save"}</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Saving..." : "Save"}
+            </Button>
           </div>
         </form>
+      </div>
+
+      {/* Add User Button */}
+      <div className="flex justify-start mt-4">
+        <Button onClick={handleAddUser} variant="default">
+          Add User
+        </Button>
       </div>
     </div>
   );
