@@ -16,9 +16,17 @@ type ShopFormData = {
   address: string;
 };
 
+type RoleFormData = {
+  email: string;
+};
+
 export default function Settings() {
   const [isLoading, setIsLoading] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [staffUsers, setStaffUsers] = useState<{ name?: string; email: string; role?: string }[]>([]);
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ShopFormData>();
+  const { register: registerRole, handleSubmit: handleRoleSubmit, reset: resetRole, formState: { errors: roleErrors } } = useForm<RoleFormData>();
 
   // Prefill the form when page loads
   useEffect(() => {
@@ -40,6 +48,18 @@ export default function Settings() {
     };
 
     fetchShopData();
+
+    // Fetch staff users
+    const fetchStaff = async () => {
+      try {
+        const response = await axios.get("/api/user?staff=true");
+        setStaffUsers(response.data);
+      } catch (error: any) {
+        toast.error("Failed to fetch staff users");
+      }
+    };
+
+    fetchStaff();
   }, [reset]);
 
   const onSubmit = async (data: ShopFormData) => {
@@ -56,8 +76,19 @@ export default function Settings() {
   };
 
   // Handler for Add User button
-  const handleAddUser = () => {
-    toast("Add User button clicked"); // Replace with modal or API integration later
+  const onRoleSubmit = async (data: RoleFormData) => {
+    try {
+      const response = await axios.post("/api/user", { email: data.email });
+      toast.success(response.data.message);
+      resetRole();
+      setShowRoleModal(false);
+
+      // Refresh staff list after adding new user
+      const staffResponse = await axios.get("/api/user?staff=true");
+      setStaffUsers(staffResponse.data);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to assign role");
+    }
   };
 
   return (
@@ -132,9 +163,49 @@ export default function Settings() {
 
       {/* Add User Button */}
       <div className="flex justify-start mt-4">
-        <Button onClick={handleAddUser} variant="default">
+        <Button onClick={() => setShowRoleModal(true)} variant="default">
           Add User
         </Button>
+      </div>
+
+      {/* Role Modal */}
+      {showRoleModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Assign Role</h2>
+            <form onSubmit={handleRoleSubmit(onRoleSubmit)} className="flex flex-col space-y-4">
+              <Input
+                placeholder="Enter user email"
+                {...registerRole("email", { required: "Email is required" })}
+                className="bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
+              />
+              <div className="flex justify-end space-x-2">
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={() => setShowRoleModal(false)}
+                  className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-600"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Set Role</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Staff Users List */}
+      <div className="border rounded-lg p-6 mt-6">
+        <h2 className="text-xl font-bold mb-4">Staff Users</h2>
+        <ul className="list-disc pl-5">
+          {staffUsers.length === 0 && <li>No staff users yet</li>}
+          {staffUsers.map((user) => (
+            <li key={user.email}>
+              {user.name || "(No name)"} — {user.email} — {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "(No role)"}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
