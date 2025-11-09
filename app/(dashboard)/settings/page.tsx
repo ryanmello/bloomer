@@ -92,7 +92,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="container max-w-2xl py-8 space-y-6">
+    <div className="container mx-auto py-8 space-y-6 px-6">
       {/* Page header */}
       <div>
         <h1 className="text-3xl font-bold">Settings</h1>
@@ -106,7 +106,7 @@ export default function Settings() {
       </div>
 
       {/* Business Info Card */}
-      <div className="border rounded-lg p-6">
+      <div className="border rounded-lg p-6 w-full">
         <h2 className="text-xl font-bold mb-4">Business Info</h2>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
           <div className="grid grid-cols-2 gap-4">
@@ -161,11 +161,33 @@ export default function Settings() {
         </form>
       </div>
 
-      {/* Add User Button */}
-      <div className="flex justify-start mt-4">
-        <Button onClick={() => setShowRoleModal(true)} variant="default">
-          Add User
-        </Button>
+      {/* Staff Users Tile */}
+      <div className="border rounded-lg p-6 mt-6 w-full">
+        {/* Tile Header */}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Staff Users</h2>
+          <Button onClick={() => setShowRoleModal(true)} variant="default">Add User</Button>
+        </div>
+
+        {/* Column Titles */}
+        <div className="grid grid-cols-3 font-semibold mb-2 px-2">
+          <span>Name</span>
+          <span>Role</span>
+          <span>Email</span>
+        </div>
+
+        {/* Divider */}
+        <hr className="border-t border-gray-300 mx-2 mb-2" />
+
+        {/* Staff Rows */}
+        {staffUsers.length === 0 && <p className="text-gray-500 px-2">No staff users yet</p>}
+        {staffUsers.map((user) => (
+          <div key={user.email} className="grid grid-cols-3 px-2 py-1">
+            <span>{user.name || "(No name)"}</span>
+            <span>{user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "(No role)"}</span>
+            <span>{user.email}</span>
+          </div>
+        ))}
       </div>
 
       {/* Role Modal */}
@@ -194,19 +216,6 @@ export default function Settings() {
           </div>
         </div>
       )}
-
-      {/* Staff Users List */}
-      <div className="border rounded-lg p-6 mt-6">
-        <h2 className="text-xl font-bold mb-4">Staff Users</h2>
-        <ul className="list-disc pl-5">
-          {staffUsers.length === 0 && <li>No staff users yet</li>}
-          {staffUsers.map((user) => (
-            <li key={user.email}>
-              {user.name || "(No name)"} — {user.email} — {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "(No role)"}
-            </li>
-          ))}
-        </ul>
-      </div>
     </div>
   );
 }
