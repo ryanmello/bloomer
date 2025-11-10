@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import axios from "axios";
 import { useState, useEffect } from "react";
+import { Trash2 } from "lucide-react";
 
 type ShopFormData = {
   name: string;
@@ -16,9 +17,17 @@ type ShopFormData = {
   address: string;
 };
 
+type RoleFormData = {
+  email: string;
+};
+
 export default function Settings() {
   const [isLoading, setIsLoading] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [staffUsers, setStaffUsers] = useState<{ name?: string; email: string; role?: string }[]>([]);
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ShopFormData>();
+  const { register: registerRole, handleSubmit: handleRoleSubmit, reset: resetRole, formState: { errors: roleErrors } } = useForm<RoleFormData>();
 
   // Prefill the form when page loads
   useEffect(() => {
@@ -40,6 +49,18 @@ export default function Settings() {
     };
 
     fetchShopData();
+
+    // Fetch staff users
+    const fetchStaff = async () => {
+      try {
+        const response = await axios.get("/api/user?staff=true");
+        setStaffUsers(response.data);
+      } catch (error: any) {
+        toast.error("Failed to fetch staff users");
+      }
+    };
+
+    fetchStaff();
   }, [reset]);
 
   const onSubmit = async (data: ShopFormData) => {
@@ -56,12 +77,36 @@ export default function Settings() {
   };
 
   // Handler for Add User button
-  const handleAddUser = () => {
-    toast("Add User button clicked"); // Replace with modal or API integration later
+  const onRoleSubmit = async (data: RoleFormData) => {
+    try {
+      const response = await axios.post("/api/user", { email: data.email });
+      toast.success(response.data.message);
+      resetRole();
+      setShowRoleModal(false);
+
+      // Refresh staff list after adding new user
+      const staffResponse = await axios.get("/api/user?staff=true");
+      setStaffUsers(staffResponse.data);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to assign role");
+    }
+  };
+
+  // Handler to remove staff role from a user
+  const removeStaffRole = async (email: string) => {
+    try {
+      await axios.delete("/api/user", { data: { email } });
+      toast.success("Staff role removed!");
+      // Refresh the staff list
+      const response = await axios.get("/api/user?staff=true");
+      setStaffUsers(response.data);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to remove staff role");
+    }
   };
 
   return (
-    <div className="container max-w-2xl py-8 space-y-6">
+    <div className="container mx-auto py-8 space-y-6 px-6">
       {/* Page header */}
       <div>
         <h1 className="text-3xl font-bold">Settings</h1>
@@ -75,7 +120,7 @@ export default function Settings() {
       </div>
 
       {/* Business Info Card */}
-      <div className="border rounded-lg p-6">
+      <div className="border rounded-lg p-6 w-full">
         <h2 className="text-xl font-bold mb-4">Business Info</h2>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
           <div className="grid grid-cols-2 gap-4">
@@ -130,12 +175,90 @@ export default function Settings() {
         </form>
       </div>
 
-      {/* Add User Button */}
-      <div className="flex justify-start mt-4">
-        <Button onClick={handleAddUser} variant="default">
-          Add User
-        </Button>
+      {/* Staff Users Tile */}
+      <div className="border rounded-lg p-6 mt-6 w-full">
+        {/* Tile Header */}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Staff Users</h2>
+          <div className="flex space-x-2">
+            {/* Refresh button */}
+            <Button
+              onClick={async () => {
+                try {
+                  const response = await axios.get("/api/user?staff=true");
+                  setStaffUsers(response.data);
+                  toast.success("Staff list refreshed!");
+                } catch (error: any) {
+                  toast.error("Failed to refresh staff users");
+                }
+              }}
+              variant="default"
+              className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-600"
+            >
+              Refresh
+            </Button>
+
+            {/* Add User button */}
+            <Button onClick={() => setShowRoleModal(true)} variant="default">Add User</Button>
+          </div>
+        </div>
+
+        {/* Column Titles */}
+        <div className="grid grid-cols-[2fr_1.2fr_2fr_40px] font-semibold mb-2 px-2">
+          <div className="truncate">Name</div>
+          <div className="truncate pl-1">Role</div>
+          <div className="truncate">Email</div>
+          <div></div> {/* tiny 4th column for icon */}
+        </div>
+
+        {/* Divider */}
+        <hr className="border-t border-gray-300 mx-2 mb-2" />
+
+        {/* Staff Rows */}
+        {staffUsers.map((user) => (
+          <div key={user.email} className="grid grid-cols-[2fr_1.2fr_2fr_40px] px-2 py-1 items-center">
+            <div className="truncate">{user.name || "(No name)"}</div>
+            <div className="truncate pl-1">{user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "(No role)"}</div>
+            <div className="truncate">{user.email}</div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => removeStaffRole(user.email)}
+              className="p-2 w-8 h-8 flex items-center justify-center rounded transition-colors hover:bg-red-600 hover:text-white"
+              title="Remove staff role"
+            >
+              <Trash2 size={16} />
+            </Button>
+          </div>
+        ))}
       </div>
+
+      {/* Role Modal */}
+      {showRoleModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Assign Role</h2>
+            <form onSubmit={handleRoleSubmit(onRoleSubmit)} className="flex flex-col space-y-4">
+              <Input
+                placeholder="Enter user email"
+                {...registerRole("email", { required: "Email is required" })}
+                className="bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
+              />
+              <div className="flex justify-end space-x-2">
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={() => setShowRoleModal(false)}
+                  className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-600"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Set Role</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
