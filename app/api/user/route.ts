@@ -26,13 +26,14 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ message: "Role updated", user: updatedUser }, { status: 200 });
-
+    
   } catch (error) {
     console.error("Assign role error:", error);
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }
 
+// Get current user or list of staff users
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -63,5 +64,34 @@ export async function GET(request: Request) {
       { message: "Internal server error" },
       { status: 500 }
     );
+  }
+}
+
+// Remove the staff role from a user
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json();
+    const { email } = body;
+
+    if (!email) {
+      return NextResponse.json({ message: "Email is required" }, { status: 400 });
+    }
+
+    const user = await db.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    // Remove the staff role (set role to null)
+    const updatedUser = await db.user.update({
+      where: { email },
+      data: { role: null },
+    });
+
+    return NextResponse.json({ message: "Staff role removed", user: updatedUser }, { status: 200 });
+  } catch (error) {
+    console.error("Remove staff role error:", error);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }

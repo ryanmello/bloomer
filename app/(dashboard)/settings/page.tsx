@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import axios from "axios";
 import { useState, useEffect } from "react";
+import { Trash2 } from "lucide-react";
 
 type ShopFormData = {
   name: string;
@@ -91,6 +92,19 @@ export default function Settings() {
     }
   };
 
+  // Handler to remove staff role from a user
+  const removeStaffRole = async (email: string) => {
+    try {
+      await axios.delete("/api/user", { data: { email } });
+      toast.success("Staff role removed!");
+      // Refresh the staff list
+      const response = await axios.get("/api/user?staff=true");
+      setStaffUsers(response.data);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to remove staff role");
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 space-y-6 px-6">
       {/* Page header */}
@@ -166,26 +180,55 @@ export default function Settings() {
         {/* Tile Header */}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Staff Users</h2>
-          <Button onClick={() => setShowRoleModal(true)} variant="default">Add User</Button>
+          <div className="flex space-x-2">
+            {/* Refresh button */}
+            <Button
+              onClick={async () => {
+                try {
+                  const response = await axios.get("/api/user?staff=true");
+                  setStaffUsers(response.data);
+                  toast.success("Staff list refreshed!");
+                } catch (error: any) {
+                  toast.error("Failed to refresh staff users");
+                }
+              }}
+              variant="default"
+              className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-600"
+            >
+              Refresh
+            </Button>
+
+            {/* Add User button */}
+            <Button onClick={() => setShowRoleModal(true)} variant="default">Add User</Button>
+          </div>
         </div>
 
         {/* Column Titles */}
-        <div className="grid grid-cols-3 font-semibold mb-2 px-2">
-          <span>Name</span>
-          <span>Role</span>
-          <span>Email</span>
+        <div className="grid grid-cols-[2fr_1.2fr_2fr_40px] font-semibold mb-2 px-2">
+          <div className="truncate">Name</div>
+          <div className="truncate pl-1">Role</div>
+          <div className="truncate">Email</div>
+          <div></div> {/* tiny 4th column for icon */}
         </div>
 
         {/* Divider */}
         <hr className="border-t border-gray-300 mx-2 mb-2" />
 
         {/* Staff Rows */}
-        {staffUsers.length === 0 && <p className="text-gray-500 px-2">No staff users yet</p>}
         {staffUsers.map((user) => (
-          <div key={user.email} className="grid grid-cols-3 px-2 py-1">
-            <span>{user.name || "(No name)"}</span>
-            <span>{user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "(No role)"}</span>
-            <span>{user.email}</span>
+          <div key={user.email} className="grid grid-cols-[2fr_1.2fr_2fr_40px] px-2 py-1 items-center">
+            <div className="truncate">{user.name || "(No name)"}</div>
+            <div className="truncate pl-1">{user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "(No role)"}</div>
+            <div className="truncate">{user.email}</div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => removeStaffRole(user.email)}
+              className="p-2 w-8 h-8 flex items-center justify-center rounded transition-colors hover:bg-red-600 hover:text-white"
+              title="Remove staff role"
+            >
+              <Trash2 size={16} />
+            </Button>
           </div>
         ))}
       </div>
