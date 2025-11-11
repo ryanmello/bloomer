@@ -111,6 +111,7 @@ const handleDelete = async (id: string) => {
 
 
   return (
+    
     <div className="p-6 space-y-6">
       {/* Import From Square Button */}
       <div className="flex justify-end">
@@ -153,83 +154,111 @@ const handleDelete = async (id: string) => {
 
       {customers.length === 0 && !loading && <p>No customers found.</p>}
 
-      {/* Customer Cards */}
-      {customers.map((customer) => (
-        <Card key={customer.id} className="w-full p-6 shadow-md">
-          <CardHeader>
-            <CardTitle className ="flex justify-between items-center w-full pr-40">
-              {`${customer.firstName} ${customer.lastName}`.trim()}
-          
-               <div className="flex gap-17 text-lg font-semibold text-white">
-                <span>{customer.orderCount ?? 0}</span>
-                <span> {new Intl.NumberFormat("en-US", {
-                       style: "currency",
-                       currency: "USD",
-                       }).format(customer.spendAmount ?? 0)}</span>
-                <span>{customer.occasionsCount ?? 0}</span>
-               </div>
-              {/* TODO: Add CustomerGroupPanel component to display group badge */}
-            </CardTitle>
-            {customer.squareId !== null && <div className="inline-flex items-center px-2 py-1.5 rounded-md border border-border bg-muted/50 text-muted-foreground text-sm font-medium">Square</div>}
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-6 text-gray-300 text-sm md:text-base">
-              <div className="min-w-[150px]">
-                <strong>Email:</strong> {customer.email || "-"}
+     
+     {/* Customer Cards */}
+     
+        {/* Customer Cards */}
+      {filteredCustomers.map((customer) => {
+        const initials = `${customer.firstName?.[0] ?? ""}${customer.lastName?.[0] ?? ""}`.toUpperCase();
+
+        return (
+          <Card key={customer.id} className="w-full p-6 shadow-md">
+            <div className="flex items-center gap-3 ">
+              {/* LEFT: Profile Icon */}
+              <div className="flex-shrink-0 w-14 h-14 rounded-full bg-muted/50 border border-gray-400 text-gray-200 flex items-center justify-center text-lg font-bold ">
+                {initials || "?"}
               </div>
-              <div className="min-w-[150px]">
-                <strong>Phone:</strong> {customer.phoneNumber || "-"}
+
+              {/* CENTER + RIGHT CONTENT */}
+              <div className="flex-1 flex justify-between items-start gap-6">
+                {/* LEFT SIDE: header + content */}
+                <div className="flex-1">
+                  <CardHeader>
+                    <CardTitle className="w-full flex items-center gap-3 mb-4">
+                      {`${customer.firstName} ${customer.lastName}`.trim()}
+                      {customer.squareId && (
+                        <div className="inline-flex items-center px-2 py-1.5 rounded-md border border-border bg-muted/50 text-muted-foreground text-sm font-medium">
+                          Square
+                        </div>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+
+                  <CardContent>
+                    <div className="flex flex-wrap gap-6 text-gray-300 text-sm md:text-base">
+                      <div className="min-w-[150px]">
+                        <strong>Email:</strong> {customer.email || "-"}
+                      </div>
+                      <div className="min-w-[150px]">
+                        <strong>Phone:</strong> {customer.phoneNumber || "-"}
+                      </div>
+                      <div className="min-w-[150px]">
+                        <strong>Addresses:</strong>{" "}
+                        {customer.address && customer.address.length > 0
+                          ? customer.address
+                              .map((addr) =>
+                                [addr.line1, addr.line2, addr.city, addr.state, addr.zip, addr.country]
+                                  .filter(Boolean)
+                                  .join(" ")
+                              )
+                              .join(", ")
+                          : "-"}
+                      </div>
+                    </div>
+                  </CardContent>
+                </div>
+
+                {/* RIGHT SIDE: Stats + Buttons */}
+                <div className="flex justify-between items-center gap-6 self-stretch">
+                  {/* Stats */}
+                  <div className="flex justify-between items-center gap-6">
+                    {[
+                      { label: "Orders", value: customer.orderCount ?? 0 },
+                      {
+                        label: "Spend",
+                        value: new Intl.NumberFormat("en-US", {
+                          style: "currency",
+                          currency: "USD",
+                        }).format(customer.spendAmount ?? 0),
+                      },
+                      { label: "Occasions", value: customer.occasionsCount ?? 0 },
+                    ].map((stat, i) => (
+                      <div key={i} className="flex flex-col items-center gap-4">
+                        <span className="text-lg font-semibold text-white">{stat.value}</span>
+                        <span className="text-sm text-gray-400 font-medium">{stat.label}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-4 justify-center">
+                    <button
+                      onClick={() => {
+                        const newSet = new Set(editingCustomerIds);
+                        newSet.has(customer.id)
+                          ? newSet.delete(customer.id)
+                          : newSet.add(customer.id);
+                        setEditingCustomerIds(newSet);
+                      }}
+                      className="p-2 rounded border border-gray-400 hover:bg-blue-200 bg-transparent cursor-pointer"
+                      title="Edit Customer"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(customer.id)}
+                      className="p-2 rounded border border-gray-400 hover:bg-red-200 bg-transparent cursor-pointer"
+                      title="Delete Customer"
+                    >
+                      <Trash2 size={16} className="text-red-600" />
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="min-w-[150px]">
-                <strong>Addresses:</strong>{" "}
-                {customer.address && customer.address.length > 0 ? (
-                  <>
-                    {customer.address
-                      .map((addr) =>
-                        [
-                          addr.line1,
-                          addr.line2,
-                          addr.city,
-                          addr.state,
-                          addr.zip,
-                          addr.country,
-                        ]
-                          .filter(Boolean)
-                          .join(" ")
-                      )
-                      .join(", ")}
-                  </>
-                ) : (
-                  "-"
-                )}
-              </div>
-              
-             <div className="flex gap-10 text-gray-400 text-sm md:text-base font-semibold ml-auto">
-              <div>Orders</div>
-              <div>Spend</div>
-             <div>Occasions</div>
-              </div>
-             <button
-               onClick={() => {
-               const newSet = new Set(editingCustomerIds);
-               if (newSet.has(customer.id)) newSet.delete(customer.id);
-               else newSet.add(customer.id);
-               setEditingCustomerIds(newSet);
-               }}
-               className="p-2 rounded border border-gray-400 hover:bg-blue-200 bg-transparent cursor-pointer"
-               title="Edit Customer"
-             >
-             Edit
-            </button>
-            <button
-            className="p-2 rounded border border-gray-400 hover:bg-red-200 bg-transparent cursor-pointer"
-            onClick={() => handleDelete(customer.id)}
-            title="Delete Customer"
-             >
-             <Trash2 size={16} className="text-red-600" />
-           </button>
             </div>
-                 {editingCustomerIds.has(customer.id) && (
+
+            {/* Inline Edit Form */}
+            {editingCustomerIds.has(customer.id) && (
               <div className="mt-4 border-t pt-4">
                 <EditCustomerForm
                   customer={customer}
@@ -246,14 +275,10 @@ const handleDelete = async (id: string) => {
                   }}
                 />
               </div>
-            )}      
-
-          </CardContent>
-         </Card>
-        
-      ))}
-
-      
+            )}
+          </Card>
+        );
+      })}
     </div>
   );
 }
