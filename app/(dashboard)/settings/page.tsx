@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import axios from "axios";
 import { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
+import SecurityTile from "@/components/settings/SecurityTile";
 
 type ShopFormData = {
   name: string;
@@ -232,6 +233,15 @@ export default function Settings() {
           </div>
         ))}
       </div>
+
+      <div className="grid grid-cols-2 gap-x-[2rem]">
+        <div>
+          Preferences
+        </div>
+        {/* Security Tile */}
+        <SecurityTile/>
+      </div>
+      
 
       {/* Role Modal */}
       {showRoleModal && (
