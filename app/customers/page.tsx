@@ -9,6 +9,8 @@ import CreateCustomerForm from "@/components/customers/CreateCustomerForm";
 import { Trash2 } from "lucide-react";
 import EditCustomerForm from "@/components/customers/EditCustomerForm";
 
+
+
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
 interface Address {
@@ -114,7 +116,7 @@ const handleDelete = async (id: string) => {
     
     <div className="p-6 space-y-6">
       {/* Import From Square Button */}
-      <div className="flex justify-end">
+      <div className="flex justify- gap-4">
       <h1 className="text-2xl font-semibold mr-auto">Customers</h1>
         <button
           onClick={handleImport}
@@ -126,9 +128,9 @@ const handleDelete = async (id: string) => {
         {/* Add Customer Button */}
         <Dialog>
           <DialogTrigger asChild>
-            <Button>
-              <Plus /> Add Customer
-            </Button>
+            <button className="px-4 py-2 rounded border border-gray-600 text-black bg-white cursor-pointer flex items-center justify-center gap-2">
+              <Plus  /> Add Customer
+            </button>
           </DialogTrigger>
           <CreateCustomerForm />
         </Dialog>
@@ -155,7 +157,7 @@ const handleDelete = async (id: string) => {
       {customers.length === 0 && !loading && <p>No customers found.</p>}
 
      
-     {/* Customer Cards */}
+  
      
         {/* Customer Cards */}
       {filteredCustomers.map((customer) => {

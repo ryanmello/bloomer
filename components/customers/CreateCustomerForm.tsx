@@ -146,7 +146,7 @@ export default function CreateCustomerForm() {
     <DialogPortal>
       <DialogOverlay />
 
-      <DialogContent className="top-[6%] left-[33%] overflow-y-auto">
+      <DialogContent className="fixed top-110 w-full p-6 overflow-auto">
         <DialogHeader>
           <DialogTitle>Add New Customer</DialogTitle>
           <DialogDescription>
