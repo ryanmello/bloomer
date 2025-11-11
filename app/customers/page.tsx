@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomerGroupDropdown } from "../../components/customers/CustomerGroupDropdown";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
@@ -8,8 +8,8 @@ import { Plus } from "lucide-react";
 import CreateCustomerForm from "@/components/customers/CreateCustomerForm";
 import { Trash2 } from "lucide-react";
 import EditCustomerForm from "@/components/customers/EditCustomerForm";
-
-
+import { Download } from "lucide-react";
+import CustomerFilter from "@/components/customers/CustomerFilter";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
@@ -22,7 +22,7 @@ interface Address {
   country?: string;
 }
 
-interface Customer {
+export interface Customer {
   id: string;
   squareId?: string;
   firstName: string;
@@ -34,6 +34,7 @@ interface Customer {
   occasionsCount?: number;
   spendAmount?: number; 
   group?: CustomerGroup;
+  createdAt?: string;
 }
 
 export default function CustomersPage() {
@@ -42,19 +43,17 @@ export default function CustomersPage() {
   const [selectedGroups, setSelectedGroups] = useState<CustomerGroup[]>([]);
   const [editingCustomerIds, setEditingCustomerIds] = useState<Set<string>>(new Set());
 
+  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
 
   //Filter customers algorithm to display selected groups
-  let filteredCustomers;
-  if(selectedGroups.length === 0) {
-    filteredCustomers = customers;
-  } else {
-    filteredCustomers = customers.filter((customer) => 
-      selectedGroups.some(group => 
-        group?.toLowerCase() === customer.group?.toLowerCase()
-      )
-    );
-  }
-
+  const groupFiltered = useMemo(() => {
+  if (selectedGroups.length === 0) return customers;
+  return customers.filter((customer) =>
+    selectedGroups.some(
+      (group) => group?.toLowerCase() === customer.group?.toLowerCase()
+    )
+  );
+}, [customers, selectedGroups]);
   // Fetch customers from API
   const fetchCustomers = async () => {
     setLoading(true);
@@ -62,6 +61,7 @@ export default function CustomersPage() {
       const res = await fetch("/api/customer");
       const data: Customer[] = await res.json();
       setCustomers(data);
+      setFilteredCustomers(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -121,7 +121,8 @@ const handleDelete = async (id: string) => {
         <button
           onClick={handleImport}
           disabled={loading}
-          className="px-4 py-2 rounded border border-gray-600 text-white bg-transparent cursor-pointer">
+          className="px-4 py-2 rounded border border-gray-600 text-white bg-transparent cursor-pointer flex items-center justify-center gap-2">
+          <Download size={20} />
           {loading ? "Importing..." : "Import Customers"}
         </button>
 
@@ -136,20 +137,26 @@ const handleDelete = async (id: string) => {
         </Dialog>
       </div>
 
-    <div className="p-6">
-        <div className="mb-6">
+    <div className="p-6 ">
+        <div className="mb-6  ">
           <h1 className="text-2xl font-semibold mb-4">Customers</h1>
           <div className="flex items-center justify-between rounded border border-gray-600 p-4">
+             <div className="flex items-center gap-4">
             <CustomerGroupDropdown
               selectedGroups={selectedGroups}
               onSelectionChange={setSelectedGroups}
             />
+            <CustomerFilter
+                customers={groupFiltered}
+                onFiltered={(filtered) => setFilteredCustomers(filtered)}
+              />
+              </div>  
             <span className="px-4 py-2 text-white bg-transparent">
                {loading
                  ? "Loading..."
                  : `${customers.length} Customer${customers.length === 1 ? "" : "s"}`}
             </span>
-          </div>
+          </div> 
         </div>
       </div>
 
