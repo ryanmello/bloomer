@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Customer } from "@/app/customers/page";
+import type { Customer } from "@/app/(dashboard)/customers/page";
 
 export type SortOption =
   | "alphabetical"
