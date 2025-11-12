@@ -2,15 +2,11 @@
 
 import { useState } from "react";
 import ResetPasswordModal from "./ResetPasswordModal";
+import TwoFactorAuthModal from "./TwoFactorAuthModal";
 
-interface SecurityTileProps {
-  onTwoFactorAuth?: () => void;
-}
-
-export default function SecurityTile({
-  onTwoFactorAuth,
-}: SecurityTileProps) {
+export default function SecurityTile() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
 
   return (
     <>
@@ -53,7 +49,7 @@ export default function SecurityTile({
 
           {/* Two-Factor Authentication Option */}
           <button
-            onClick={onTwoFactorAuth}
+            onClick={() => setShowTwoFactorModal(true)}
             className="w-full flex items-center justify-between p-4 border rounded-lg hover:bg-accent hover:border-primary transition-colors group"
           >
             <div className="flex items-center gap-3">
@@ -85,6 +81,12 @@ export default function SecurityTile({
       <ResetPasswordModal
         isOpen={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
+      />
+
+      {/* Two-Factor Authentication Modal */}
+      <TwoFactorAuthModal
+        isOpen={showTwoFactorModal}
+        onClose={() => setShowTwoFactorModal(false)}
       />
     </>
   );

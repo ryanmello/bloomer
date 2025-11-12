@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import axios from "axios";
 import {
   Card,
   CardHeader,
@@ -30,6 +31,25 @@ export default function SignIn() {
     setError("");
 
     try {
+      // First, check if user has 2FA enabled
+      const checkResponse = await axios.post("/api/auth/check-2fa", {
+        email,
+        password,
+      });
+
+      if (checkResponse.data.requiresTwoFactor) {
+        // Store email and password temporarily for 2FA verification
+        sessionStorage.setItem("2fa_email", email);
+        sessionStorage.setItem("2fa_password", password);
+        sessionStorage.setItem("2fa_temp", "true");
+        sessionStorage.setItem("2fa_timestamp", Date.now().toString());
+        
+        // Redirect to 2FA verification page
+        router.push("/verify-2fa");
+        return;
+      }
+
+      // Normal sign-in for users without 2FA
       const result = await signIn("credentials", {
         email,
         password,
@@ -40,10 +60,14 @@ export default function SignIn() {
         setError("Invalid credentials. Please try again.");
       } else {
         setError("");
-        router.replace("/");
+        router.replace("/dashboard");
       }
-    } catch (error) {
-      setError("An error occurred. Please try again.");
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        setError("Invalid credentials. Please try again.");
+      } else {
+        setError("An error occurred. Please try again.");
+      }
       console.error("Sign in error:", error);
     } finally {
       setIsLoading(false);
