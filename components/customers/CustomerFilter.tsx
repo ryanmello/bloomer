@@ -41,12 +41,12 @@ export default function CustomerFilter({ customers, onFiltered }: CustomerFilter
     // Status filter
     if (filters.status && filters.status !== "all") {
       filtered = filtered.filter(
-        (c) => c.status?.toLowerCase() === filters.status
+        (c) => c.overallStatus?.toLowerCase() === filters.status
       );
     }
     // "all" shows active + completed 
     else if (filters.status === "all") {
-      filtered = filtered.filter((c) => c.status);
+      filtered = filtered.filter((c) => c.overallStatus);
     }
     // null show everything, no filter
     
@@ -110,7 +110,9 @@ export default function CustomerFilter({ customers, onFiltered }: CustomerFilter
     { label: "Select status", value: null },
     { label: "All", value: "all" },
     { label: "Active", value: "active" },
+    { label: "Pending", value: "pending" },
     { label: "Completed", value: "completed" },
+    { label: "Cancelled", value: "cancelled" },
   ];
 
   const renderMultiSelectDropdown = <T extends string>(

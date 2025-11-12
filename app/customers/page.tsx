@@ -22,6 +22,14 @@ interface Address {
   country?: string;
 }
 
+interface Order {
+  id: string;
+  name: string;
+  status: "PENDING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+  notes?: string;
+  totalAmount: number;
+}
+
 export interface Customer {
   id: string;
   squareId?: string;
@@ -30,11 +38,15 @@ export interface Customer {
   email?: string;
   phoneNumber?: string;
   address?: Address[];
+  orders?: Order[];
   orderCount?: number;
   occasionsCount?: number;
-  spendAmount?: number; 
+  spendAmount?: number;
+  additionalNote?: string;
   group?: CustomerGroup;
   createdAt?: string;
+
+  overallStatus?: "PENDING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 }
 
 export default function CustomersPage() {
@@ -42,26 +54,58 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<CustomerGroup[]>([]);
   const [editingCustomerIds, setEditingCustomerIds] = useState<Set<string>>(new Set());
-
+  const [detailsOpen, setDetailsOpen] = useState<Set<string>>(new Set());
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
 
-  //Filter customers algorithm to display selected groups
   const groupFiltered = useMemo(() => {
-  if (selectedGroups.length === 0) return customers;
-  return customers.filter((customer) =>
-    selectedGroups.some(
-      (group) => group?.toLowerCase() === customer.group?.toLowerCase()
-    )
-  );
-}, [customers, selectedGroups]);
-  // Fetch customers from API
+    if (selectedGroups.length === 0) return customers;
+    return customers.filter((customer) =>
+      selectedGroups.some(
+        (group) => group?.toLowerCase() === customer.group?.toLowerCase()
+      )
+    );
+  }, [customers, selectedGroups]);
+
+  // compute overall status
+  const getOverallStatus = (customer: Customer): Customer["overallStatus"] => {
+    if (!customer.orders || customer.orders.length === 0) return undefined;
+    const statuses = customer.orders.map((o) => o.status.toLowerCase());
+    if (statuses.includes("pending")) return "PENDING";
+    if (statuses.includes("active")) return "ACTIVE";
+    if (statuses.includes("cancelled")) return "CANCELLED";
+    if (statuses.every((s) => s === "completed")) return "COMPLETED";
+    return undefined;
+  };
+
   const fetchCustomers = async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/customer");
       const data: Customer[] = await res.json();
-      setCustomers(data);
-      setFilteredCustomers(data);
+
+      const withStats = data.map((customer) => {
+      const overallStatus = getOverallStatus(customer);
+
+      const orderCount = customer.orders?.length ?? 0;
+      const occasionsCount = customer.occasionsCount ?? orderCount;
+
+      // Compute spendAmount excluding cancelled orders
+      const spendAmount = customer.orders?.reduce((sum, order) => {
+        if (order.status === "CANCELLED") return sum; 
+        return sum + (order.totalAmount ?? 0);
+      }, 0) ?? 0;
+
+      return {
+        ...customer,
+        overallStatus,
+        orderCount,
+        spendAmount,
+        occasionsCount,
+      };
+    });
+
+      setCustomers(withStats);
+      setFilteredCustomers(withStats);
     } catch (err) {
       console.error(err);
     } finally {
@@ -69,11 +113,10 @@ export default function CustomersPage() {
     }
   };
 
-  // Import customers from Square API
   const handleImport = async () => {
     setLoading(true);
     try {
-      await fetch("/api/customer/import", {method: "POST"});
+      await fetch("/api/customer/import", { method: "POST" });
       await fetchCustomers();
     } catch (err) {
       console.error(err);
@@ -86,38 +129,31 @@ export default function CustomersPage() {
     fetchCustomers();
   }, []);
 
+  const handleDelete = async (id: string) => {
+    const confirmed = confirm("Are you sure you want to delete this customer?");
+    if (!confirmed) return;
 
-const handleDelete = async (id: string) => {
-  const confirmed = confirm("Are you sure you want to delete this customer?");
-  if (!confirmed) return;
-
-  try {
-    const res = await fetch(`/api/customer`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }), 
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error("Failed to delete customer");
+    try {
+      const res = await fetch(`/api/customer`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error("Failed to delete customer");
+      alert(data.message);
+      fetchCustomers();
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting customer.");
     }
-
-   alert(data.message);
-    fetchCustomers();
-  } catch (err) {
-    console.error(err);
-    alert("Error deleting customer.");
-  }
-};
-
-
+  };
 
   return (
-    
     <div className="p-6 space-y-6">
-      {/* Import From Square Button */}
+      {/* Header and Import/Add Buttons */}
       <div className="flex justify- gap-4">
-      <h1 className="text-2xl font-semibold mr-auto">Customers</h1>
+        <h1 className="text-2xl font-semibold mr-auto">Customers</h1>
         <button
           onClick={handleImport}
           disabled={loading}
@@ -126,61 +162,55 @@ const handleDelete = async (id: string) => {
           {loading ? "Importing..." : "Import Customers"}
         </button>
 
-        {/* Add Customer Button */}
         <Dialog>
           <DialogTrigger asChild>
             <button className="px-4 py-2 rounded border border-gray-600 text-black bg-white cursor-pointer flex items-center justify-center gap-2">
-              <Plus  /> Add Customer
+              <Plus /> Add Customer
             </button>
           </DialogTrigger>
           <CreateCustomerForm />
         </Dialog>
       </div>
 
-    <div className="p-6 ">
-        <div className="mb-6  ">
+      {/* Filters */}
+      <div className="p-6">
+        <div className="mb-6">
           <h1 className="text-2xl font-semibold mb-4">Customers</h1>
           <div className="flex items-center justify-between rounded border border-gray-600 p-4">
-             <div className="flex items-center gap-4">
-            <CustomerGroupDropdown
-              selectedGroups={selectedGroups}
-              onSelectionChange={setSelectedGroups}
-            />
-            <CustomerFilter
-                customers={groupFiltered}
-                onFiltered={(filtered) => setFilteredCustomers(filtered)}
+            <div className="flex items-center gap-4">
+              <CustomerGroupDropdown
+                selectedGroups={selectedGroups}
+                onSelectionChange={setSelectedGroups}
               />
-              </div>  
+              <CustomerFilter
+                customers={groupFiltered}
+                onFiltered={setFilteredCustomers}
+              />
+            </div>
             <span className="px-4 py-2 text-white bg-transparent">
-               {loading
-                 ? "Loading..."
-                 : `${customers.length} Customer${customers.length === 1 ? "" : "s"}`}
+              {loading ? "Loading..." : `${customers.length} Customer${customers.length === 1 ? "" : "s"}`}
             </span>
-          </div> 
+          </div>
         </div>
       </div>
 
-
       {customers.length === 0 && !loading && <p>No customers found.</p>}
 
-     
-  
-     
-        {/* Customer Cards */}
+      {/* Customer Cards */}
       {filteredCustomers.map((customer) => {
         const initials = `${customer.firstName?.[0] ?? ""}${customer.lastName?.[0] ?? ""}`.toUpperCase();
+        const overallStatus = customer.overallStatus;
 
         return (
           <Card key={customer.id} className="w-full p-6 shadow-md">
-            <div className="flex items-center gap-3 ">
-              {/* LEFT: Profile Icon */}
-              <div className="flex-shrink-0 w-14 h-14 rounded-full bg-muted/50 border border-gray-400 text-gray-200 flex items-center justify-center text-lg font-bold ">
+            <div className="flex items-center gap-3">
+              {/* Profile Icon */}
+              <div className="flex-shrink-0 w-14 h-14 rounded-full bg-muted/50 border border-gray-400 text-gray-200 flex items-center justify-center text-lg font-bold">
                 {initials || "?"}
               </div>
 
-              {/* CENTER + RIGHT CONTENT */}
               <div className="flex-1 flex justify-between items-start gap-6">
-                {/* LEFT SIDE: header + content */}
+                {/* LEFT SIDE: Header + Content */}
                 <div className="flex-1">
                   <CardHeader>
                     <CardTitle className="w-full flex items-center gap-3 mb-4">
@@ -188,6 +218,21 @@ const handleDelete = async (id: string) => {
                       {customer.squareId && (
                         <div className="inline-flex items-center px-2 py-1.5 rounded-md border border-border bg-muted/50 text-muted-foreground text-sm font-medium">
                           Square
+                        </div>
+                      )}
+                      {overallStatus && (
+                        <div
+                          className={`inline-flex items-center px-2 py-1.5 rounded-md text-white text-sm font-medium ${
+                            overallStatus === "COMPLETED"
+                              ? "bg-green-600"
+                              : overallStatus === "ACTIVE"
+                              ? "bg-blue-600"
+                              : overallStatus === "PENDING"
+                              ? "bg-yellow-500"
+                              : "bg-gray-500"
+                          }`}
+                        >
+                          {overallStatus}
                         </div>
                       )}
                     </CardTitle>
@@ -219,7 +264,6 @@ const handleDelete = async (id: string) => {
 
                 {/* RIGHT SIDE: Stats + Buttons */}
                 <div className="flex justify-between items-center gap-6 self-stretch">
-                  {/* Stats */}
                   <div className="flex justify-between items-center gap-6">
                     {[
                       { label: "Orders", value: customer.orderCount ?? 0 },
@@ -239,8 +283,20 @@ const handleDelete = async (id: string) => {
                     ))}
                   </div>
 
-                  {/* Buttons */}
-                  <div className="flex gap-4 justify-center">
+                  <div className="flex gap-2 justify-center">
+                    <button
+                      onClick={() => {
+                        const newSet = new Set(detailsOpen);
+                        newSet.has(customer.id)
+                          ? newSet.delete(customer.id)
+                          : newSet.add(customer.id);
+                        setDetailsOpen(newSet);
+                      }}
+                      className="p-2 rounded border border-gray-400 hover:bg-gray-200 bg-transparent cursor-pointer"
+                    >
+                      View Details
+                    </button>
+
                     <button
                       onClick={() => {
                         const newSet = new Set(editingCustomerIds);
@@ -250,14 +306,13 @@ const handleDelete = async (id: string) => {
                         setEditingCustomerIds(newSet);
                       }}
                       className="p-2 rounded border border-gray-400 hover:bg-blue-200 bg-transparent cursor-pointer"
-                      title="Edit Customer"
                     >
                       Edit
                     </button>
+
                     <button
                       onClick={() => handleDelete(customer.id)}
                       className="p-2 rounded border border-gray-400 hover:bg-red-200 bg-transparent cursor-pointer"
-                      title="Delete Customer"
                     >
                       <Trash2 size={16} className="text-red-600" />
                     </button>
@@ -266,7 +321,58 @@ const handleDelete = async (id: string) => {
               </div>
             </div>
 
-            {/* Inline Edit Form */}
+            {/* VIEW DETAILS: Notes + Orders */}
+            {detailsOpen.has(customer.id) && (
+              <div className="mt-4 border-t pt-4 text-sm text-gray-300 space-y-2">
+                {customer.additionalNote ? (
+                  <div>
+                    <strong>Notes:</strong> {customer.additionalNote}
+                  </div>
+                ) : (
+                  <div>No notes available</div>
+                )}
+
+                {customer.orders?.length ? (
+                  <div>
+                    <strong>Orders:</strong>
+                    <ul className="mt-1 space-y-2">
+                      {customer.orders.map((order) => (
+                        <li
+                          key={order.id}
+                          className="flex flex-col border border-gray-700 rounded-lg p-2"
+                        >
+                          <div className="flex justify-between items-center">
+                            <span>Order #{order.id}</span>
+                            <span
+                              className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                order.status === "COMPLETED"
+                                  ? "bg-green-600 text-white"
+                                  : order.status === "ACTIVE"
+                                  ? "bg-blue-600 text-white"
+                                  : order.status === "PENDING"
+                                  ? "bg-yellow-500 text-white"
+                                  : "bg-gray-500 text-white"
+                              }`}
+                            >
+                              {order.status}
+                            </span>
+                          </div>
+                          {order.notes && (
+                            <div className="mt-1 text-sm text-gray-400">
+                              <strong>Notes:</strong> {order.notes}
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <div>No orders available</div>
+                )}
+              </div>
+            )}
+
+            {/* EDIT FORM */}
             {editingCustomerIds.has(customer.id) && (
               <div className="mt-4 border-t pt-4">
                 <EditCustomerForm
