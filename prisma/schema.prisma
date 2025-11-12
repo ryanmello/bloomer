@@ -73,6 +73,28 @@ model Customer {
   shop   Shop?   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   campaignRecipients CampaignRecipient[]
+
+  orders Order[] 
+}
+
+model Order {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  customerId  String    @db.ObjectId
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  status      OrderStatus   
+  totalAmount Float         @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  notes       String?
+}
+
+enum OrderStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
 }
 
 model Address {
