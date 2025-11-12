@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/actions/getCurrentUser";
-import { db } from "@/lib/prisma";
+import db from "@/lib/prisma";
 
 // GET - Fetch a single campaign
 export async function GET(

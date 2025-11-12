@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromDb } from "@/lib/auth-utils";
 
+export const runtime = 'nodejs'; // Use Node.js runtime for database access
+
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();

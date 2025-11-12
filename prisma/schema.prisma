@@ -36,11 +36,11 @@ model User {
 }
 
 model Shop {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  userId String @db.ObjectId @unique
-  name   String
-  phone  String
-  email  String
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String @unique @db.ObjectId
+  name    String
+  phone   String
+  email   String
   address String
 
   createdAt DateTime @default(now())
@@ -49,6 +49,7 @@ model Shop {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   customers Customer[]
   campaigns Campaign[]
+  products  Product[]
 }
 
 model Customer {
@@ -59,10 +60,10 @@ model Customer {
   phoneNumber    String?
   additionalNote String?
   addresses      Address[]
-  squareId       String?   
-  orderCount     Int        @default(0)
-  spendAmount     Float     @default(0)   
-  occasionsCount  Int       @default(0)
+  squareId       String?
+  orderCount     Int       @default(0)
+  spendAmount    Float     @default(0)
+  occasionsCount Int       @default(0)
   group          String?
 
   createdAt DateTime @default(now())
@@ -157,4 +158,44 @@ model CampaignRecipient {
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId, customerId])
+}
+
+model Product {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  description       String?
+  category          String
+  color             String?
+  costPrice         Float
+  retailPrice       Float
+  quantity          Int      @default(0)
+  lowInventoryAlert Int      @default(10)
+  trackInventory    Boolean  @default(true)
+  shelfLifeDays     Int?
+  stemLength        String?
+  image             String?
+  isActive          Boolean  @default(true)
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  shopId String @db.ObjectId
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  inventoryMovements InventoryMovement[]
+}
+
+model InventoryMovement {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  type              String // Type: "purchase", "sale", "adjustment", "waste", "return"
+  quantity          Int // Positive for additions, negative for removals
+  previousInventory Int
+  newInventory      Int
+  reason            String? // e.g., "Expired", "Damaged", "Customer order #123"
+  referenceId       String? // Link to order/purchase if applicable
+  notes             String?
+  createdAt         DateTime @default(now())
+  productId         String   @db.ObjectId
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  shopId            String   @db.ObjectId
 }
