@@ -22,7 +22,7 @@ export async function GET() {
 
     const customers = await db.customer.findMany({
       where: { shopId: shop.id },
-      include: { addresses: true },
+      include: { addresses: true, orders: true },
     });
 
     return NextResponse.json(customers || []);
