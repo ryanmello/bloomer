@@ -2,16 +2,36 @@
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Play, Check, X, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Flower from "@/public/flower.png";
 import Image from "next/image";
 import Dashboard from "@/public/dashboard.png";
-import { Arrow } from "@radix-ui/react-dropdown-menu";
+import { useUser } from "@/context/AuthContext";
 
 export default function LandingPage() {
+  const { user } = useUser();
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-secondary/20">
       {/* Header */}
+      {user && (
+        <div className="w-full flex justify-center py-4">
+          <Link href="/dashboard" className="w-full max-w-2xl mx-4">
+            <div className="flex items-center justify-between px-6 py-2 rounded-full border border-blue-400 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer">
+              <span className="text-sm text-blue-800">
+                Welcome back,{" "}
+                <span className="font-medium text-blue-600">{user.name}</span>
+              </span>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-blue-700">
+                  Go to dashboard
+                </p>
+                <ArrowRight className="h-4 w-4 text-blue-600" />
+              </div>
+            </div>
+          </Link>
+        </div>
+      )}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-7xl mx-auto grid grid-cols-3 h-16 items-center px-4 md:px-8">
           <div className="flex items-center gap-2">
@@ -21,25 +41,25 @@ export default function LandingPage() {
 
           <nav className="hidden md:flex items-center gap-6 justify-center">
             <Link
-              href="#features"
+              href=""
               className="text-sm font-medium hover:text-primary transition-colors"
             >
               Pricing
             </Link>
             <Link
-              href="#how-it-works"
+              href=""
               className="text-sm font-medium hover:text-primary transition-colors"
             >
               Features
             </Link>
             <Link
-              href="#pricing"
+              href=""
               className="text-sm font-medium hover:text-primary transition-colors"
             >
               About
             </Link>
             <Link
-              href="#faq"
+              href=""
               className="text-sm font-medium hover:text-primary transition-colors"
             >
               Contact Us
@@ -69,7 +89,7 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-            <Button asChild size="lg" className="text-base px-8 h-12">
+            <Button asChild size="lg">
               <Link href="/sign-up">
                 Upgrade to Bloomer
                 <ArrowRight />
@@ -118,7 +138,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-8">
             {/* The Old Way */}
-            <div className="space-y-6 p-8 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 border border-border/50">
+            {/* <div className="space-y-6 p-8 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 border border-border/50">
               <div className="flex items-center gap-3 pb-2">
                 <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center">
                   <X className="h-5 w-5 text-destructive" />
@@ -150,11 +170,10 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
 
             {/* The Bloomer Way */}
-            <div className="space-y-6 p-8 rounded-2xl bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border-2 border-primary/30 shadow-lg shadow-primary/5 relative overflow-hidden">
-              {/* Decorative gradient */}
+            {/* <div className="space-y-6 p-8 rounded-2xl bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border-2 border-primary/30 shadow-lg shadow-primary/5 relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
 
               <div className="relative">
@@ -188,7 +207,7 @@ export default function LandingPage() {
                   ))}
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </section>
@@ -205,8 +224,8 @@ export default function LandingPage() {
       </section> */}
 
       {/* Footer */}
-      <footer className="border-t py-8 px-4 mt-auto">
-      </footer>
+      {/* <footer className="border-t py-8 px-4 mt-auto">
+      </footer> */}
     </div>
   );
 }
