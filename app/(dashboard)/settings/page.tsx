@@ -8,8 +8,9 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import axios from "axios";
 import { useState, useEffect } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, LogOut } from "lucide-react";
 import SecurityTile from "@/components/settings/SecurityTile";
+import { signOut } from "next-auth/react";
 
 type ShopFormData = {
   name: string;
@@ -241,7 +242,22 @@ export default function Settings() {
         {/* Security Tile */}
         <SecurityTile/>
       </div>
-      
+
+      {/* Logout Section */}
+      <div className="border rounded-lg p-6 w-full">
+        <h2 className="text-xl font-bold mb-2">Account</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Sign out of your account
+        </p>
+        <Button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          variant="destructive"
+          className="flex items-center gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
+        </Button>
+      </div>
 
       {/* Role Modal */}
       {showRoleModal && (
