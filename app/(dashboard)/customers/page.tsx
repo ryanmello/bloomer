@@ -1,15 +1,16 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CustomerGroupDropdown } from "@/components/customers/CustomerGroupDropdown";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import {useEffect, useState, useMemo} from "react";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {CustomerGroupDropdown} from "@/components/customers/CustomerGroupDropdown";
+import {Dialog, DialogTrigger} from "@/components/ui/dialog";
+import {Button} from "@/components/ui/button";
+import {Plus, Search} from "lucide-react";
 import CreateCustomerForm from "@/components/customers/CreateCustomerForm";
-import { Trash2 } from "lucide-react";
+import {Trash2} from "lucide-react";
 import EditCustomerForm from "@/components/customers/EditCustomerForm";
-import { Download } from "lucide-react";
+import {Download} from "lucide-react";
 import CustomerFilter from "@/components/customers/CustomerFilter";
+import {Input} from "@/components/ui/input";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
@@ -35,9 +36,9 @@ export interface Customer {
   squareId?: string;
   firstName: string;
   lastName: string;
-  email?: string;
-  phoneNumber?: string;
-  address?: Address[];
+  email: string;
+  phoneNumber: string;
+  address: Address[];
   orders?: Order[];
   orderCount?: number;
   occasionsCount?: number;
@@ -53,9 +54,12 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<CustomerGroup[]>([]);
-  const [editingCustomerIds, setEditingCustomerIds] = useState<Set<string>>(new Set());
+  const [editingCustomerIds, setEditingCustomerIds] = useState<Set<string>>(
+    new Set()
+  );
   const [detailsOpen, setDetailsOpen] = useState<Set<string>>(new Set());
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const groupFiltered = useMemo(() => {
     if (selectedGroups.length === 0) return customers;
@@ -84,25 +88,26 @@ export default function CustomersPage() {
       const data: Customer[] = await res.json();
 
       const withStats = data.map((customer) => {
-      const overallStatus = getOverallStatus(customer);
+        const overallStatus = getOverallStatus(customer);
 
-      const orderCount = customer.orders?.length ?? 0;
-      const occasionsCount = customer.occasionsCount ?? orderCount;
+        const orderCount = customer.orders?.length ?? 0;
+        const occasionsCount = customer.occasionsCount ?? orderCount;
 
-      // Compute spendAmount excluding cancelled orders
-      const spendAmount = customer.orders?.reduce((sum, order) => {
-        if (order.status === "CANCELLED") return sum; 
-        return sum + (order.totalAmount ?? 0);
-      }, 0) ?? 0;
+        // Compute spendAmount excluding cancelled orders
+        const spendAmount =
+          customer.orders?.reduce((sum, order) => {
+            if (order.status === "CANCELLED") return sum;
+            return sum + (order.totalAmount ?? 0);
+          }, 0) ?? 0;
 
-      return {
-        ...customer,
-        overallStatus,
-        orderCount,
-        spendAmount,
-        occasionsCount,
-      };
-    });
+        return {
+          ...customer,
+          overallStatus,
+          orderCount,
+          spendAmount,
+          occasionsCount,
+        };
+      });
 
       setCustomers(withStats);
       setFilteredCustomers(withStats);
@@ -116,7 +121,7 @@ export default function CustomersPage() {
   const handleImport = async () => {
     setLoading(true);
     try {
-      await fetch("/api/customer/import", { method: "POST" });
+      await fetch("/api/customer/import", {method: "POST"});
       await fetchCustomers();
     } catch (err) {
       console.error(err);
@@ -125,10 +130,6 @@ export default function CustomersPage() {
     }
   };
 
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
   const handleDelete = async (id: string) => {
     const confirmed = confirm("Are you sure you want to delete this customer?");
     if (!confirmed) return;
@@ -136,8 +137,8 @@ export default function CustomersPage() {
     try {
       const res = await fetch(`/api/customer`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({id}),
       });
       const data = await res.json();
       if (!res.ok) throw new Error("Failed to delete customer");
@@ -149,56 +150,89 @@ export default function CustomersPage() {
     }
   };
 
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  useEffect(() => {
+    // Combine group + search filters
+    const filtered = groupFiltered.filter((customer) => {
+      const fullName =
+        `${customer.firstName} ${customer.lastName}`.toLowerCase();
+      const query = searchQuery.toLowerCase();
+
+      const matchesSearch =
+        query === "" ||
+        fullName.includes(query) ||
+        customer.firstName.toLowerCase().includes(query) ||
+        customer.lastName.toLowerCase().includes(query) ||
+        customer.email.toLowerCase().includes(query) ||
+        customer.phoneNumber.toLowerCase().includes(query);
+
+      return matchesSearch;
+    });
+    setFilteredCustomers(filtered);
+  }, [searchQuery, groupFiltered]);
+
   return (
     <div className="p-6 space-y-6">
       {/* Header and Import/Add Buttons */}
       <div className="flex justify- gap-4">
         <h1 className="text-2xl font-semibold mr-auto">Customers</h1>
-        <button
-          onClick={handleImport}
-          disabled={loading}
-          className="px-4 py-2 rounded border border-gray-600 text-white bg-transparent cursor-pointer flex items-center justify-center gap-2">
+        <Button onClick={handleImport} disabled={loading} className="outline">
           <Download size={20} />
           {loading ? "Importing..." : "Import Customers"}
-        </button>
+        </Button>
 
         <Dialog>
           <DialogTrigger asChild>
-            <button className="px-4 py-2 rounded border border-gray-600 text-black bg-white cursor-pointer flex items-center justify-center gap-2">
+            <Button variant="default">
               <Plus /> Add Customer
-            </button>
+            </Button>
           </DialogTrigger>
           <CreateCustomerForm />
         </Dialog>
       </div>
 
       {/* Filters */}
-      <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold mb-4">Customers</h1>
-          <div className="flex items-center justify-between rounded border border-gray-600 p-4">
-            <div className="flex items-center gap-4">
-              <CustomerGroupDropdown
-                selectedGroups={selectedGroups}
-                onSelectionChange={setSelectedGroups}
-              />
-              <CustomerFilter
-                customers={groupFiltered}
-                onFiltered={setFilteredCustomers}
-              />
-            </div>
-            <span className="px-4 py-2 text-white bg-transparent">
-              {loading ? "Loading..." : `${customers.length} Customer${customers.length === 1 ? "" : "s"}`}
-            </span>
-          </div>
+      <div className="rounded-2xl border bg-card/50 border-border p-4 flex flex-col gap-3">
+        <div className="relative w-full">
+          <Search className="z-1 absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search customers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-11 rounded-xl border-border/50 bg-muted/50 backdrop-blur-sm focus-visible:ring-ring"
+          />
         </div>
+        <div className="flex items gap-4">
+          <CustomerGroupDropdown
+            selectedGroups={selectedGroups}
+            onSelectionChange={setSelectedGroups}
+          />
+          <CustomerFilter
+            customers={groupFiltered}
+            onFiltered={setFilteredCustomers}
+          />
+        </div>
+
+        <span className="text-sm text-muted-foreground mb-4">
+          {loading
+            ? "Loading..."
+            : `${customers.length} Customer${
+                customers.length === 1 ? "" : "s"
+              }`}
+        </span>
       </div>
 
       {customers.length === 0 && !loading && <p>No customers found.</p>}
 
       {/* Customer Cards */}
       {filteredCustomers.map((customer) => {
-        const initials = `${customer.firstName?.[0] ?? ""}${customer.lastName?.[0] ?? ""}`.toUpperCase();
+        const initials = `${customer.firstName?.[0] ?? ""}${
+          customer.lastName?.[0] ?? ""
+        }`.toUpperCase();
+
         const overallStatus = customer.overallStatus;
 
         return (
@@ -230,8 +264,7 @@ export default function CustomersPage() {
                               : overallStatus === "PENDING"
                               ? "bg-yellow-500"
                               : "bg-gray-500"
-                          }`}
-                        >
+                          }`}>
                           {overallStatus}
                         </div>
                       )}
@@ -251,7 +284,14 @@ export default function CustomersPage() {
                         {customer.address && customer.address.length > 0
                           ? customer.address
                               .map((addr) =>
-                                [addr.line1, addr.line2, addr.city, addr.state, addr.zip, addr.country]
+                                [
+                                  addr.line1,
+                                  addr.line2,
+                                  addr.city,
+                                  addr.state,
+                                  addr.zip,
+                                  addr.country,
+                                ]
                                   .filter(Boolean)
                                   .join(" ")
                               )
@@ -266,7 +306,7 @@ export default function CustomersPage() {
                 <div className="flex justify-between items-center gap-6 self-stretch">
                   <div className="flex justify-between items-center gap-6">
                     {[
-                      { label: "Orders", value: customer.orderCount ?? 0 },
+                      {label: "Orders", value: customer.orderCount ?? 0},
                       {
                         label: "Spend",
                         value: new Intl.NumberFormat("en-US", {
@@ -274,11 +314,15 @@ export default function CustomersPage() {
                           currency: "USD",
                         }).format(customer.spendAmount ?? 0),
                       },
-                      { label: "Occasions", value: customer.occasionsCount ?? 0 },
+                      {label: "Occasions", value: customer.occasionsCount ?? 0},
                     ].map((stat, i) => (
                       <div key={i} className="flex flex-col items-center gap-4">
-                        <span className="text-lg font-semibold text-white">{stat.value}</span>
-                        <span className="text-sm text-gray-400 font-medium">{stat.label}</span>
+                        <span className="text-lg font-semibold text-white">
+                          {stat.value}
+                        </span>
+                        <span className="text-sm text-gray-400 font-medium">
+                          {stat.label}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -292,8 +336,7 @@ export default function CustomersPage() {
                           : newSet.add(customer.id);
                         setDetailsOpen(newSet);
                       }}
-                      className="p-2 rounded border border-gray-400 hover:bg-gray-200 bg-transparent cursor-pointer"
-                    >
+                      className="p-2 rounded border border-gray-400 hover:bg-gray-200 bg-transparent cursor-pointer">
                       View Details
                     </button>
 
@@ -305,15 +348,13 @@ export default function CustomersPage() {
                           : newSet.add(customer.id);
                         setEditingCustomerIds(newSet);
                       }}
-                      className="p-2 rounded border border-gray-400 hover:bg-blue-200 bg-transparent cursor-pointer"
-                    >
+                      className="p-2 rounded border border-gray-400 hover:bg-blue-200 bg-transparent cursor-pointer">
                       Edit
                     </button>
 
                     <button
                       onClick={() => handleDelete(customer.id)}
-                      className="p-2 rounded border border-gray-400 hover:bg-red-200 bg-transparent cursor-pointer"
-                    >
+                      className="p-2 rounded border border-gray-400 hover:bg-red-200 bg-transparent cursor-pointer">
                       <Trash2 size={16} className="text-red-600" />
                     </button>
                   </div>
@@ -339,8 +380,7 @@ export default function CustomersPage() {
                       {customer.orders.map((order) => (
                         <li
                           key={order.id}
-                          className="flex flex-col border border-gray-700 rounded-lg p-2"
-                        >
+                          className="flex flex-col border border-gray-700 rounded-lg p-2">
                           <div className="flex justify-between items-center">
                             <span>Order #{order.id}</span>
                             <span
@@ -352,8 +392,7 @@ export default function CustomersPage() {
                                   : order.status === "PENDING"
                                   ? "bg-yellow-500 text-white"
                                   : "bg-gray-500 text-white"
-                              }`}
-                            >
+                              }`}>
                               {order.status}
                             </span>
                           </div>
