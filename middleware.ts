@@ -16,7 +16,8 @@ export default auth((req) => {
   const isPublicPage =
     nextUrl.pathname === "/" ||
     nextUrl.pathname.startsWith("/sign-in") ||
-    nextUrl.pathname.startsWith("/sign-up");
+    nextUrl.pathname.startsWith("/sign-up") ||
+    nextUrl.pathname.startsWith("/verify-2fa");
 
   // Redirect authenticated users away from auth pages to dashboard
   if (isLoggedIn && isAuthPage) {
