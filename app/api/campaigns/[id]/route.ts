@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/actions/getCurrentUser";
 import db from "@/lib/prisma";
+import { Resend } from "resend";
+
+// Helper to get Resend client with validation
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is not set in environment variables');
+  }
+  return new Resend(apiKey);
+}
 
 // GET - Fetch a single campaign
 export async function GET(
@@ -66,7 +76,28 @@ export async function PATCH(
     const body = await req.json();
     const { status, sentAt } = body;
 
-    const campaign = await db.campaign.update({
+    // Get the campaign with all necessary data
+    const campaign = await db.campaign.findUnique({
+      where: { id },
+      include: {
+        shop: true,
+        recipients: {
+          include: {
+            customer: true
+          }
+        }
+      }
+    });
+
+    if (!campaign) {
+      return NextResponse.json(
+        { message: "Campaign not found" },
+        { status: 404 }
+      );
+    }
+
+    // Update campaign status
+    const updatedCampaign = await db.campaign.update({
       where: { id },
       data: {
         status,
@@ -74,8 +105,51 @@ export async function PATCH(
       }
     });
 
+    // If status is being set to 'Sent', trigger email sending
+    if (status === 'Sent' && campaign.status !== 'Sent') {
+      // Validate API key
+      if (!process.env.RESEND_API_KEY) {
+        console.error('RESEND_API_KEY is missing - cannot send emails');
+        await db.campaign.update({
+          where: { id },
+          data: { status: 'Failed' }
+        });
+        return NextResponse.json(
+          { 
+            message: "Campaign updated but emails failed to send - RESEND_API_KEY is missing",
+            campaign: { ...updatedCampaign, status: 'Failed' }
+          },
+          { status: 200 }
+        );
+      }
+
+      // Get customers from recipients
+      const customers = campaign.recipients.map(r => ({
+        id: r.customer.id,
+        email: r.customer.email,
+        firstName: r.customer.firstName,
+        lastName: r.customer.lastName
+      }));
+
+      // Import and call sendCampaignEmails function
+      const { sendCampaignEmails } = await import('@/lib/resend-email');
+      
+      // Send emails in the background
+      sendCampaignEmails(
+        campaign.id,
+        customers,
+        campaign.subject,
+        campaign.emailBody,
+        campaign.shop.name || 'Your Store',
+        campaign.shop.email || ''
+      ).catch(error => {
+        console.error('Error sending campaign emails from PATCH:', error);
+        console.error('Error stack:', error?.stack);
+      });
+    }
+
     return NextResponse.json(
-      { message: "Campaign updated successfully", campaign },
+      { message: "Campaign updated successfully", campaign: updatedCampaign },
       { status: 200 }
     );
   } catch (error) {
