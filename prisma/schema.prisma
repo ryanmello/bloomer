@@ -199,3 +199,22 @@ model InventoryMovement {
   product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   shopId            String   @db.ObjectId
 }
+
+enum AudienceStatus {
+  active
+  inactive
+  draft
+}
+
+enum AudienceType {
+  custom
+  predefined
+}
+
+model Audience {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  description     String?
+  status          AudienceStatus   @default(draft)
+  type            AudienceType     @default(custom)
+}
