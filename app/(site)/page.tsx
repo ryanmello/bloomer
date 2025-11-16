@@ -67,9 +67,7 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-3 justify-end">
-            <Button asChild>
-              <Link href="/sign-up">Book a demo</Link>
-            </Button>
+            <Button className="cursor-pointer">Book a demo</Button>
           </div>
         </div>
       </header>
