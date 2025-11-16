@@ -2,20 +2,24 @@
 
 import MetricCard from "@/components/dashboard/MetricCard";
 import AudienceCard from "@/components/audiences/AudienceCard";
-import { Users, Target, Send, TrendingUp, Search } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import {Users, Target, Send, TrendingUp, Search, Plus} from "lucide-react";
+import {Tabs, TabsList, TabsTrigger} from "@/components/ui/tabs";
+import {Input} from "@/components/ui/input";
+import {useState} from "react";
+import {Card, CardTitle, CardDescription} from "@/components/ui/card";
+import {Button} from "@/components/ui/button";
+import {useRouter} from "next/navigation";
 
 export default function Audiences() {
+  const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const metrics = {
-    totalCustomers: { value: "1,842", change: 8.3 },
-    activeAudiences: { value: 12, change: 20.0 },
-    totalCampaigns: { value: 47, change: 15.5 },
-    avgGrowthRate: { value: "12.4%", change: 3.2 },
+    totalCustomers: {value: "1,842", change: 8.3},
+    activeAudiences: {value: 12, change: 20.0},
+    totalCampaigns: {value: 47, change: 15.5},
+    avgGrowthRate: {value: "12.4%", change: 3.2},
   };
 
   const audiences = [
@@ -97,6 +101,21 @@ export default function Audiences() {
 
   return (
     <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
+      {/* Top Panel */}
+      <Card className="flex flex-row justify-between items-center p-6 bg-card">
+        <div className="flex-1">
+          <CardTitle className="text-2xl font-bold">Audiences</CardTitle>
+          <CardDescription>
+            Create and manage customer segments for targeted marketing and
+            automation
+          </CardDescription>
+        </div>
+
+        <Button variant="default" onClick={() => router.push("/audiences/new")}>
+          <Plus /> Add Audience
+        </Button>
+      </Card>
+
       {/* Metric cards */}
       <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 w-full">
         <MetricCard
@@ -132,37 +151,31 @@ export default function Audiences() {
           <Tabs
             value={selectedFilter}
             onValueChange={setSelectedFilter}
-            className="w-full sm:w-auto"
-          >
+            className="w-full sm:w-auto">
             <TabsList className="w-full sm:w-auto">
               <TabsTrigger
                 value="all"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial"
-              >
+                className="text-xs sm:text-sm flex-1 sm:flex-initial">
                 All
               </TabsTrigger>
               <TabsTrigger
                 value="active"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial"
-              >
+                className="text-xs sm:text-sm flex-1 sm:flex-initial">
                 Active
               </TabsTrigger>
               <TabsTrigger
                 value="inactive"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial"
-              >
+                className="text-xs sm:text-sm flex-1 sm:flex-initial">
                 Inactive
               </TabsTrigger>
               <TabsTrigger
                 value="custom"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial"
-              >
+                className="text-xs sm:text-sm flex-1 sm:flex-initial">
                 Custom
               </TabsTrigger>
               <TabsTrigger
                 value="predefined"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial"
-              >
+                className="text-xs sm:text-sm flex-1 sm:flex-initial">
                 Predefined
               </TabsTrigger>
             </TabsList>
