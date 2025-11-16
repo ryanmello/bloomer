@@ -130,8 +130,15 @@ export async function POST(req: NextRequest) {
 
     // Determine campaign status
     let campaignStatus = status || 'Draft';
+    let scheduledDate: Date | null = null;
+    
     if (scheduledFor) {
       campaignStatus = 'Scheduled';
+      scheduledDate = new Date(scheduledFor);
+      console.log(`📅 Creating scheduled campaign:`);
+      console.log(`   Scheduled for: ${scheduledDate.toISOString()}`);
+      console.log(`   Current time: ${new Date().toISOString()}`);
+      console.log(`   Will be sent in: ${Math.round((scheduledDate.getTime() - new Date().getTime()) / 1000 / 60)} minutes`);
     }
 
     // Create the campaign
@@ -142,7 +149,7 @@ export async function POST(req: NextRequest) {
         emailBody,
         audienceType,
         status: campaignStatus,
-        scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
+        scheduledFor: scheduledDate,
         sentAt: sentAt ? new Date(sentAt) : null,
         userId: user.id,
         shopId: shopId,
@@ -157,6 +164,12 @@ export async function POST(req: NextRequest) {
         recipients: true
       }
     });
+
+    if (campaignStatus === 'Scheduled') {
+      console.log(`✅ Campaign "${campaignName}" scheduled successfully`);
+      console.log(`   It will be sent automatically when the scheduled time arrives.`);
+      console.log(`   To test immediately, call: GET /api/campaigns/send-schedule`);
+    }
 
     // If status is 'Sent', send emails immediately
     if (campaignStatus === 'Sent') {

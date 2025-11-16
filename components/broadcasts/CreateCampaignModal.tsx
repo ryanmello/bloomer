@@ -59,7 +59,16 @@ export default function CreateCampaignModal({
         payload.sentAt = new Date().toISOString();
       } else if (actionType === 'schedule') {
         payload.status = 'Scheduled';
+        // Combine date and time, handling timezone properly
         const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+        
+        // Validate that the scheduled time is in the future
+        if (scheduledDateTime <= new Date()) {
+          toast.error('Scheduled time must be in the future');
+          setLoading(false);
+          return;
+        }
+        
         payload.scheduledFor = scheduledDateTime.toISOString();
       } else {
         payload.status = 'Draft';
@@ -244,6 +253,45 @@ export default function CreateCampaignModal({
                   />
                 </div>
               </div>
+              {scheduledDate && scheduledTime && (() => {
+                try {
+                  const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+                  const now = new Date();
+                  const isToday = scheduledDate === now.toISOString().split('T')[0];
+                  const isPast = scheduledDateTime <= now;
+                  const minutesUntil = Math.round((scheduledDateTime.getTime() - now.getTime()) / 1000 / 60);
+                  
+                  if (isPast) {
+                    return (
+                      <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2 flex items-center gap-1">
+                        <span>⚠️</span>
+                        <span>Selected time is in the past. Please choose a future time.</span>
+                      </p>
+                    );
+                  }
+                  if (isToday) {
+                    return (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
+                        <span>✓</span>
+                        <span>Scheduled for today in {minutesUntil} minute(s) ({scheduledTime})</span>
+                      </p>
+                    );
+                  }
+                  const daysUntil = Math.floor(minutesUntil / 1440);
+                  const hoursUntil = Math.floor((minutesUntil % 1440) / 60);
+                  return (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
+                      <span>📅</span>
+                      <span>
+                        Scheduled for {daysUntil > 0 ? `${daysUntil} day(s) and ` : ''}{hoursUntil} hour(s) from now
+                        {' '}({scheduledDateTime.toLocaleDateString()} at {scheduledTime})
+                      </span>
+                    </p>
+                  );
+                } catch (error) {
+                  return null;
+                }
+              })()}
             </div>
           )}
         </div>
