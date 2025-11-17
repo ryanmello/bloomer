@@ -1,6 +1,11 @@
 'use client';
 
-import React from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Product } from '@/app/storefront/page';
+import EditProductModal from './EditProductModal';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
     Table,
     TableBody,
@@ -9,70 +14,190 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Package, AlertTriangle } from 'lucide-react';
 
-// Define the type for a single product
-type Product = {
-    id: string;
-    name: string;
-    price: number;
-    description?: string; // Make optional if it can be null
-    inventoryCount: number;
-    lastUpdated: string; // Or Date
-};
-
-// Apply the type to the 'product' prop
-function ProductRow({ product }: { product: Product }) {
-
-    const handleEdit = () => {
-        // STATIC: Just log to the console
-        console.log('Edit product:', product.id);
-        // LATER: This will open form modal
-    };
-
-    const handleDelete = () => {
-        // STATIC: Just log to the console
-        console.log('Delete product:', product.id);
-        // LATER: This will call your DELETE API
-    };
-
-    return (
-        <TableRow>
-            <TableCell className="font-medium">{product.name}</TableCell>
-            <TableCell>${product.price?.toFixed(2)}</TableCell>
-            <TableCell>{product.description}</TableCell>
-            <TableCell>{product.inventoryCount}</TableCell>
-            <TableCell>
-                {new Date(product.lastUpdated).toLocaleDateString()}
-            </TableCell>
-            <TableCell>
-                <Button variant="ghost" size="sm" onClick={handleEdit}>
-                    Edit
-                </Button>
-            </TableCell>
-        </TableRow>
-    );
+interface StorefrontTableProps {
+    products: Product[];
 }
-export default function StorefrontTable({ products }: { products: Product[] }) {
+
+export default function StorefrontTable({ products }: StorefrontTableProps) {
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const router = useRouter();
+
+    const handleDelete = async (productId: string) => {
+        setIsDeleting(true);
+        try {
+            const res = await fetch(`/api/products/${productId}`, {
+                method: 'DELETE',
+            });
+            if (!res.ok) throw new Error('Failed to delete product');
+            router.refresh();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const getStockStatus = (count: number) => {
+        if (count === 0) return { label: 'Out of Stock', variant: 'danger' as const };
+        if (count < 10) return { label: 'Low Stock', variant: 'warning' as const };
+        return { label: 'In Stock', variant: 'default' as const };
+    };
+
     return (
-        <div className="rounded-md border">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Inventory</TableHead>
-                        <TableHead>Last Updated</TableHead>
-                        <TableHead>Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {products.map((product: Product) => (
-                        <ProductRow key={product.id} product={product} />
-                    ))}
-                </TableBody>
-            </Table>
-        </div>
+        <>
+            <div className="rounded-lg border bg-card">
+                <Table>
+                    <TableHeader>
+                        <TableRow className="hover:bg-transparent">
+                            <TableHead className="w-[250px]">Product</TableHead>
+                            <TableHead>Price</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Inventory</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Last Updated</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {products.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={7} className="h-24 text-center">
+                                    <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                        <Package className="h-8 w-8" />
+                                        <p>No products found. Add your first product to get started.</p>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            products.map((product) => {
+                                const stockStatus = getStockStatus(product.inventoryCount);
+                                return (
+                                    <TableRow key={product.id}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                                                    <Package className="h-5 w-5 text-muted-foreground" />
+                                                </div>
+                                                <div>
+                                                    <div className="font-medium">{product.name}</div>
+                                                    {product.description && (
+                                                        <div className="text-sm text-muted-foreground line-clamp-1 max-w-[200px]">
+                                                            {product.description}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="font-medium">${product.price.toFixed(2)}</div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {product.category ? (
+                                                <Badge variant="default" className="font-normal">
+                                                    {product.category}
+                                                </Badge>
+                                            ) : (
+                                                <span className="text-muted-foreground">—</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                {product.inventoryCount < 10 && product.inventoryCount > 0 && (
+                                                    <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+                                                )}
+                                                <span className={
+                                                    product.inventoryCount === 0
+                                                        ? "text-destructive font-medium"
+                                                        : product.inventoryCount < 10
+                                                            ? "text-yellow-600 dark:text-yellow-500 font-medium"
+                                                            : ""
+                                                }>
+                                                    {product.inventoryCount} units
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={stockStatus.variant}>
+                                                {stockStatus.label}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                            {new Date(product.lastUpdated).toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                year: 'numeric',
+                                            })}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setEditingProduct(product)}
+                                                >
+                                                    Edit
+                                                </Button>
+
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button
+                                                            variant="destructive"
+                                                            size="sm"
+                                                            disabled={isDeleting}
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                This action cannot be undone. This will permanently delete
+                                                                <span className="font-medium"> "{product.name}"</span> from your inventory.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction
+                                                                onClick={() => handleDelete(product.id)}
+                                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                            >
+                                                                Delete
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+
+            <EditProductModal
+                product={editingProduct}
+                onClose={() => {
+                    setEditingProduct(null);
+                    router.refresh(); // Refresh data after edit
+                }}
+            />
+        </>
     );
 }
