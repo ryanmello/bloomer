@@ -48,6 +48,8 @@ model Shop {
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   Customer   Customer? @relation(fields: [customerId], references: [id])
   customerId String?   @db.ObjectId
+
+  products   Product[]
 }
 
 model Customer {
@@ -140,4 +142,7 @@ model Product {
   isActive      Boolean  @default(true)
   lastUpdated   DateTime @updatedAt
   createdAt     DateTime @default(now())
+
+  shopId String @db.ObjectId
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 }
