@@ -12,11 +12,12 @@ import { cookies } from 'next/headers';
 export interface Product {
   id: string;
   name: string;
-  price: number;
+  retailPrice: number;
+  costPrice: number;
+  quantity: number;
   description: string | null;
-  inventoryCount: number;
-  category: string | null;
-  lastUpdated: string;
+  category: string;
+  updatedAt: string;
   createdAt: string;
 }
 
@@ -68,10 +69,10 @@ async function getProducts() {
     // Format products to match the expected interface
     const formattedProducts = products.map(p => ({
       ...p,
-      lastUpdated: p.lastUpdated.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
       createdAt: p.createdAt.toISOString(),
       description: p.description || null,
-      category: p.category || null,
+      category: p.category || "General"
     }));
 
     return { products: formattedProducts, noShop: false };
@@ -82,14 +83,13 @@ async function getProducts() {
   }
 }
 
-// Calculate statistics for dashboard cards
+// Update calculateStats function
 function calculateStats(products: Product[]) {
   const totalProducts = products.length;
-  const totalInventory = products.reduce((sum, p) => sum + p.inventoryCount, 0);
-  const totalValue = products.reduce((sum, p) => sum + (p.price * p.inventoryCount), 0);
-  const lowStock = products.filter(p => p.inventoryCount < 10 && p.inventoryCount > 0).length;
-  const outOfStock = products.filter(p => p.inventoryCount === 0).length;
-
+  const totalInventory = products.reduce((sum, p) => sum + p.quantity, 0);
+  const totalValue = products.reduce((sum, p) => sum + (p.retailPrice * p.quantity), 0);
+  const lowStock = products.filter(p => p.quantity < 10 && p.quantity > 0).length;
+  const outOfStock = products.filter(p => p.quantity === 0).length;
   return { totalProducts, totalInventory, totalValue, lowStock, outOfStock };
 }
 

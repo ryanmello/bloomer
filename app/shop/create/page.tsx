@@ -1,13 +1,3 @@
-/**
- * Create Shop Page
- * 
- * Form for creating a new shop
- * - Collects shop name, phone, and email
- * - Client-side validation via HTML5 form attributes
- * - Redirects to storefront after successful creation
- * - Displays error messages if creation fails
- */
-
 'use client';
 
 import { useState } from 'react';
@@ -15,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
     Card,
     CardContent,
@@ -23,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { Package, Phone, Mail } from 'lucide-react';
+import { Package, Phone, Mail, MapPin } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function CreateShopPage() {
@@ -31,6 +22,7 @@ export default function CreateShopPage() {
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
+    const [address, setAddress] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -49,7 +41,7 @@ export default function CreateShopPage() {
             const res = await fetch('/api/shop', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, phone, email }),
+                body: JSON.stringify({ name, phone, email, address }),
             });
 
             if (!res.ok) {
@@ -139,6 +131,26 @@ export default function CreateShopPage() {
                                 placeholder="contact@my-shop.com"
                                 required
                             />
+                        </div>
+
+                        {/* Address - NEW FIELD ADDED */}
+                        <div className="space-y-2">
+                            <Label htmlFor="address" className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                Shop Address
+                            </Label>
+                            <Textarea
+                                id="address"
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                                placeholder="123 Main Street&#10;City, State 12345"
+                                rows={3}
+                                className="resize-none"
+                                required
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                This address will be used for your shop's location and invoices
+                            </p>
                         </div>
                     </CardContent>
 

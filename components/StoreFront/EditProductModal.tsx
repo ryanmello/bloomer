@@ -1,4 +1,3 @@
-// components/StoreFront/EditProductModal.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -25,19 +24,22 @@ interface EditProductModalProps {
 export default function EditProductModal({ product, onClose }: EditProductModalProps) {
     // Internal form state
     const [name, setName] = useState('');
-    const [price, setPrice] = useState('');
+    const [retailPrice, setRetailPrice] = useState('');
+    const [costPrice, setCostPrice] = useState('');
     const [description, setDescription] = useState('');
-    const [inventoryCount, setInventoryCount] = useState('');
+    const [quantity, setQuantity] = useState('');
     const [category, setCategory] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const router = useRouter();
 
     // Use useEffect to update form state when the product prop changes
     useEffect(() => {
         if (product) {
             setName(product.name);
-            setPrice(product.price.toString());
+            setRetailPrice(product.retailPrice.toString());
+            setCostPrice(product.costPrice.toString());
             setDescription(product.description || '');
-            setInventoryCount(product.inventoryCount.toString());
+            setQuantity(product.quantity.toString());
             setCategory(product.category || '');
         }
     }, [product]);
@@ -53,15 +55,17 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name,
-                    price: parseFloat(price),
+                    retailPrice: parseFloat(retailPrice),
+                    costPrice: parseFloat(costPrice),
                     description,
-                    inventoryCount: parseInt(inventoryCount),
+                    quantity: parseInt(quantity),
                     category,
                 }),
             });
 
             if (!res.ok) throw new Error('Failed to update product');
             onClose(); // Close the modal
+            router.refresh(); // Refresh the page data
         } catch (error) {
             console.error(error);
         } finally {
@@ -97,45 +101,62 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="price" className="text-right col-span-2">
-                                    Price ($)
+                                <Label htmlFor="retailPrice" className="text-right col-span-2">
+                                    Retail Price
                                 </Label>
                                 <Input
-                                    id="price"
+                                    id="retailPrice"
                                     type="number"
                                     step="0.01"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
+                                    value={retailPrice}
+                                    onChange={(e) => setRetailPrice(e.target.value)}
                                     className="col-span-2"
                                     required
                                 />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="count" className="text-right col-span-2">
-                                    Count
+                                <Label htmlFor="costPrice" className="text-right col-span-2">
+                                    Cost Price
                                 </Label>
                                 <Input
-                                    id="count"
+                                    id="costPrice"
                                     type="number"
-                                    step="1"
-                                    value={inventoryCount}
-                                    onChange={(e) => setInventoryCount(e.target.value)}
+                                    step="0.01"
+                                    value={costPrice}
+                                    onChange={(e) => setCostPrice(e.target.value)}
                                     className="col-span-2"
                                     required
                                 />
                             </div>
                         </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="category" className="text-right">
-                                Category
-                            </Label>
-                            <Input
-                                id="category"
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                className="col-span-3"
-                                placeholder="e.g., Bouquet"
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="quantity" className="text-right col-span-2">
+                                    Quantity
+                                </Label>
+                                <Input
+                                    id="quantity"
+                                    type="number"
+                                    step="1"
+                                    value={quantity}
+                                    onChange={(e) => setQuantity(e.target.value)}
+                                    className="col-span-2"
+                                    required
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="category" className="text-right col-span-2">
+                                    Category
+                                </Label>
+                                <Input
+                                    id="category"
+                                    value={category}
+                                    onChange={(e) => setCategory(e.target.value)}
+                                    className="col-span-2"
+                                    placeholder="e.g., Bouquet"
+                                    required
+                                />
+                            </div>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="description" className="text-right">

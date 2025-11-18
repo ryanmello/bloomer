@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,17 +16,51 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Package, DollarSign, Hash } from 'lucide-react';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, Package, DollarSign, Hash, TrendingUp, AlertCircle } from 'lucide-react';
 
 export default function AddProduct() {
     const [isOpen, setIsOpen] = useState(false);
     const [name, setName] = useState('');
-    const [price, setPrice] = useState('');
+    const [costPrice, setCostPrice] = useState('');
+    const [retailPrice, setRetailPrice] = useState('');
     const [description, setDescription] = useState('');
     const [inventoryCount, setInventoryCount] = useState('');
     const [category, setCategory] = useState('');
+    const [margin, setMargin] = useState(0);
+    const [profit, setProfit] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+
+    // Calculate margin and profit whenever prices change
+    useEffect(() => {
+        const cost = parseFloat(costPrice) || 0;
+        const retail = parseFloat(retailPrice) || 0;
+
+        if (cost > 0 && retail > 0) {
+            const profitAmount = retail - cost;
+            const marginPercent = ((profitAmount / retail) * 100);
+            setProfit(profitAmount);
+            setMargin(marginPercent);
+        } else {
+            setProfit(0);
+            setMargin(0);
+        }
+    }, [costPrice, retailPrice]);
+
+    // Get margin color based on percentage
+    const getMarginColor = () => {
+        if (margin < 20) return 'text-red-600';
+        if (margin < 40) return 'text-yellow-600';
+        return 'text-green-600';
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -38,7 +72,8 @@ export default function AddProduct() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name,
-                    price: parseFloat(price),
+                    price: parseFloat(retailPrice),
+                    costPrice: parseFloat(costPrice),
                     description,
                     inventoryCount: parseInt(inventoryCount),
                     category,
@@ -53,15 +88,17 @@ export default function AddProduct() {
             // Reset form and close modal
             setIsOpen(false);
             setName('');
-            setPrice('');
+            setCostPrice('');
+            setRetailPrice('');
             setDescription('');
             setInventoryCount('');
             setCategory('');
+            setMargin(0);
+            setProfit(0);
 
-            router.refresh(); // Refresh page data
+            router.refresh();
         } catch (error) {
             console.error(error);
-            // You can add toast notification here if you have it set up
             alert(error instanceof Error ? error.message : 'Failed to create product');
         } finally {
             setIsLoading(false);
@@ -76,7 +113,7 @@ export default function AddProduct() {
                     Add Product
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                     <DialogTitle>Add New Product</DialogTitle>
                     <DialogDescription>
@@ -100,31 +137,80 @@ export default function AddProduct() {
                             />
                         </div>
 
-                        {/* Price and Inventory Row */}
+                        {/* Pricing Section with Margin Display */}
+                        <div className="space-y-2">
+                            <Label className="flex items-center gap-2">
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                Pricing & Margins
+                            </Label>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="space-y-1">
+                                    <Label htmlFor="costPrice" className="text-xs text-muted-foreground">
+                                        Cost Price
+                                    </Label>
+                                    <Input
+                                        id="costPrice"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={costPrice}
+                                        onChange={(e) => setCostPrice(e.target.value)}
+                                        placeholder="0.00"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="retailPrice" className="text-xs text-muted-foreground">
+                                        Retail Price
+                                    </Label>
+                                    <Input
+                                        id="retailPrice"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={retailPrice}
+                                        onChange={(e) => setRetailPrice(e.target.value)}
+                                        placeholder="0.00"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground">
+                                        Margin
+                                    </Label>
+                                    <div className={`text-2xl font-bold ${getMarginColor()}`}>
+                                        {margin.toFixed(1)}%
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Profit Display */}
+                            {profit > 0 && (
+                                <div className="text-sm text-muted-foreground">
+                                    Profit per unit: <span className="font-medium">${profit.toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            {/* Margin Warning */}
+                            {margin > 0 && margin < 30 && (
+                                <Alert className="mt-2">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertDescription>
+                                        Warning: Profit margin is low. Consider increasing retail price or finding a cheaper supplier.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                        </div>
+
+                        {/* Inventory and Category */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="price" className="flex items-center gap-2">
-                                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                                    Price ($)
-                                </Label>
-                                <Input
-                                    id="price"
-                                    type="number"
-                                    step="0.01"
-                                    min="0.01"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
-                                    placeholder="0.00"
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="count" className="flex items-center gap-2">
+                                <Label htmlFor="inventoryCount" className="flex items-center gap-2">
                                     <Hash className="h-4 w-4 text-muted-foreground" />
                                     Initial Stock
                                 </Label>
                                 <Input
-                                    id="count"
+                                    id="inventoryCount"
                                     type="number"
                                     step="1"
                                     min="0"
@@ -134,20 +220,29 @@ export default function AddProduct() {
                                     required
                                 />
                             </div>
-                        </div>
-
-                        {/* Category */}
-                        <div className="space-y-2">
-                            <Label htmlFor="category">
-                                Category
-                                <span className="text-muted-foreground text-xs ml-2">(optional)</span>
-                            </Label>
-                            <Input
-                                id="category"
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                placeholder="e.g., Bouquet, Arrangement, Plant"
-                            />
+                            <div className="space-y-2">
+                                <Label htmlFor="category" className="flex items-center gap-2">
+                                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                                    Category
+                                </Label>
+                                <Select value={category} onValueChange={setCategory} required>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Roses">Roses</SelectItem>
+                                        <SelectItem value="Bouquets">Bouquets</SelectItem>
+                                        <SelectItem value="Arrangements">Arrangements</SelectItem>
+                                        <SelectItem value="Plants">Plants</SelectItem>
+                                        <SelectItem value="Wedding">Wedding</SelectItem>
+                                        <SelectItem value="Funeral">Funeral</SelectItem>
+                                        <SelectItem value="Seasonal">Seasonal</SelectItem>
+                                        <SelectItem value="Vases">Vases & Accessories</SelectItem>
+                                        <SelectItem value="Supplies">Supplies</SelectItem>
+                                        <SelectItem value="Other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
 
                         {/* Description */}
@@ -165,14 +260,35 @@ export default function AddProduct() {
                                 className="resize-none"
                             />
                         </div>
+
+                        {/* Total Value Preview */}
+                        {inventoryCount && retailPrice && (
+                            <div className="bg-muted rounded-lg p-3">
+                                <div className="text-sm space-y-1">
+                                    <div className="flex justify-between">
+                                        <span>Total Cost Value:</span>
+                                        <span>${(parseFloat(costPrice || '0') * parseInt(inventoryCount)).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Total Retail Value:</span>
+                                        <span>${(parseFloat(retailPrice || '0') * parseInt(inventoryCount)).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between font-bold text-green-600 pt-1 border-t">
+                                        <span>Potential Profit:</span>
+                                        <span>${(profit * parseInt(inventoryCount)).toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
+
                     <DialogFooter>
                         <DialogClose asChild>
                             <Button type="button" variant="outline" disabled={isLoading}>
                                 Cancel
                             </Button>
                         </DialogClose>
-                        <Button type="submit" disabled={isLoading} className="gap-2">
+                        <Button type="submit" disabled={isLoading || margin < 0} className="gap-2">
                             {isLoading ? (
                                 <>
                                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />

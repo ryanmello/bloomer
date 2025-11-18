@@ -153,14 +153,17 @@ export async function POST(req: Request) {
         const newProduct = await db.product.create({
             data: {
                 name: data.name,
-                price: parseFloat(data.price),
+                retailPrice: parseFloat(data.price),
+                costPrice: parseFloat(data.costPrice || data.price),
+                quantity: parseInt(data.inventoryCount),
                 description: data.description || null,
-                inventoryCount: parseInt(data.inventoryCount),
-                category: data.category || null,
-                shopId: shop.id, // Link to the active shop
+                category: data.category || "General",  // Use default instead of null
+                shop: {
+                    connect: { id: shop.id }  // ← Use connect instead of shopId
+                }
             },
             include: {
-                shop: true // Include shop details in response
+                shop: true
             }
         });
 

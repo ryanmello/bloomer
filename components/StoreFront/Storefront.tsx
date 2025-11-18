@@ -54,7 +54,7 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
     const getStockStatus = (count: number) => {
         if (count === 0) return { label: 'Out of Stock', variant: 'danger' as const };
         if (count < 10) return { label: 'Low Stock', variant: 'warning' as const };
-        return { label: 'In Stock', variant: 'default' as const };
+        return { label: 'In Stock', variant: 'success' as const };
     };
 
     return (
@@ -84,7 +84,7 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
                             </TableRow>
                         ) : (
                             products.map((product) => {
-                                const stockStatus = getStockStatus(product.inventoryCount);
+                                const stockStatus = getStockStatus(product.quantity);
                                 return (
                                     <TableRow key={product.id}>
                                         <TableCell>
@@ -103,11 +103,11 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">${product.price.toFixed(2)}</div>
+                                            <div className="font-medium">${product.retailPrice.toFixed(2)}</div>
                                         </TableCell>
                                         <TableCell>
                                             {product.category ? (
-                                                <Badge variant="default" className="font-normal">
+                                                <Badge variant="outline" className="font-normal">
                                                     {product.category}
                                                 </Badge>
                                             ) : (
@@ -116,17 +116,17 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                {product.inventoryCount < 10 && product.inventoryCount > 0 && (
+                                                {product.quantity < 10 && product.quantity > 0 && (
                                                     <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
                                                 )}
                                                 <span className={
-                                                    product.inventoryCount === 0
+                                                    product.quantity === 0
                                                         ? "text-destructive font-medium"
-                                                        : product.inventoryCount < 10
+                                                        : product.quantity < 10
                                                             ? "text-yellow-600 dark:text-yellow-500 font-medium"
                                                             : ""
                                                 }>
-                                                    {product.inventoryCount} units
+                                                    {product.quantity} units
                                                 </span>
                                             </div>
                                         </TableCell>
@@ -136,7 +136,7 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
-                                            {new Date(product.lastUpdated).toLocaleDateString('en-US', {
+                                            {new Date(product.updatedAt).toLocaleDateString('en-US', {
                                                 month: 'short',
                                                 day: 'numeric',
                                                 year: 'numeric',

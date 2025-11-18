@@ -15,41 +15,54 @@ model Coupon {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  // Link coupon to the user who created it
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model User {
-  id       String  @id @default(auto()) @map("_id") @db.ObjectId
-  name     String?
-  email    String  @unique
-  password String
-  image    String?
-  role     String?
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  firstName String?
+  lastName  String?
+  email     String  @unique
+  password  String
+  image     String?
+  role      String?
+  address1  String?
+  address2  String?
+  city      String?
+  state     String?
+  country   String?
+  postal    String?
+  phone     String?
+
+  // Two-Factor Authentication
+  twoFactorEnabled Boolean  @default(false)
+  twoFactorSecret  String?
+  backupCodes      String[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shops   Shop[]
-  coupons Coupon[]
+  shops     Shop[]
+  coupons   Coupon[]
+  campaigns Campaign[]
 }
 
 model Shop {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  userId String @db.ObjectId
-  name   String
-  phone  String
-  email  String
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String @db.ObjectId
+  name    String
+  phone   String
+  email   String
+  address String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  Customer   Customer? @relation(fields: [customerId], references: [id])
-  customerId String?   @db.ObjectId
-
-  products   Product[]
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customers Customer[]
+  campaigns Campaign[]
+  products  Product[]
 }
 
 model Customer {
@@ -59,19 +72,42 @@ model Customer {
   email          String    @unique
   phoneNumber    String?
   additionalNote String?
-  address        Address[]
-  squareId       String?   
-
-  birthday       DateTime?
-  anniversary    DateTime?
-  firstOrderDate DateTime?
+  addresses      Address[]
+  squareId       String?
+  orderCount     Int       @default(0)
+  spendAmount    Float     @default(0)
+  occasionsCount Int       @default(0)
+  group          String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shops Shop[]
-  
-  automationExecutions AutomationExecution[]
+  shopId String? @db.ObjectId
+  shop   Shop?   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  campaignRecipients CampaignRecipient[]
+
+  orders Order[]
+}
+
+model Order {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  customerId String   @db.ObjectId
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  status      OrderStatus
+  totalAmount Float       @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  notes String?
+}
+
+enum OrderStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
 }
 
 model Address {
@@ -87,62 +123,111 @@ model Address {
   customerId String   @db.ObjectId
 }
 
-model Automation {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  description   String?
-  active        Boolean   @default(true)
-  triggerType   String
-  triggerTiming String
-  actionType    String
-  emailTemplateId String  @db.ObjectId
-  emailTemplate EmailTemplate @relation(fields: [emailTemplateId], references: [id])
-  sendTo        String
+model Campaign {
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  campaignName String
+  subject      String
+  emailBody    String
 
-  executions AutomationExecution[]
+  // Status: Draft, Scheduled, Sent, Failed
+  status String @default("Draft")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+  // Target audience type: All, VIP, New, Potential, Newsletter, Custom
+  audienceType String
 
-model EmailTemplate {
-  id      String   @id @default(auto()) @map("_id") @db.ObjectId
-  name    String   @unique
-  subject String
-  body    String // This will hold the HTML/text of the email
-
-  automations Automation[]
+  // For scheduled campaigns
+  scheduledFor DateTime?
+  sentAt       DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
 
-model AutomationExecution {
-  id     String   @id @default(auto()) @map("_id") @db.ObjectId
-  
-  automationId String     @db.ObjectId
-  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
-  
-  customerId String     @db.ObjectId
-customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade) 
-  sentAt     DateTime   @default(now())
-  status     String
-  error      String?
-
-  @@unique([automationId, customerId])
-}
-
-model Product {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  price         Float
-  description   String?
-  inventoryCount Int     @default(0)
-  category       String? 
-  isActive      Boolean  @default(true)
-  lastUpdated   DateTime @updatedAt
-  createdAt     DateTime @default(now())
+  // Relations
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   shopId String @db.ObjectId
   shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  recipients CampaignRecipient[]
+}
+
+model CampaignRecipient {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Email delivery status: Pending, Sent, Failed, Opened, Clicked
+  status    String    @default("Pending")
+  sentAt    DateTime?
+  openedAt  DateTime?
+  clickedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaignId String   @db.ObjectId
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  customerId String   @db.ObjectId
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, customerId])
+}
+
+model Product {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  description       String?
+  category          String   @default("General")
+  color             String?
+  costPrice         Float
+  retailPrice       Float
+  quantity          Int      @default(0)
+  lowInventoryAlert Int      @default(10)
+  trackInventory    Boolean  @default(true)
+  shelfLifeDays     Int?
+  stemLength        String?
+  image             String?
+  isActive          Boolean  @default(true)
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  shopId String @db.ObjectId
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  inventoryMovements InventoryMovement[]
+}
+
+model InventoryMovement {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  type              String // Type: "purchase", "sale", "adjustment", "waste", "return"
+  quantity          Int // Positive for additions, negative for removals
+  previousInventory Int
+  newInventory      Int
+  reason            String? // e.g., "Expired", "Damaged", "Customer order #123"
+  referenceId       String? // Link to order/purchase if applicable
+  notes             String?
+  createdAt         DateTime @default(now())
+  productId         String   @db.ObjectId
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  shopId            String   @db.ObjectId
+}
+
+enum AudienceStatus {
+  active
+  inactive
+  draft
+}
+
+enum AudienceType {
+  custom
+  predefined
+}
+
+model Audience {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  status      AudienceStatus @default(draft)
+  type        AudienceType   @default(custom)
 }

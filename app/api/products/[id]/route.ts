@@ -58,9 +58,9 @@ export async function PUT(
         // Parse and validate request body
         const data = await req.json();
 
-        if (!data.name || data.price === undefined || data.inventoryCount === undefined) {
+        if (!data.name || data.retailPrice === undefined || data.quantity === undefined) {
             return NextResponse.json(
-                { error: 'Name, price, and inventory count are required' },
+                { error: 'Name, retail price, and quantity are required' },
                 { status: 400 }
             );
         }
@@ -70,10 +70,11 @@ export async function PUT(
             where: { id },
             data: {
                 name: data.name,
-                price: parseFloat(data.price),
+                retailPrice: parseFloat(data.retailPrice),
+                costPrice: parseFloat(data.costPrice || data.retailPrice),
                 description: data.description || null,
-                inventoryCount: parseInt(data.inventoryCount),
-                category: data.category || null,
+                quantity: parseInt(data.quantity),
+                category: data.category || "General",
             },
             include: {
                 shop: true

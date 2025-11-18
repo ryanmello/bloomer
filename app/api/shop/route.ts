@@ -50,7 +50,7 @@ export async function GET() {
 /**
  * POST /api/shop
  * Creates a new shop for the authenticated user
- * @param req - Request body must contain: name, phone, email
+ * @param req - Request body must contain: name, phone, email, address  
  * @returns The newly created shop object
  */
 export async function POST(req: Request) {
@@ -67,11 +67,11 @@ export async function POST(req: Request) {
 
     // Parse and validate request body
     const body = await req.json();
-    const { name, phone, email } = body;
+    const { name, phone, email, address } = body;
 
-    if (!name || !phone || !email) {
+    if (!name || !phone || !email || !address) {
       return NextResponse.json(
-        { message: 'Name, phone, and email are required' },
+        { message: 'Name, phone, email, and address are required' },
         { status: 400 }
       );
     }
@@ -82,6 +82,7 @@ export async function POST(req: Request) {
         name,
         phone,
         email,
+        address,
         userId: user.id,
       },
     });
