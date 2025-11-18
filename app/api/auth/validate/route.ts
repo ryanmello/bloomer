@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       id: user.id,
       email: user.email,
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
     });
   } catch (error) {
     console.error("Validation error:", error);

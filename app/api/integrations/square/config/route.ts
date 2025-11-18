@@ -1,6 +1,6 @@
 // app/api/integrations/square/config/route.ts
 import { NextResponse } from "next/server";
-import { db } from "@/lib/prisma";
+import db from "@/lib/prisma";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
