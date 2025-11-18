@@ -17,18 +17,18 @@ export default function LandingPage() {
       {user && (
         <div className="w-full flex justify-center py-4">
           <Link href="/dashboard" className="w-full max-w-2xl mx-4">
-            <div className="flex items-center justify-between px-6 py-2 rounded-full border border-blue-400 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer">
-              <span className="text-sm text-blue-800">
+            <div className="flex items-center justify-between px-6 py-2 rounded-full border border-orange-300 bg-orange-50 hover:bg-orange-100 transition-colors cursor-pointer">
+              <span className="text-sm text-black">
                 Welcome back,{" "}
-                <span className="font-medium text-blue-600">
+                <span className="font-medium text-black">
                   {user.firstName} {user.lastName}
                 </span>
               </span>
               <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-blue-700">
+                <p className="text-sm font-semibold text-black">
                   Go to dashboard
                 </p>
-                <ArrowRight className="h-4 w-4 text-blue-600" />
+                <ArrowRight className="h-4 w-4 text-black" />
               </div>
             </div>
           </Link>
@@ -101,7 +101,9 @@ export default function LandingPage() {
 
       {/* Product Screenshot */}
       <section className="w-full px-4 md:px-8 pb-20">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto relative">
+          {/* Glow effect */}
+          <div className="absolute -top-1 -left-1 -right-1 h-[96%] bg-gradient-to-r from-red-400 to-orange-300 rounded-xl blur-xl opacity-20" />
           <div className="relative rounded-xl border-t border-r border-l bg-card shadow-2xl overflow-hidden">
             {/* Placeholder for product screenshot */}
             <Image src={Dashboard} alt="Dashboard" className="w-full h-full" />
@@ -212,20 +214,75 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      {/* <section className="w-full flex flex-col items-center px-4 md:px-8 pb-20">
-        <h2 className="text-2xl font-semibold">Ready to bloom?</h2>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
-          <Button asChild size="lg" className="text-base px-8 h-12">
-            <Link href="/sign-up">Book a demo</Link>
-            
-          </Button>
-        </div>
-      </section> */}
-
       {/* Footer */}
-      {/* <footer className="border-t py-8 px-4 mt-auto">
-      </footer> */}
+      <footer className="border-t bg-background py-12 px-4 md:px-8">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-8">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Image src={Flower} alt="Bloomer" width={24} height={24} />
+              <span className="text-lg font-bold">Bloomer</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              The all-in-one platform for modern flower shops.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-4">Product</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>
+                <Link href="#" className="hover:text-primary">
+                  Features
+                </Link>
+              </li>
+              <li>
+                <Link href="#" className="hover:text-primary">
+                  Pricing
+                </Link>
+              </li>
+              <li>
+                <Link href="#" className="hover:text-primary">
+                  Integrations
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-4">Company</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>
+                <Link href="#" className="hover:text-primary">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link href="#" className="hover:text-primary">
+                  Careers
+                </Link>
+              </li>
+              <li>
+                <Link href="#" className="hover:text-primary">
+                  Blog
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-4">Legal</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>
+                <Link href="#" className="hover:text-primary">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="#" className="hover:text-primary">
+                  Terms of Service
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
