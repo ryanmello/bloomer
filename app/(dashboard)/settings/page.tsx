@@ -8,6 +8,12 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import axios from "axios";
 import { useState, useEffect } from "react";
+import { Trash2, LogOut } from "lucide-react";
+import SecurityTile from "@/components/settings/SecurityTile";
+import { signOut } from "next-auth/react";
+import AccountDetails from "@/components/settings/AccountDetails";
+import { useUser } from "@/context/AuthContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ShopFormData = {
   name: string;
@@ -16,9 +22,30 @@ type ShopFormData = {
   address: string;
 };
 
+type RoleFormData = {
+  email: string;
+};
+
 export default function Settings() {
+  const { user, isLoading: userLoading } = useUser();
   const [isLoading, setIsLoading] = useState(false);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<ShopFormData>();
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [staffUsers, setStaffUsers] = useState<
+    { name?: string; email: string; role?: string }[]
+  >([]);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ShopFormData>();
+  const {
+    register: registerRole,
+    handleSubmit: handleRoleSubmit,
+    reset: resetRole,
+    formState: { errors: roleErrors },
+  } = useForm<RoleFormData>();
 
   // Prefill the form when page loads
   useEffect(() => {
@@ -35,11 +62,25 @@ export default function Settings() {
 
         reset(defaultValues);
       } catch (error: any) {
-        toast.error(error.response?.data?.message || "Failed to fetch shop info");
+        toast.error(
+          error.response?.data?.message || "Failed to fetch shop info"
+        );
       }
     };
 
     fetchShopData();
+
+    // Fetch staff users
+    const fetchStaff = async () => {
+      try {
+        const response = await axios.get("/api/user?staff=true");
+        setStaffUsers(response.data);
+      } catch (error: any) {
+        toast.error("Failed to fetch staff users");
+      }
+    };
+
+    fetchStaff();
   }, [reset]);
 
   const onSubmit = async (data: ShopFormData) => {
@@ -49,23 +90,67 @@ export default function Settings() {
       toast.success("Business info saved successfully!");
       reset(data);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to save business info");
+      toast.error(
+        error.response?.data?.message || "Failed to save business info"
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   // Handler for Add User button
-  const handleAddUser = () => {
-    toast("Add User button clicked"); // Replace with modal or API integration later
+  const onRoleSubmit = async (data: RoleFormData) => {
+    try {
+      const response = await axios.post("/api/user", { email: data.email });
+      toast.success(response.data.message);
+      resetRole();
+      setShowRoleModal(false);
+
+      // Refresh staff list after adding new user
+      const staffResponse = await axios.get("/api/user?staff=true");
+      setStaffUsers(staffResponse.data);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to assign role");
+    }
+  };
+
+  // Handler to remove staff role from a user
+  const removeStaffRole = async (email: string) => {
+    try {
+      await axios.delete("/api/user", { data: { email } });
+      toast.success("Staff role removed!");
+      // Refresh the staff list
+      const response = await axios.get("/api/user?staff=true");
+      setStaffUsers(response.data);
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to remove staff role"
+      );
+    }
   };
 
   return (
-    <div className="container max-w-2xl py-8 space-y-6">
-      {/* Page header */}
-      <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your account settings and preferences</p>
+    <div className="p-4">
+      <div className="flex gap-8">
+        <div className="w-1/3 space-y-4">
+          <div className="mt-4">
+            <h2 className="font-semibold text-lg">Account Details</h2>
+            {userLoading ? (
+              <Skeleton className="w-full h-24 mt-4" />
+            ) : user ? (
+              <AccountDetails user={user} />
+            ) : (
+              <p className="text-muted-foreground">No user data available</p>
+            )}
+          </div>
+          <div className="h-48 border">
+            Shops: display a list of the users shops in a card. if they click on
+            the card navigate to /settings/shop/[shopid]
+          </div>
+        </div>
+        <div className="w-2/3">
+          <div className="h-96 border">something will go here</div>
+        </div>
       </div>
 
       {/* Theme section */}
@@ -75,50 +160,101 @@ export default function Settings() {
       </div>
 
       {/* Business Info Card */}
-      <div className="border rounded-lg p-6">
+      <div className="border rounded-lg p-6 w-full">
         <h2 className="text-xl font-bold mb-4">Business Info</h2>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col h-full"
+        >
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col">
-              <Label htmlFor="name" className="mb-2">Shop Name</Label>
+              <Label htmlFor="name" className="mb-2">
+                Shop Name
+              </Label>
               <Input
                 id="name"
                 placeholder="Enter shop name"
-                {...register("name", { required: "Shop name is required", minLength: { value: 2, message: "Shop name must be at least 2 characters" } })}
+                {...register("name", {
+                  required: "Shop name is required",
+                  minLength: {
+                    value: 2,
+                    message: "Shop name must be at least 2 characters",
+                  },
+                })}
               />
-              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+              {errors.name && (
+                <p className="text-sm text-destructive">
+                  {errors.name.message}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col">
-              <Label htmlFor="email" className="mb-2">Contact Email</Label>
+              <Label htmlFor="email" className="mb-2">
+                Contact Email
+              </Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="Enter contact email"
-                {...register("email", { required: "Email is required", pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: "Please enter a valid email address" } })}
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Please enter a valid email address",
+                  },
+                })}
               />
-              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+              {errors.email && (
+                <p className="text-sm text-destructive">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col">
-              <Label htmlFor="phone" className="mb-2">Phone Number</Label>
+              <Label htmlFor="phone" className="mb-2">
+                Phone Number
+              </Label>
               <Input
                 id="phone"
                 type="tel"
                 placeholder="Enter phone number"
-                {...register("phone", { required: "Phone number is required", pattern: { value: /^[0-9+\-\s()]+$/, message: "Please enter a valid phone number" } })}
+                {...register("phone", {
+                  required: "Phone number is required",
+                  pattern: {
+                    value: /^[0-9+\-\s()]+$/,
+                    message: "Please enter a valid phone number",
+                  },
+                })}
               />
-              {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
+              {errors.phone && (
+                <p className="text-sm text-destructive">
+                  {errors.phone.message}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col">
-              <Label htmlFor="address" className="mb-2">Store Address</Label>
+              <Label htmlFor="address" className="mb-2">
+                Store Address
+              </Label>
               <Input
                 id="address"
                 placeholder="Enter store address"
-                {...register("address", { required: "Store address is required", minLength: { value: 5, message: "Address must be at least 5 characters" } })}
+                {...register("address", {
+                  required: "Store address is required",
+                  minLength: {
+                    value: 5,
+                    message: "Address must be at least 5 characters",
+                  },
+                })}
               />
-              {errors.address && <p className="text-sm text-destructive">{errors.address.message}</p>}
+              {errors.address && (
+                <p className="text-sm text-destructive">
+                  {errors.address.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -130,12 +266,126 @@ export default function Settings() {
         </form>
       </div>
 
-      {/* Add User Button */}
-      <div className="flex justify-start mt-4">
-        <Button onClick={handleAddUser} variant="default">
-          Add User
+      {/* Staff Users Tile */}
+      <div className="border rounded-lg p-6 mt-6 w-full">
+        {/* Tile Header */}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Staff Users</h2>
+          <div className="flex space-x-2">
+            {/* Refresh button */}
+            <Button
+              onClick={async () => {
+                try {
+                  const response = await axios.get("/api/user?staff=true");
+                  setStaffUsers(response.data);
+                  toast.success("Staff list refreshed!");
+                } catch (error: any) {
+                  toast.error("Failed to refresh staff users");
+                }
+              }}
+              variant="default"
+              className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-600"
+            >
+              Refresh
+            </Button>
+
+            {/* Add User button */}
+            <Button onClick={() => setShowRoleModal(true)} variant="default">
+              Add User
+            </Button>
+          </div>
+        </div>
+
+        {/* Column Titles */}
+        <div className="grid grid-cols-[2fr_1.2fr_2fr_40px] font-semibold mb-2 px-2">
+          <div className="truncate">Name</div>
+          <div className="truncate pl-1">Role</div>
+          <div className="truncate">Email</div>
+          <div></div> {/* tiny 4th column for icon */}
+        </div>
+
+        {/* Divider */}
+        <hr className="border-t border-gray-300 mx-2 mb-2" />
+
+        {/* Staff Rows */}
+        {staffUsers.map((user) => (
+          <div
+            key={user.email}
+            className="grid grid-cols-[2fr_1.2fr_2fr_40px] px-2 py-1 items-center"
+          >
+            <div className="truncate">{user.name || "(No name)"}</div>
+            <div className="truncate pl-1">
+              {user.role
+                ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+                : "(No role)"}
+            </div>
+            <div className="truncate">{user.email}</div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => removeStaffRole(user.email)}
+              className="p-2 w-8 h-8 flex items-center justify-center rounded transition-colors hover:bg-red-600 hover:text-white"
+              title="Remove staff role"
+            >
+              <Trash2 size={16} />
+            </Button>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-[2rem]">
+        <div>Preferences</div>
+        {/* Security Tile */}
+        <SecurityTile />
+      </div>
+
+      {/* Logout Section */}
+      <div className="border rounded-lg p-6 w-full">
+        <h2 className="text-xl font-bold mb-2">Account</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Sign out of your account
+        </p>
+        <Button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          variant="destructive"
+          className="flex items-center gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
         </Button>
       </div>
+
+      {/* Role Modal */}
+      {showRoleModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
+              Assign Role
+            </h2>
+            <form
+              onSubmit={handleRoleSubmit(onRoleSubmit)}
+              className="flex flex-col space-y-4"
+            >
+              <Input
+                placeholder="Enter user email"
+                {...registerRole("email", { required: "Email is required" })}
+                className="bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
+              />
+              <div className="flex justify-end space-x-2">
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={() => setShowRoleModal(false)}
+                  className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-600"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Set Role</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
