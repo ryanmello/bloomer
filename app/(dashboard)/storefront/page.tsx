@@ -4,9 +4,12 @@ import ShopSelector from '@/components/shop/ShopSelector';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, TrendingUp, AlertCircle, DollarSign } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { db } from '@/lib/prisma';
+import db from '@/lib/prisma';
 import { getCurrentUser } from '@/actions/getCurrentUser';
 import { cookies } from 'next/headers';
+
+export const dynamic = 'force-dynamic';
+
 
 // Define the Product type based on your schema
 export interface Product {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Product } from '@/app/storefront/page';
+import { Product } from '@/lib/types';
 import EditProductModal from './EditProductModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

@@ -9,8 +9,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getCurrentUser } from '@/actions/getCurrentUser';
-import { db } from '@/lib/prisma';
-
+import db from '@/lib/prisma';
 /**
  * GET /api/shop/active
  * Retrieves the currently active shop ID from cookies

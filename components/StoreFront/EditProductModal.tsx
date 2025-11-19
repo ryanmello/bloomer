@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Product } from '@/app/storefront/page';
+import { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
