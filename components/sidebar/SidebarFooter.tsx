@@ -26,11 +26,15 @@ export default function UserFooter({
     return 'U';
   };
 
+  const fullName = currentUser?.firstName && currentUser?.lastName
+    ? `${currentUser.firstName} ${currentUser.lastName}`
+    : currentUser?.firstName || currentUser?.lastName || null;
+  
   const initials = currentUser
-    ? getInitials(currentUser.name, currentUser.email)
+    ? getInitials(fullName, currentUser.email)
     : "U";
   const displayName = currentUser
-    ? currentUser.name || currentUser.email || "User"
+    ? fullName || currentUser.email || "User"
     : "User";
 
   return (

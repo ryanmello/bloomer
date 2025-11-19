@@ -5,10 +5,13 @@ import { verifyPassword } from "@/utils/password";
 /**
  * Get user from database by email and verify password
  */
-export async function getUserFromDb(email: string, password: string): Promise<User | null> {
+export async function getUserFromDb(
+  email: string,
+  password: string
+): Promise<User | null> {
   try {
     const user = await db.user.findUnique({
-      where: { email: email }
+      where: { email: email },
     });
 
     if (!user || !user.password) {
@@ -30,13 +33,19 @@ export async function getUserFromDb(email: string, password: string): Promise<Us
 /**
  * Create a new user in the database
  */
-export async function createUser(email: string, password: string, name?: string): Promise<User | null> {
+export async function createUser(
+  email: string,
+  password: string,
+  firstName?: string,
+  lastName?: string
+): Promise<User | null> {
   try {
     const user = await db.user.create({
       data: {
         email,
         password,
-        name: name || undefined,
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
       },
     });
 
@@ -53,7 +62,7 @@ export async function createUser(email: string, password: string, name?: string)
 export async function userExists(email: string): Promise<boolean> {
   try {
     const user = await db.user.findUnique({
-      where: { email }
+      where: { email },
     });
     return !!user;
   } catch (error) {
