@@ -50,7 +50,7 @@ model User {
 
 model Shop {
   id      String @id @default(auto()) @map("_id") @db.ObjectId
-  userId  String @unique @db.ObjectId
+  userId  String @db.ObjectId
   name    String
   phone   String
   email   String
@@ -177,7 +177,7 @@ model Product {
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
   name              String
   description       String?
-  category          String
+  category          String   @default("General")
   color             String?
   costPrice         Float
   retailPrice       Float
