@@ -47,20 +47,57 @@ export default function Settings() {
     formState: { errors: roleErrors },
   } = useForm<RoleFormData>();
 
+  // Helper to combine first and last names
+  const combineNames = (arr: any[]) =>
+    arr.map((u: any) => ({
+      ...u,
+      name: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || null,
+    }));
+
   // Prefill the form when page loads
   useEffect(() => {
     const fetchShopData = async () => {
       try {
-        const response = await axios.get("/api/shop");
-        const data = response.data;
+        // Fetch all shops for the user
+        const shopResp = await axios.get("/api/shop");
+        const shops = shopResp.data || [];
 
-        const defaultValues: Partial<ShopFormData> = {};
-        if (data?.name) defaultValues.name = data.name;
-        if (data?.email) defaultValues.email = data.email;
-        if (data?.phone) defaultValues.phone = data.phone;
-        if (data?.address) defaultValues.address = data.address;
 
-        reset(defaultValues);
+        // Try to get the active shop id
+        const activeResp = await axios.get("/api/shop/active");
+        const activeShopId = activeResp.data?.activeShopId;
+
+
+        // Pick the active shop if possible, otherwise first shop
+        let shop = null;
+        if (Array.isArray(shops) && shops.length > 0) {
+          if (activeShopId) {
+            shop = shops.find((s: any) => s.id === activeShopId) || shops[0];
+          } else {
+            shop = shops[0];
+          }
+        } else if (shops && !Array.isArray(shops)) {
+          // Safety in case API changed: handle single object
+          shop = shops;
+        }
+
+
+        if (shop) {
+          reset({
+            name: shop.name || "",
+            email: shop.email || "",
+            phone: shop.phone || "",
+            address: shop.address || "",
+          });
+        } else {
+          // No shop yet, clear the form
+          reset({
+            name: "",
+            email: "",
+            phone: "",
+            address: "",
+          });
+        }
       } catch (error: any) {
         toast.error(
           error.response?.data?.message || "Failed to fetch shop info"
@@ -74,7 +111,7 @@ export default function Settings() {
     const fetchStaff = async () => {
       try {
         const response = await axios.get("/api/user?staff=true");
-        setStaffUsers(response.data);
+        setStaffUsers(combineNames(response.data));
       } catch (error: any) {
         toast.error("Failed to fetch staff users");
       }
@@ -108,7 +145,7 @@ export default function Settings() {
 
       // Refresh staff list after adding new user
       const staffResponse = await axios.get("/api/user?staff=true");
-      setStaffUsers(staffResponse.data);
+      setStaffUsers(combineNames(staffResponse.data));
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to assign role");
     }
@@ -121,7 +158,7 @@ export default function Settings() {
       toast.success("Staff role removed!");
       // Refresh the staff list
       const response = await axios.get("/api/user?staff=true");
-      setStaffUsers(response.data);
+      setStaffUsers(combineNames(response.data));
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Failed to remove staff role"
@@ -130,7 +167,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 space-y-8">
       <div className="flex gap-8">
         <div className="w-1/3 space-y-4">
           <div className="mt-4">
@@ -277,7 +314,7 @@ export default function Settings() {
               onClick={async () => {
                 try {
                   const response = await axios.get("/api/user?staff=true");
-                  setStaffUsers(response.data);
+                  setStaffUsers(combineNames(response.data));
                   toast.success("Staff list refreshed!");
                 } catch (error: any) {
                   toast.error("Failed to refresh staff users");
