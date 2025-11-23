@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import Flower from "@/public/flower.png";
 import Image from "next/image";
 import Dashboard from "@/public/dashboard.png";
@@ -43,7 +43,7 @@ export default function LandingPage() {
 
           <nav className="hidden md:flex items-center gap-6 justify-center">
             <Link
-              href=""
+              href="#pricing"
               className="text-sm font-medium hover:text-primary transition-colors"
             >
               Pricing
@@ -210,6 +210,95 @@ export default function LandingPage() {
                 </div>
               </div>
             </div> */}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="w-full px-4 md:px-8 pb-20 scroll-mt-20">
+        <div className="max-w-4xl mx-auto">
+          {/* Section Header */}
+          <div className="text-center space-y-4 mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+              All the tools you need, one simple price.
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Experience the peace of mind that comes with having your flower
+              shop under control
+            </p>
+          </div>
+
+          <div className="relative rounded-2xl bg-gradient-to-br from-primary/5 via-background to-primary/5 border-2 border-primary/20 shadow-2xl overflow-hidden">
+            {/* Decorative glow effects */}
+            <div className="absolute -top-20 -right-20 h-60 w-60 bg-gradient-to-br from-red-400 to-orange-300 rounded-full blur-3xl opacity-10" />
+            <div className="absolute -bottom-20 -left-20 h-60 w-60 bg-gradient-to-br from-orange-300 to-red-400 rounded-full blur-3xl opacity-10" />
+
+            <div className="relative p-8 md:p-12">
+              {/* Header */}
+              <div className="mb-8 space-y-3">
+                <div className="inline-flex items-center gap-2 mb-2">
+                  <Image src={Flower} alt="Flower" width={32} height={32} />
+                  <h2 className="text-xl md:text-2xl font-bold">
+                    Bloomer Platform
+                  </h2>
+                </div>
+                <p className="text-muted-foreground max-w-2xl">
+                  One simple package to give your shop everything it needs to
+                  increase revenue
+                </p>
+              </div>
+
+              {/* Pricing */}
+              <div className="text-center mb-8 pb-8 border-b border-border/50">
+                <div className="flex items-baseline justify-center gap-2 mb-2">
+                  <span className="text-5xl md:text-6xl font-bold">$99</span>
+                  <span className="text-xl text-muted-foreground">/month</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  per shop • billed monthly
+                </p>
+                <div className="mt-6">
+                  <Button asChild size="lg" className="px-8">
+                    <Link href="/sign-up">
+                      Get Started
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Features */}
+              <div className="space-y-6">
+                <p className="text-center text-base font-semibold text-foreground">
+                  Everything you need to convert, capture, and connect with your
+                  members including:
+                </p>
+
+                <div className="grid md:grid-cols-2 gap-x-8 gap-y-4 max-w-3xl mx-auto">
+                  {[
+                    "Customer management system",
+                    "Order tracking & history",
+                    "Email marketing campaigns",
+                    "Real-time analytics & reports",
+                    "Mobile-friendly dashboard",
+                    "Payment processing",
+                    "Inventory management",
+                    "Lilli AI Agent assistant",
+                    "Voice agent for phone orders",
+                    "24/7 automated customer support",
+                    "Smart order routing",
+                    "Priority support & onboarding",
+                  ].map((feature, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground font-medium">
+                        {feature}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
