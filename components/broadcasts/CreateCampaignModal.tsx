@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Send, Users } from 'lucide-react';
+import { Send, Users, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Audience {
@@ -28,54 +28,104 @@ export default function CreateCampaignModal({
   const [emailBody, setEmailBody] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
 
-  const createCampaign = async (status: 'Draft' | 'Sent') => {
+  const createCampaign = async (actionType: 'draft' | 'send' | 'schedule') => {
     if (!campaignName || !selectedAudience || !subject || !emailBody) {
       toast.error('Please fill in all fields');
       return;
     }
 
-    const setLoading = status === 'Draft' ? setIsSaving : setIsSending;
+    if (actionType === 'schedule' && (!scheduledDate || !scheduledTime)) {
+      toast.error('Please select a date and time for scheduling');
+      return;
+    }
+
+    const setLoading = actionType === 'draft' ? setIsSaving : setIsSending;
     setLoading(true);
 
     try {
+      const payload: any = {
+        campaignName,
+        subject,
+        emailBody,
+        audienceType: selectedAudience,
+      };
+
+      if (actionType === 'send') {
+        payload.status = 'Sent';
+        payload.sentAt = new Date().toISOString();
+      } else if (actionType === 'schedule') {
+        payload.status = 'Scheduled';
+        // Combine date and time, handling timezone properly
+        const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+        
+        // Validate that the scheduled time is in the future
+        if (scheduledDateTime <= new Date()) {
+          toast.error('Scheduled time must be in the future');
+          setLoading(false);
+          return;
+        }
+        
+        payload.scheduledFor = scheduledDateTime.toISOString();
+      } else {
+        payload.status = 'Draft';
+      }
+
       const response = await fetch('/api/campaigns', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          campaignName,
-          subject,
-          emailBody,
-          audienceType: selectedAudience,
-          status,
-          ...(status === 'Sent' && { sentAt: new Date().toISOString() })
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to ${status === 'Draft' ? 'save draft' : 'send campaign'}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to ${actionType} campaign`);
       }
 
-      toast.success(status === 'Draft' ? 'Draft saved successfully!' : 'Campaign sent successfully!');
+      const successMessage = 
+        actionType === 'draft' ? 'Draft saved successfully!' :
+        actionType === 'schedule' ? 'Campaign scheduled successfully!' :
+        'Campaign is being sent! This may take a few minutes.';
+      
+      toast.success(successMessage);
       
       // Reset form
       setCampaignName('');
       setSelectedAudience('');
       setSubject('');
       setEmailBody('');
+      setScheduledDate('');
+      setScheduledTime('');
+      setShowSchedule(false);
       onCampaignCreated();
     } catch (error) {
-      console.error(`Error ${status === 'Draft' ? 'saving draft' : 'sending campaign'}:`, error);
-      toast.error(status === 'Draft' ? 'Failed to save draft' : 'Failed to send campaign');
+      console.error(`Error ${actionType} campaign:`, error);
+      toast.error(error instanceof Error ? error.message : `Failed to ${actionType} campaign`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSend = () => createCampaign('Sent');
-  const handleSaveDraft = () => createCampaign('Draft');
+  const handleSend = () => createCampaign('send');
+  const handleSaveDraft = () => createCampaign('draft');
+  const handleSchedule = () => {
+    if (showSchedule) {
+      createCampaign('schedule');
+    } else {
+      setShowSchedule(true);
+    }
+  };
+
+  const handleCancelSchedule = () => {
+    setShowSchedule(false);
+    setScheduledDate('');
+    setScheduledTime('');
+  };
 
   if (!isOpen) return null;
 
@@ -112,7 +162,7 @@ export default function CreateCampaignModal({
               value={campaignName}
               onChange={(e) => setCampaignName(e.target.value)}
               placeholder="e.g., Spring Sale 2025"
-              disabled={isSending}
+              disabled={isSending || isSaving}
               className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition disabled:opacity-50"
             />
           </div>
@@ -125,7 +175,7 @@ export default function CreateCampaignModal({
             <select
               value={selectedAudience}
               onChange={(e) => setSelectedAudience(e.target.value)}
-              disabled={isSending}
+              disabled={isSending || isSaving}
               className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition appearance-none cursor-pointer disabled:opacity-50"
             >
               <option value="">Select an audience</option>
@@ -146,7 +196,7 @@ export default function CreateCampaignModal({
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Enter email subject"
-              disabled={isSending}
+              disabled={isSending || isSaving}
               className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition disabled:opacity-50"
             />
           </div>
@@ -155,15 +205,95 @@ export default function CreateCampaignModal({
             <label className="block text-sm font-semibold text-foreground mb-2">
               Email body
             </label>
+            <div className="mb-2 text-xs text-muted-foreground">
+              Use <code className="bg-muted px-1 py-0.5 rounded">{'{{firstName}}'}</code>, <code className="bg-muted px-1 py-0.5 rounded">{'{{lastName}}'}</code>, <code className="bg-muted px-1 py-0.5 rounded">{'{{email}}'}</code> for personalization
+            </div>
             <textarea
               value={emailBody}
               onChange={(e) => setEmailBody(e.target.value)}
               placeholder="Write your email message here..."
               rows={12}
-              disabled={isSending}
+              disabled={isSending || isSaving}
               className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition resize-none disabled:opacity-50"
             />
           </div>
+
+          {showSchedule && (
+            <div className="p-4 bg-muted/30 rounded-lg border border-border">
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-semibold text-foreground">
+                  <Calendar className="w-4 h-4 inline mr-1" />
+                  Schedule for later
+                </label>
+                <button
+                  onClick={handleCancelSchedule}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={scheduledDate}
+                    onChange={(e) => setScheduledDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-2.5 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">Time</label>
+                  <input
+                    type="time"
+                    value={scheduledTime}
+                    onChange={(e) => setScheduledTime(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition"
+                  />
+                </div>
+              </div>
+              {scheduledDate && scheduledTime && (() => {
+                try {
+                  const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+                  const now = new Date();
+                  const isToday = scheduledDate === now.toISOString().split('T')[0];
+                  const isPast = scheduledDateTime <= now;
+                  const minutesUntil = Math.round((scheduledDateTime.getTime() - now.getTime()) / 1000 / 60);
+                  
+                  if (isPast) {
+                    return (
+                      <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2 flex items-center gap-1">
+                        <span>⚠️</span>
+                        <span>Selected time is in the past. Please choose a future time.</span>
+                      </p>
+                    );
+                  }
+                  if (isToday) {
+                    return (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
+                        <span>✓</span>
+                        <span>Scheduled for today in {minutesUntil} minute(s) ({scheduledTime})</span>
+                      </p>
+                    );
+                  }
+                  const daysUntil = Math.floor(minutesUntil / 1440);
+                  const hoursUntil = Math.floor((minutesUntil % 1440) / 60);
+                  return (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
+                      <span>📅</span>
+                      <span>
+                        Scheduled for {daysUntil > 0 ? `${daysUntil} day(s) and ` : ''}{hoursUntil} hour(s) from now
+                        {' '}({scheduledDateTime.toLocaleDateString()} at {scheduledTime})
+                      </span>
+                    </p>
+                  );
+                } catch (error) {
+                  return null;
+                }
+              })()}
+            </div>
+          )}
         </div>
 
         <div className="sticky bottom-0 bg-card border-t border-border p-6 flex items-center justify-between">
@@ -175,19 +305,23 @@ export default function CreateCampaignModal({
             {isSaving ? 'Saving...' : 'Save Draft'}
           </button>
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleSend}
-              disabled={isSending || isSaving}
-              className="flex items-center gap-2 px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Send className="w-4 h-4" />
-              {isSending ? 'Sending...' : 'Send'}
-            </button>
+            {!showSchedule && (
+              <button
+                onClick={handleSend}
+                disabled={isSending || isSaving}
+                className="flex items-center gap-2 px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send className="w-4 h-4" />
+                {isSending ? 'Sending...' : 'Send Now'}
+              </button>
+            )}
             <button 
+              onClick={handleSchedule}
               disabled={isSending || isSaving}
-              className="px-6 py-2.5 border border-border rounded-lg font-semibold hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-2.5 border border-border rounded-lg font-semibold hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Schedule
+              <Calendar className="w-4 h-4" />
+              {showSchedule ? (isSending ? 'Scheduling...' : 'Confirm Schedule') : 'Schedule'}
             </button>
           </div>
         </div>
