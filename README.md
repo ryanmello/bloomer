@@ -1,12 +1,8 @@
 # 🌸 Bloomer
 
-![Bloomer Logo](./public/bloomer-logo.png)
-
 **Grow with Bloomer: Customer Relationship Management for Flower Shops**
 
 Bloomer is a comprehensive, all-in-one CRM platform specifically designed for flower shops and florists. It provides powerful tools for customer management, marketing automation, inventory tracking, and business analytics to help flower shops thrive in the modern marketplace.
-
-![Dashboard Screenshot](./public/screenshots/dashboard.png)
 
 ---
 
