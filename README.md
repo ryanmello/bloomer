@@ -1,25 +1,44 @@
 # 🌸 Bloomer
 
+![Bloomer Logo](./public/bloomer-logo.png)
+
 **Grow with Bloomer: Customer Relationship Management for Flower Shops**
 
 Bloomer is a comprehensive, all-in-one CRM platform specifically designed for flower shops and florists. It provides powerful tools for customer management, marketing automation, inventory tracking, and business analytics to help flower shops thrive in the modern marketplace.
+
+![Dashboard Screenshot](./public/screenshots/dashboard.png)
+
+---
+
+## 📖 Project Synopsis
+
+Bloomer is a specialized Customer Relationship Management (CRM) solution built specifically for the floral industry. Traditional CRM platforms are either too generic or too expensive for small flower shops, leaving a gap in the market for an affordable, industry-specific solution.
+
+**The Problem:** Flower shops have unique needs including tracking customer occasions (birthdays, anniversaries), managing perishable inventory with expiration dates, coordinating time-sensitive deliveries, and running targeted campaigns for seasonal events (Valentine's Day, Mother's Day, etc.). Most existing CRM tools don't address these specific requirements.
+
+**Our Solution:** Bloomer provides florists with an all-in-one platform featuring customer management, occasion tracking, email marketing automation, inventory management with shelf-life monitoring, order tracking, and seamless Square POS integration. Built with modern web technologies (Next.js, React, TypeScript, MongoDB), Bloomer offers an intuitive interface with light/dark themes and real-time analytics.
+
+**Target Users:** Small to medium-sized flower shops (1-10 employees) looking to modernize their customer management and grow their business through data-driven marketing.
+
+**Project Info:** CSC 190 (Fall 2025) / CSC 191 (Spring 2026)
 
 ---
 
 ## 📋 Table of Contents
 
+- [Project Synopsis](#-project-synopsis)
 - [Features](#-features)
 - [Dashboard Overview](#-dashboard-overview)
 - [Tech Stack](#-tech-stack)
 - [Getting Started](#-getting-started)
-- [Environment Variables](#-environment-variables)
+- [Developer Instructions](#-developer-instructions)
+- [Testing](#-testing)
+- [Deployment](#-deployment)
+- [Project Timeline](#-project-timeline)
 - [Project Structure](#-project-structure)
 - [Database Schema](#-database-schema)
-- [API Routes](#-api-routes)
-- [Authentication](#-authentication)
 - [Square Integration](#-square-integration)
 - [Contributing](#-contributing)
-- [License](#-license)
 
 ---
 
@@ -215,6 +234,156 @@ npm run build
 npm start
 ```
 
+---
+
+## 👨‍💻 Developer Instructions
+
+### Setting Up Development Environment
+
+1. **Clone and Install**
+```bash
+git clone https://github.com/yourusername/bloomer.git
+cd bloomer
+npm install
+```
+
+2. **Configure Environment Variables**
+
+Create a `.env` file:
+```env
+DATABASE_URL="mongodb+srv://username:password@cluster.mongodb.net/bloomer"
+AUTH_SECRET="your-secret-key"
+NEXTAUTH_URL="http://localhost:3000"
+SQUARE_ACCESS_TOKEN="your-square-token"
+```
+
+3. **Setup Database**
+```bash
+npx prisma generate
+npx prisma db push
+```
+
+4. **Run Development Server**
+```bash
+npm run dev
+```
+
+### Development Workflow
+
+- Create feature branches: `git checkout -b feature/feature-name`
+- Follow TypeScript and ESLint rules
+- Test changes before committing
+- Submit pull requests for review
+
+### Useful Commands
+
+```bash
+npm run dev          # Start dev server
+npm run build        # Build for production
+npm run lint         # Run ESLint
+npx prisma studio    # Open database GUI
+npx prisma generate  # Regenerate Prisma client
+```
+
+---
+
+## 🧪 Testing
+
+> **Note:** Testing will be implemented in CSC 191 (Spring 2026)
+
+### Planned Testing Approach
+
+- **Unit Tests:** Jest + React Testing Library for component testing
+- **Integration Tests:** API route testing with Supertest
+- **E2E Tests:** Playwright for end-to-end user flows
+- **Coverage Goal:** 80%+ code coverage
+
+### Running Tests (CSC 191)
+
+```bash
+npm test              # Run all tests
+npm test:coverage     # Run with coverage report
+npm test:e2e          # Run E2E tests
+```
+
+---
+
+## 🚀 Deployment
+
+> **Note:** Deployment will be configured in CSC 191 (Spring 2026)
+
+### Planned Deployment Strategy
+
+- **Platform:** Vercel (Next.js hosting)
+- **Database:** MongoDB Atlas (production cluster)
+- **Domain:** Custom domain with SSL
+- **CI/CD:** GitHub Actions for automated deployments
+
+### Deployment Checklist (CSC 191)
+
+- [ ] Set up production MongoDB cluster
+- [ ] Configure environment variables in Vercel
+- [ ] Set up custom domain
+- [ ] Configure monitoring and error tracking
+- [ ] Test Square integration in production
+- [ ] Set up automated backups
+
+---
+
+## 📅 Project Timeline
+
+### CSC 191 Spring 2026 - Key Milestones
+
+| Sprint | Weeks | Features | Story Points |
+|--------|-------|----------|--------------|
+| **Sprint 1** | 1-3 | Email Campaign Enhancement: Template builder, scheduling, automated sends | 13 pts |
+| **Sprint 2** | 4-6 | Advanced Customer Segmentation: Custom audience builder, dynamic filters | 13 pts |
+| **Sprint 3** | 7-9 | Order Management: Complete order workflow, status tracking, delivery scheduling | 21 pts |
+| **Sprint 4** | 10-11 | Inventory System: Product management, stock tracking, low-stock alerts, shelf-life monitoring | 13 pts |
+| **Sprint 5** | 12-13 | Marketing Automation: Workflow engine, occasion reminders, automated follow-ups | 13 pts |
+| **Sprint 6** | 14 | Testing & QA: Unit tests, integration tests, E2E tests, bug fixes | 8 pts |
+| **Sprint 7** | 15 | Deployment: Production setup, monitoring, documentation | 5 pts |
+| **Beta Release** | 16 | Final presentation and user acceptance testing | - |
+
+**Total Story Points:** 86
+
+### Key Feature Breakdown
+
+**Sprint 1 - Campaign Enhancement (Weeks 1-3)**
+- JIRA-45: Email template builder with drag-and-drop interface
+- JIRA-46: Campaign scheduling with timezone support
+- JIRA-47: Automated email sending with retry logic
+
+**Sprint 2 - Segmentation (Weeks 4-6)**
+- JIRA-50: Visual custom audience builder
+- JIRA-51: Dynamic customer filters (spend, orders, occasions)
+- JIRA-52: Smart groups with auto-update
+
+**Sprint 3 - Orders (Weeks 7-9)**
+- JIRA-60: Order creation workflow
+- JIRA-61: Order status tracking system
+- JIRA-62: Delivery scheduling with calendar
+
+**Sprint 4 - Inventory (Weeks 10-11)**
+- JIRA-70: Product management interface
+- JIRA-71: Inventory movement tracking
+- JIRA-72: Low-stock and expiration alerts
+
+**Sprint 5 - Automation (Weeks 12-13)**
+- JIRA-80: Automation workflow builder
+- JIRA-81: Occasion-based reminder system
+- JIRA-82: Automated email sequences
+
+**Sprint 6 - Testing (Week 14)**
+- JIRA-90: Unit and integration test suite
+- JIRA-91: E2E testing with Playwright
+
+**Sprint 7 - Deployment (Week 15)**
+- JIRA-95: Production environment setup
+- JIRA-96: Monitoring and analytics
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -291,6 +460,8 @@ bloomer/
 ---
 
 ## 🗄 Database Schema
+
+![Entity Relationship Diagram](./public/erd-diagram.png)
 
 Bloomer uses Prisma with MongoDB. Here's an overview of the main models:
 
