@@ -37,6 +37,10 @@ Bloomer is a specialized Customer Relationship Management (CRM) solution built s
 - [Contributing](#-contributing)
 
 ---
+## ERD 
+<img width="3353" height="5769" alt="image" src="https://github.com/user-attachments/assets/f0605bc2-6e4d-4d98-b9f0-4557bbc9810b" />
+
+---
 
 ## ✨ Features
 
