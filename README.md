@@ -40,8 +40,9 @@ Bloomer is a specialized Customer Relationship Management (CRM) solution built s
 ## ERD 
 <img width="3353" height="5769" alt="image" src="https://github.com/user-attachments/assets/f0605bc2-6e4d-4d98-b9f0-4557bbc9810b" />
 
-- This Entity-Relationship Diagram represents a CRM and shop-management platform that connects users, customers, products, orders, inventory, discounts, and marketing campaigns into one integrated system.
-
+### CRM ERD Diagram
+- This Entity-Relationship Diagram represents a CRM and shop-management platform that connects users, customers, products, orders, inventory, discounts, and marketing campaigns into a single integrated system.
+- It shows the complete lifecycle of business operations; covering customer management, product tracking, order processing, inventory control, coupon handling, and automated marketing—centered around each shop owned by a user.
 ---
 
 ## ✨ Features
