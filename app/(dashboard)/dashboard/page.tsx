@@ -6,17 +6,10 @@ import InventoryStatus from "@/components/dashboard/InventoryStatus";
 import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import { DollarSign, ShoppingBag, Users, Package } from "lucide-react";
 import CustomerOccasions from "@/components/dashboard/CustomerOccasions";
-import axios from "axios";
+import { fetchSquareOrders } from "@/lib/square";
 
-async function fetchSquareOrders() {
-  try {
-    const res = await axios.get(`${process.env.NEXT_PUBLIC_APP_URL}/api/square/orders`);
-    return res.data;
-  } catch (error) {
-    console.error("Error fetching Square orders:", error);
-    return null;
-  }
-}
+// Force dynamic rendering - fetch fresh data on each request
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   // Fetch Square orders and monthly revenue
