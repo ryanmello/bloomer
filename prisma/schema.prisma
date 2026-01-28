@@ -40,12 +40,17 @@ model User {
   twoFactorSecret  String?
   backupCodes      String[]
 
+  // Password Reset
+  passwordResetToken      String?
+  passwordResetExpires    DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shops     Shop[]
-  coupons   Coupon[]
-  campaigns Campaign[]
+  shops            Shop[]
+  coupons          Coupon[]
+  campaigns        Campaign[]
+  emailIntegrations EmailIntegration[]
 }
 
 model Shop {
@@ -230,4 +235,20 @@ model Audience {
   description String?
   status      AudienceStatus @default(draft)
   type        AudienceType   @default(custom)
+}
+
+model EmailIntegration {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform      String   // "gmail" or "outlook"
+  email         String   // The connected email address
+  accessToken   String   // Encrypted access token
+  refreshToken  String?  // Encrypted refresh token
+  expiresAt     DateTime? // Token expiration time
+  connected     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, platform])
 }

@@ -99,8 +99,8 @@ export default function SignUp() {
             "Account created but failed to sign in. Please try signing in manually."
           );
         } else {
-          // Redirect to dashboard after successful registration and sign in
-          router.replace("/dashboard");
+          // Hard navigate so auth cookies are definitely present before middleware runs.
+          window.location.assign("/dashboard");
         }
       } else {
         setError(data.message || "Failed to create account");

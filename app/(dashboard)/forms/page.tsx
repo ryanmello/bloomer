@@ -17,6 +17,7 @@ import {
   Trash2,
   TrendingUp,
   Copy as CopyIcon,
+  Files,
   LayoutGrid,
   Rows3,
   ChevronLeft,
@@ -111,6 +112,21 @@ export default function Forms() {
   // Delete
   const handleDeleteForm = (id: string) => {
     setForms(prevForms => prevForms.filter(f => f.id !== id))
+  }
+
+  // Duplicate
+  const handleDuplicateForm = (form: FormRow) => {
+    const duplicated: FormRow = {
+      ...form,
+      id: `form-${Date.now()}`,
+      title: `${form.title} (Copy)`,
+      views: 0,
+      submissions: 0,
+      conversions: 0,
+      updatedAt: new Date().toISOString().split("T")[0],
+    }
+    setForms(prevForms => [duplicated, ...prevForms])
+    toast.success("Form duplicated successfully")
   }
 
   // Create
@@ -692,6 +708,17 @@ export default function Forms() {
                             )}
                           </Button>
 
+                          {/* Duplicate */}
+                          <Button
+                            variant="outline"
+                            className="px-3"
+                            onClick={() => handleDuplicateForm(f)}
+                            aria-label="Duplicate form"
+                            title="Duplicate"
+                          >
+                            <Files className="h-4 w-4" />
+                          </Button>
+
                           {/* Share */}
                           <Button
                             variant="outline"
@@ -788,6 +815,9 @@ export default function Forms() {
                                     ) : (
                                       <CopyIcon className="h-4 w-4" />
                                     )}
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => handleDuplicateForm(f)} title="Duplicate">
+                                    <Files className="h-4 w-4" />
                                   </Button>
                                   <Button size="sm" variant="outline" onClick={() => handleShare(f)} title="Share">
                                     <Share2 className="h-4 w-4" />

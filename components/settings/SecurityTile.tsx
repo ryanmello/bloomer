@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Shield } from "lucide-react";
 import ResetPasswordModal from "./ResetPasswordModal";
 import TwoFactorAuthModal from "./TwoFactorAuthModal";
 
@@ -10,13 +12,17 @@ export default function SecurityTile() {
 
   return (
     <>
-      <div className="border rounded-lg p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-xl font-bold">Security</h2>
-        </div>
-        <p className="text-muted-foreground mb-6">
-          Manage your account security settings
-        </p>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            <CardTitle>Security</CardTitle>
+          </div>
+          <CardDescription>
+            Manage your account security settings
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
 
         <div className="space-y-3">
           {/* Reset Password Option */}
@@ -75,7 +81,8 @@ export default function SecurityTile() {
             </svg>
           </button>
         </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Password Reset Modal */}
       <ResetPasswordModal
