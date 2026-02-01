@@ -179,7 +179,7 @@ function InboxContent() {
           <CardHeader>
             <CardTitle>Connect Your Email</CardTitle>
             <CardDescription>
-              Choose your email platform to sync your inbox. You'll be redirected to sign in securely.
+              Choose your email platform to sync your inbox. You&apos;ll be redirected to sign in securely.
             </CardDescription>
           </CardHeader>
           <CardContent>

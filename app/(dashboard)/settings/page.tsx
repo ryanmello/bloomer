@@ -390,7 +390,7 @@ export default function Settings() {
             <div className="space-y-2">
               {staffUsers.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  No staff members yet. Click "Add User" to get started.
+                  No staff members yet. Click &quot;Add User&quot; to get started.
                 </p>
               ) : (
                 staffUsers.map((user) => (

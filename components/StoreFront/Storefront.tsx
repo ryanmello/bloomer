@@ -167,7 +167,7 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
                                                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                                             <AlertDialogDescription>
                                                                 This action cannot be undone. This will permanently delete
-                                                                <span className="font-medium"> "{product.name}"</span> from your inventory.
+                                                                <span className="font-medium"> &quot;{product.name}&quot;</span> from your inventory.
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
