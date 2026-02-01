@@ -110,6 +110,7 @@ export default function AudienceEditPage({
       toast.error("Audience not found");
       router.push("/audiences");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mockAudiences is static lookup data
   }, [audienceId, router]);
 
   const handleSave = () => {
