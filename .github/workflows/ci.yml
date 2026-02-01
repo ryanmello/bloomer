@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push: {}
+  pull_request: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          DATABASE_URL: "mongodb://localhost:27017/ci"
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run build
+        run: npm run build
+        env:
+          DATABASE_URL: "mongodb://localhost:27017/ci"
+          SKIP_ENV_VALIDATION: "1"
