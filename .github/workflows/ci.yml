@@ -25,7 +25,8 @@ jobs:
         run: npm run lint
 
       - name: Run build
-        run: npm run build
+        run: npx next build
         env:
           DATABASE_URL: "mongodb://localhost:27017/ci"
           SKIP_ENV_VALIDATION: "1"
+          NODE_OPTIONS: "--max-old-space-size=4096"
