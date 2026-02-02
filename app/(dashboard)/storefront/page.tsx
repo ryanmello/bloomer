@@ -137,7 +137,7 @@ export default async function StorefrontPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Storefront</h1>
             <p className="text-muted-foreground">
-              Manage your shop's products and inventory
+              Manage your shop&apos;s products and inventory
             </p>
           </div>
           <div className="flex items-center gap-4">

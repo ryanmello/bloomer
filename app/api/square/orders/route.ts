@@ -3,14 +3,36 @@ import { NextResponse } from "next/server";
 import { fetchSquareOrders } from "@/lib/square";
 
 export async function GET() {
-  const data = await fetchSquareOrders();
+  try {
+    const data = await fetchSquareOrders();
 
-  if (!data) {
+    if (!data) {
+      // Square not configured or API error - return empty structure so clients don't get 500
+      return NextResponse.json({
+        orders: [],
+        monthlyRevenue: [],
+        completedOrders: [],
+        skippedOrders: [],
+        locations: [],
+        totalOrders: 0,
+        totalCompletedOrders: 0,
+      });
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("Square orders API error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch Square orders" },
-      { status: 500 }
+      {
+        orders: [],
+        monthlyRevenue: [],
+        completedOrders: [],
+        skippedOrders: [],
+        locations: [],
+        totalOrders: 0,
+        totalCompletedOrders: 0,
+      },
+      { status: 200 }
     );
   }
-
-  return NextResponse.json(data);
 }

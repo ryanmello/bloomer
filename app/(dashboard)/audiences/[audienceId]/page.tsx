@@ -110,6 +110,7 @@ export default function AudienceEditPage({
       toast.error("Audience not found");
       router.push("/audiences");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mockAudiences is static lookup data
   }, [audienceId, router]);
 
   const handleSave = () => {
@@ -166,7 +167,7 @@ export default function AudienceEditPage({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Audience?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete <span className="font-semibold text-foreground">"{audienceData.name}"</span>? This
+                  Are you sure you want to delete <span className="font-semibold text-foreground">&quot;{audienceData.name}&quot;</span>? This
                   action cannot be undone and all associated campaigns will be
                   affected.
                 </AlertDialogDescription>

@@ -80,7 +80,7 @@ export default function CreateShopPage() {
                         </div>
                         <CardTitle className="text-center text-2xl">Create Your Shop</CardTitle>
                         <CardDescription className="text-center">
-                            Provide your shop's details to get started.
+                            Provide your shop&apos;s details to get started.
                         </CardDescription>
                     </CardHeader>
 
@@ -149,7 +149,7 @@ export default function CreateShopPage() {
                                 required
                             />
                             <p className="text-xs text-muted-foreground">
-                                This address will be used for your shop's location and invoices
+                                This address will be used for your shop&apos;s location and invoices
                             </p>
                         </div>
                     </CardContent>
