@@ -336,6 +336,10 @@ export default function Settings() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Preferences Tile */}
+        <PreferencesTile />
+        
         {/* Security Section */}
         <SecurityTile />
 
