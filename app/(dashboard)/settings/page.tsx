@@ -10,6 +10,7 @@ import axios from "axios";
 import { useState, useEffect } from "react";
 import { Trash2, LogOut } from "lucide-react";
 import SecurityTile from "@/components/settings/SecurityTile";
+import PreferencesTile from "@/components/settings/PreferencesTile";
 import { signOut } from "next-auth/react";
 import AccountDetails from "@/components/settings/AccountDetails";
 import { useUser } from "@/context/AuthContext";
@@ -371,7 +372,8 @@ export default function Settings() {
       </div>
 
       <div className="grid grid-cols-2 gap-x-[2rem]">
-        <div>Preferences</div>
+        {/* Preferences Tile */}
+        <PreferencesTile />
         {/* Security Tile */}
         <SecurityTile />
       </div>
