@@ -90,7 +90,7 @@ export default function Audiences() {
   */
 
   // get audiences from database
-  const fetchAudiences = async () => {
+  const fetchAudiencesCard = async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/audience");
@@ -106,7 +106,7 @@ export default function Audiences() {
   };
 
   useEffect(() => {
-    fetchAudiences();
+    fetchAudiencesCard();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
 

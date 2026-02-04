@@ -2,7 +2,7 @@ import {NextResponse} from "next/server";
 import db from "../../../lib/prisma";
 import {getCurrentUser} from "@/actions/getCurrentUser";
 
-// fetch audiences
+// fetch audiences card
 export async function GET() {
   try {
     const user = await getCurrentUser();
@@ -15,7 +15,10 @@ export async function GET() {
     });
 
     if (!shop) {
-      return NextResponse.json([]);
+      return NextResponse.json(
+        {message: "No shop found for user"},
+        {status: 404},
+      );
     }
 
     const audience = await db.audience.findMany({

@@ -61,7 +61,11 @@ export default function AudienceForm({mode, initialData}: Props) {
     }
 
     try {
-      const res = await fetch("/api/audience", {
+      const url =
+        mode === "create"
+          ? "/api/audience"
+          : `/api/audience/${audienceData.id}`;
+      const res = await fetch(url, {
         method: mode === "create" ? "POST" : "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -86,6 +90,9 @@ export default function AudienceForm({mode, initialData}: Props) {
       } else {
         toast.error("Failed to create Audience");
       }
+
+      router.push("/audiences");
+      router.refresh();
     } catch (error) {
       console.error("Error creating Audience:", error);
     } finally {
