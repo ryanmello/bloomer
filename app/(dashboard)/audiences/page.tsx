@@ -5,15 +5,25 @@ import AudienceCard from "@/components/audiences/AudienceCard";
 import {Users, Target, Send, TrendingUp, Search, Plus} from "lucide-react";
 import {Tabs, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {Input} from "@/components/ui/input";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {Card, CardTitle, CardDescription} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
+
+type Audiences = {
+  id: string;
+  name: string;
+  description: string;
+  status: "active" | "inactive" | "draft";
+  type: "custom" | "predefined";
+};
 
 export default function Audiences() {
   const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [audiences, setAudiences] = useState<Audiences[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const metrics = {
     totalCustomers: {value: "1,842", change: 8.3},
@@ -22,6 +32,7 @@ export default function Audiences() {
     avgGrowthRate: {value: "12.4%", change: 3.2},
   };
 
+  /*
   const audiences = [
     {
       id: "new-customers",
@@ -76,6 +87,28 @@ export default function Audiences() {
       type: "custom" as const,
     },
   ];
+  */
+
+  // get audiences from database
+  const fetchAudiences = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/audience");
+      const data: Audiences[] = await res.json();
+      if (res.ok) {
+        setAudiences(data);
+      }
+    } catch (error) {
+      console.error("Audiences load failed", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAudiences();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
+  }, []);
 
   // Filter audiences based on selected filter and search query
   const filteredAudiences = audiences.filter((audience) => {

@@ -1,12 +1,12 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import {use, useState, useEffect} from "react";
+import {useRouter} from "next/navigation";
 import AudienceCard from "@/components/audiences/AudienceCard";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Textarea} from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -25,8 +25,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Trash2, Save } from "lucide-react";
-import { toast } from "sonner";
+import {ArrowLeft, Trash2, Save} from "lucide-react";
+import {toast} from "sonner";
 
 type AudienceData = {
   id: string;
@@ -44,12 +44,13 @@ type AudienceData = {
 export default function AudienceEditPage({
   params,
 }: {
-  params: Promise<{ audienceId: string }>;
+  params: Promise<{audienceId: string}>;
 }) {
   const router = useRouter();
-  const { audienceId } = use(params);
+  const {audienceId} = use(params);
   const [audienceData, setAudienceData] = useState<AudienceData | null>(null);
 
+  /*
   // Mock data - in a real app, fetch this from your API
   const mockAudiences: Record<string, AudienceData> = {
     "new-customers": {
@@ -112,6 +113,7 @@ export default function AudienceEditPage({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mockAudiences is static lookup data
   }, [audienceId, router]);
+  */
 
   const handleSave = () => {
     // In a real app, save to your API
@@ -142,8 +144,7 @@ export default function AudienceEditPage({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.push("/audiences")}
-          >
+            onClick={() => router.push("/audiences")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -167,17 +168,19 @@ export default function AudienceEditPage({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Audience?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete <span className="font-semibold text-foreground">&quot;{audienceData.name}&quot;</span>? This
-                  action cannot be undone and all associated campaigns will be
-                  affected.
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-foreground">
+                    &quot;{audienceData.name}&quot;
+                  </span>
+                  ? This action cannot be undone and all associated campaigns
+                  will be affected.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
-                  className="bg-destructive hover:bg-destructive/90"
-                >
+                  className="bg-destructive hover:bg-destructive/90">
                   Delete Audience
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -219,7 +222,7 @@ export default function AudienceEditPage({
                   id="name"
                   value={audienceData.name}
                   onChange={(e) =>
-                    setAudienceData({ ...audienceData, name: e.target.value })
+                    setAudienceData({...audienceData, name: e.target.value})
                   }
                   placeholder="Enter audience name"
                   className="h-11"
@@ -251,9 +254,8 @@ export default function AudienceEditPage({
                   <Select
                     value={audienceData.status}
                     onValueChange={(value: "active" | "inactive" | "draft") =>
-                      setAudienceData({ ...audienceData, status: value })
-                    }
-                  >
+                      setAudienceData({...audienceData, status: value})
+                    }>
                     <SelectTrigger id="status" className="h-11">
                       <SelectValue />
                     </SelectTrigger>
@@ -271,9 +273,8 @@ export default function AudienceEditPage({
                   <Select
                     value={audienceData.type}
                     onValueChange={(value: "custom" | "predefined") =>
-                      setAudienceData({ ...audienceData, type: value })
-                    }
-                  >
+                      setAudienceData({...audienceData, type: value})
+                    }>
                     <SelectTrigger id="type" className="h-11">
                       <SelectValue />
                     </SelectTrigger>
