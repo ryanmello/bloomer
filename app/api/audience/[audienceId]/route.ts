@@ -5,6 +5,9 @@ import {getCurrentUser} from "@/actions/getCurrentUser";
 // fetch audience data
 export async function GET(
   _req: NextRequest,
+  // route [audienceId]
+  // Next.js, audienceId = "abc123" as params
+  // params = { audienceId: "abc123" }
   {params}: {params: Promise<{audienceId: string}>},
 ) {
   const {audienceId} = await params;
@@ -20,11 +23,11 @@ export async function GET(
     });
 
     if (!shop) {
-      return NextResponse.json([]);
+      return NextResponse.json({message: "No shop found"}, {status: 404});
     }
 
     const audience = await db.audience.findFirst({
-      where: {id: audienceId},
+      where: {id: audienceId, userId: user.id, shopId: shop.id},
     });
 
     if (!audience)
@@ -55,7 +58,15 @@ export async function PUT(
     });
 
     if (!shop) {
-      return NextResponse.json([]);
+      return NextResponse.json({message: "No shop found"}, {status: 404});
+    }
+
+    const existing = await db.audience.findFirst({
+      where: {id: audienceId, userId: user.id, shopId: shop.id},
+    });
+
+    if (!existing) {
+      return NextResponse.json({message: "Audience not found"}, {status: 404});
     }
 
     const body = await req.json();
@@ -67,8 +78,6 @@ export async function PUT(
         description: body.description,
         status: body.status,
         type: body.type,
-        userId: user.id,
-        shopId: shop.id,
       },
     });
 

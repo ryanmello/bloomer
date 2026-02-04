@@ -25,6 +25,7 @@ export default function Audiences() {
   const [audiences, setAudiences] = useState<Audiences[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // TODO: change to real metrics
   const metrics = {
     totalCustomers: {value: "1,842", change: 8.3},
     activeAudiences: {value: 12, change: 20.0},

@@ -47,10 +47,9 @@ type AudienceData = {
 export default function AudienceEditPage({
   params,
 }: {
-  params: {audienceId: string};
+  params: Promise<{audienceId: string}>;
 }) {
   const router = useRouter();
-  const {audienceId} = params;
   const [audienceData, setAudienceData] = useState<AudienceData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -58,6 +57,7 @@ export default function AudienceEditPage({
   const fetchAudiencesData = async () => {
     try {
       setLoading(true);
+      const {audienceId} = await params;
       const res = await fetch(`/api/audience/${audienceId}`);
       const data: AudienceData = await res.json();
 
