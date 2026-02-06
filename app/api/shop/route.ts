@@ -115,6 +115,14 @@ export async function POST(req: Request) {
               userId: user.id,
             },
             {
+              name: "VIP Customers",
+              description: "Customers in VIP group",
+              status: "active",
+              type: "predefined",
+              shopId: shop.id,
+              userId: user.id,
+            },
+            {
               name: "High Spenders",
               description:
                 "Top 20% of customers by lifetime value and purchase frequency",

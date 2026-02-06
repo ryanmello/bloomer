@@ -57,7 +57,9 @@ export default function AudienceCard({
   };
 
   const handleViewDetails = () => {
-    // TODO
+    if (id) {
+      router.push(`/audiences/${id}/customers`);
+    }
   };
 
   const getStatusColor = () => {

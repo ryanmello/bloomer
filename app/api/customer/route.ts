@@ -18,7 +18,7 @@ export async function GET() {
     }
 
     const customers = await db.customer.findMany({
-      where: { shopId: shop.id },
+      where: {shopId: shop.id},
       include: {addresses: true, orders: true},
     });
 
@@ -37,7 +37,7 @@ export async function DELETE(req: Request) {
     if (!id) {
       return NextResponse.json(
         {error: "Customer ID is required"},
-        {status: 400}
+        {status: 400},
       );
     }
 
@@ -50,7 +50,7 @@ export async function DELETE(req: Request) {
     console.error("Error deleting customer:", err);
     return NextResponse.json(
       {error: "Failed to delete customer"},
-      {status: 500}
+      {status: 500},
     );
   }
 }
@@ -64,6 +64,7 @@ export async function PUT(req: Request) {
       lastName,
       email,
       phoneNumber,
+      dateOfBirth,
       additionalNote,
       addresses,
     } = body;
@@ -71,7 +72,7 @@ export async function PUT(req: Request) {
     if (!id) {
       return NextResponse.json(
         {error: "Customer ID is required"},
-        {status: 400}
+        {status: 400},
       );
     }
 
@@ -83,6 +84,7 @@ export async function PUT(req: Request) {
         email,
         phoneNumber,
         additionalNote,
+        dateOfBirth,
         addresses: addresses
           ? {
               deleteMany: {},
@@ -101,7 +103,7 @@ export async function PUT(req: Request) {
     console.error("Error updating customer:", err);
     return NextResponse.json(
       {error: "Failed to update customer"},
-      {status: 500}
+      {status: 500},
     );
   }
 }
@@ -120,7 +122,7 @@ export async function POST(req: Request) {
     if (!shop) {
       return NextResponse.json(
         {message: "No shop found for user"},
-        {status: 404}
+        {status: 404},
       );
     }
 
@@ -133,9 +135,13 @@ export async function POST(req: Request) {
     if (existingCustomer) {
       return NextResponse.json(
         {message: "Customer already exists!"},
-        {status: 400}
+        {status: 400},
       );
     }
+
+    // If dateOfBirth exists -> do something Otherwise -> use null”
+    // new Date(dateOfBirth): new Date("1998-03-21") -convert to prisma in db-> Date(1998-03-21T00:00:00.000Z)
+    const dob = body.dateOfBirth ? new Date(body.dateOfBirth) : null;
 
     // create customer
     const newCustomer = await db.customer.create({
@@ -149,6 +155,10 @@ export async function POST(req: Request) {
         shopId: shop.id,
         addresses: body.address ? {create: body.address} : undefined,
         group: body.group || "new",
+
+        dateOfBirth: dob,
+        birthMonth: dob ? dob.getMonth() + 1 : null,
+        birthDay: dob ? dob.getDate() : null,
       },
       // After creating the customer, also return their related records.
       // Otherwise, Prisma would only return the customer fields
@@ -159,13 +169,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {message: "Customer created successfully!", customer: newCustomer},
-      {status: 201}
+      {status: 201},
     );
   } catch (error) {
     console.error("Error creating customer:", error);
     return NextResponse.json(
       {error: "Failed to create customer"},
-      {status: 500}
+      {status: 500},
     );
   }
 }

@@ -46,6 +46,7 @@ export interface Customer {
   additionalNote?: string;
   group?: CustomerGroup;
   createdAt?: string;
+  dateOfBirth?: string;
 
   overallStatus?: "PENDING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 }
@@ -55,7 +56,7 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<CustomerGroup[]>([]);
   const [editingCustomerIds, setEditingCustomerIds] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [detailsOpen, setDetailsOpen] = useState<Set<string>>(new Set());
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
@@ -65,8 +66,8 @@ export default function CustomersPage() {
     if (selectedGroups.length === 0) return customers;
     return customers.filter((customer) =>
       selectedGroups.some(
-        (group) => group?.toLowerCase() === customer.group?.toLowerCase()
-      )
+        (group) => group?.toLowerCase() === customer.group?.toLowerCase(),
+      ),
     );
   }, [customers, selectedGroups]);
 
@@ -261,10 +262,10 @@ export default function CustomersPage() {
                             overallStatus === "COMPLETED"
                               ? "bg-green-600"
                               : overallStatus === "ACTIVE"
-                              ? "bg-blue-600"
-                              : overallStatus === "PENDING"
-                              ? "bg-yellow-500"
-                              : "bg-gray-500"
+                                ? "bg-blue-600"
+                                : overallStatus === "PENDING"
+                                  ? "bg-yellow-500"
+                                  : "bg-gray-500"
                           }`}>
                           {overallStatus}
                         </div>
@@ -294,7 +295,7 @@ export default function CustomersPage() {
                                   addr.country,
                                 ]
                                   .filter(Boolean)
-                                  .join(" ")
+                                  .join(" "),
                               )
                               .join(", ")
                           : "-"}
@@ -389,10 +390,10 @@ export default function CustomersPage() {
                                 order.status === "COMPLETED"
                                   ? "bg-green-600 text-white"
                                   : order.status === "ACTIVE"
-                                  ? "bg-blue-600 text-white"
-                                  : order.status === "PENDING"
-                                  ? "bg-yellow-500 text-white"
-                                  : "bg-gray-500 text-white"
+                                    ? "bg-blue-600 text-white"
+                                    : order.status === "PENDING"
+                                      ? "bg-yellow-500 text-white"
+                                      : "bg-gray-500 text-white"
                               }`}>
                               {order.status}
                             </span>
