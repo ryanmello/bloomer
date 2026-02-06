@@ -52,6 +52,16 @@ export default function AudienceForm({mode, initialData}: Props) {
   const [audienceData, setAudienceData] = useState<AudienceData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Supported customer fields for the dropdown
+  const supportedFields = [
+    {value: "customerGroup", label: "Customer Group"},
+    {value: "totalSpent", label: "Total Spent"},
+    {value: "totalOrders", label: "Total Orders"},
+    {value: "lastOrderDate", label: "Last Order Date"},
+    {value: "joinDate", label: "Join Date"},
+    {value: "location", label: "Location"},
+  ];
+
   const handleSave = async () => {
     // In a real app, save to your
     setIsLoading(true);
@@ -270,12 +280,11 @@ export default function AudienceForm({mode, initialData}: Props) {
                   {/* The options the user can choose from */}
                   <SelectContent>
                     {/* Choosing one of these sets which customer attribute this audience will track */}
-                    <SelectItem value="customerGroup">Customer Group</SelectItem>
-                    <SelectItem value="totalSpent">Total Spent</SelectItem>
-                    <SelectItem value="totalOrders">Total Orders</SelectItem>
-                    <SelectItem value="lastOrderDate">Last Order Date</SelectItem>
-                    <SelectItem value="joinDate">Join Date</SelectItem>
-                    <SelectItem value="location">Location</SelectItem>
+                    {supportedFields.map((field) => (
+                      <SelectItem key={field.value} value={field.value}>
+                        {field.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
