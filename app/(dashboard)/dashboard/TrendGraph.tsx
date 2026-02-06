@@ -133,7 +133,7 @@ export default function TrendGraph({
             />
             <YAxis yAxisId="right" orientation="right" hide />
             <Tooltip
-              formatter={(value: any, name?: string) => {
+              formatter={(value: any, name?: string | number) => {
                 if (name === "revenue")
                   return [formatCurrency(value as number), "Revenue"];
                 if (name === "orders") return [value as number, "Orders"];
