@@ -86,6 +86,10 @@ model Customer {
   occasionsCount Int       @default(0)
   group          String?
 
+  dateOfBirth   DateTime?
+  birthMonth    Int?
+  birthDay      Int?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

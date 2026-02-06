@@ -90,16 +90,6 @@ export default function AudienceEditPage({
     fetchAudiencesData();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
-  const handleSave = () => {
-    // In a real app, save to your API
-    toast.success("Audience updated successfully!");
-  };
-
-  const handleDelete = () => {
-    // In a real app, delete from your API
-    toast.success("Audience deleted successfully!");
-    router.push("/audiences");
-  };
 
   if (loading) {
     return (
