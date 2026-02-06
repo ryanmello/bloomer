@@ -34,6 +34,7 @@ type AudienceData = {
   description: string;
   status: "active" | "inactive" | "draft";
   type: "custom" | "predefined";
+  field?: string;
   customerCount: number;
   campaignsSent: number;
   growthRate: number;
@@ -247,6 +248,36 @@ export default function AudienceForm({mode, initialData}: Props) {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Field Selection: lets the user pick which customer attribute this audience will focus on */}
+              <div className="space-y-2">
+                {/* The label the user sees above the dropdown */}
+                <Label htmlFor="field">Customer Field</Label>
+
+                {/* The dropdown where the user selects a customer field */}
+                <Select
+                  value={audienceData.field ?? ""}
+                  onValueChange={(value) =>
+                    setAudienceData({ ...audienceData, field: value })
+                  }
+                >
+                  {/* The visible button the user clicks to open the dropdown */}
+                  <SelectTrigger id="field" className="h-11">
+                    <SelectValue placeholder="Select customer field" />
+                  </SelectTrigger>
+
+                  {/* The options the user can choose from */}
+                  <SelectContent>
+                    {/* Choosing one of these sets which customer attribute this audience will track */}
+                    <SelectItem value="customerGroup">Customer Group</SelectItem>
+                    <SelectItem value="totalSpent">Total Spent</SelectItem>
+                    <SelectItem value="totalOrders">Total Orders</SelectItem>
+                    <SelectItem value="lastOrderDate">Last Order Date</SelectItem>
+                    <SelectItem value="joinDate">Join Date</SelectItem>
+                    <SelectItem value="location">Location</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
