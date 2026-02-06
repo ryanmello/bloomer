@@ -34,6 +34,7 @@ model User {
   country   String?
   postal    String?
   phone     String?
+  emailNotificationsEnabled Boolean @default(true)
 
   // Two-Factor Authentication
   twoFactorEnabled Boolean  @default(false)
