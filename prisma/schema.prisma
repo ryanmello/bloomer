@@ -235,6 +235,7 @@ model Audience {
   description String?
   status      AudienceStatus @default(draft)
   type        AudienceType   @default(custom)
+  field       String?
 }
 
 model EmailIntegration {

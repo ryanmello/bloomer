@@ -8,7 +8,6 @@ import {
   Calendar,
   Mail,
   Sparkles,
-  Edit,
   Pencil,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +18,9 @@ type AudienceCardProps = {
   id?: string;
   name: string;
   description: string;
-  customerCount: number;
-  campaignsSent: number;
-  growthRate: number;
+  customerCount?: number;
+  campaignsSent?: number;
+  growthRate?: number;
   lastCampaign?: string;
   status: "active" | "inactive" | "draft";
   engagementRate?: number;
@@ -32,15 +31,15 @@ export default function AudienceCard({
   id,
   name,
   description,
-  customerCount,
-  campaignsSent,
-  growthRate,
-  lastCampaign,
+  customerCount = 0,
+  campaignsSent = 0,
+  growthRate = 0,
+  lastCampaign = "",
   status,
-  engagementRate,
+  engagementRate = 0,
 }: AudienceCardProps) {
   const router = useRouter();
-  const isPositiveGrowth = growthRate >= 0;
+  const isPositiveGrowth = (growthRate ?? 0) >= 0;
 
   const handleViewDetails = () => {
     if (id) {
@@ -119,7 +118,7 @@ export default function AudienceCard({
             <p className="text-xs font-medium">Customers</p>
           </div>
           <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text">
-            {customerCount.toLocaleString()}
+            {(customerCount ?? 0).toLocaleString()}
           </p>
         </div>
 
@@ -130,7 +129,7 @@ export default function AudienceCard({
             <p className="text-xs font-medium">Campaigns</p>
           </div>
           <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text">
-            {campaignsSent}
+            {campaignsSent ?? 0}
           </p>
         </div>
       </div>
@@ -154,33 +153,29 @@ export default function AudienceCard({
               }`}
             >
               {isPositiveGrowth ? "+" : ""}
-              {growthRate}%
+              {growthRate ?? 0}%
             </span>
           </div>
         </div>
 
         {/* Engagement Rate */}
-        {engagementRate !== undefined && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Engagement</span>
-            <span className="text-sm font-medium text-foreground">
-              {engagementRate}%
-            </span>
-          </div>
-        )}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Engagement</span>
+          <span className="text-sm font-medium text-foreground">
+            {engagementRate ?? 0}%
+          </span>
+        </div>
 
         {/* Last Campaign */}
-        {lastCampaign && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Calendar className="h-3.5 w-3.5" />
-              <span className="text-sm">Last Campaign</span>
-            </div>
-            <span className="text-sm font-medium text-foreground">
-              {lastCampaign}
-            </span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <Calendar className="h-3.5 w-3.5" />
+            <span className="text-sm">Last Campaign</span>
           </div>
-        )}
+          <span className="text-sm font-medium text-foreground">
+            {lastCampaign ?? ""}
+            </span>
+        </div>
       </div>
 
       {/* Action Buttons */}
@@ -196,10 +191,10 @@ export default function AudienceCard({
         >
           <Pencil className="h-4 w-4" />
         </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          className="shadow-sm hover:shadow-md transition-all duration-200"
+        <Button 
+        variant="outline" 
+        size="icon" 
+        className="shadow-sm hover:shadow-md transition-all duration-200"
         >
           <Mail className="h-4 w-4" />
         </Button>

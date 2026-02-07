@@ -41,90 +41,62 @@ type AudienceData = {
   type: "custom" | "predefined";
 };
 
-export default function AudienceEditPage({
-  params,
-}: {
-  params: Promise<{ audienceId: string }>;
+export default function AudienceEditPage({ 
+  params 
+}: { 
+  params: { audienceId: string } 
 }) {
   const router = useRouter();
-  const { audienceId } = use(params);
+  const { audienceId } = params;
   const [audienceData, setAudienceData] = useState<AudienceData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - in a real app, fetch this from your API
-  const mockAudiences: Record<string, AudienceData> = {
-    "new-customers": {
-      id: "new-customers",
-      name: "New Customers",
-      description: "Customers who made their first purchase in the last 30 days",
-      customerCount: 287,
-      campaignsSent: 8,
-      growthRate: 24.5,
-      lastCampaign: "2 days ago",
-      status: "active",
-      engagementRate: 68.3,
-      type: "predefined",
-    },
-    "high-spenders": {
-      id: "high-spenders",
-      name: "High Spenders",
-      description: "Top 20% of customers by lifetime value and purchase frequency",
-      customerCount: 156,
-      campaignsSent: 15,
-      growthRate: 12.8,
-      lastCampaign: "5 days ago",
-      status: "active",
-      engagementRate: 82.4,
-      type: "predefined",
-    },
-    "inactive-customers": {
-      id: "inactive-customers",
-      name: "Inactive Customers",
-      description: "Haven't made a purchase in the last 90 days - win them back!",
-      customerCount: 423,
-      campaignsSent: 6,
-      growthRate: -8.2,
-      lastCampaign: "1 week ago",
-      status: "inactive",
-      engagementRate: 34.2,
-      type: "custom",
-    },
-    "birthday-club": {
-      id: "birthday-club",
-      name: "Birthday Club",
-      description: "Customers with birthdays in the next 30 days for special offers",
-      customerCount: 94,
-      campaignsSent: 3,
-      growthRate: 5.6,
-      lastCampaign: "3 days ago",
-      status: "active",
-      engagementRate: 91.5,
-      type: "custom",
-    },
-  };
-
+  // Fetches a single audience by ID from the backend and populates the form with its data
   useEffect(() => {
-    const data = mockAudiences[audienceId];
-    if (data) {
-      setAudienceData(data);
-    } else {
-      toast.error("Audience not found");
-      router.push("/audiences");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mockAudiences is static lookup data
+    const fetchAudience = async () => {
+      try {
+        const res = await fetch(`/api/audience/${audienceId}`);
+        if (!res.ok) throw new Error("Audience not found");
+
+        const data = await res.json();
+
+        // Map backend data to the frontend type
+        setAudienceData({
+          id: data.id,
+          name: data.name,
+          description: data.description || "",
+          status: data.status || "draft",
+          type: data.type || "custom",
+          customerCount: data.customerCount || 0,
+          campaignsSent: data.campaignsSent || 0,
+          growthRate: data.growthRate || 0,
+          lastCampaign: data.lastCampaign || "",
+          engagementRate: data.engagementRate || 0,
+        });
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load audience");
+        router.push("/audiences");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAudience();
   }, [audienceId, router]);
 
   const handleSave = () => {
-    // In a real app, save to your API
     toast.success("Audience updated successfully!");
+    // call your API to save changes here (unfinished)
   };
 
   const handleDelete = () => {
-    // In a real app, delete from your API
     toast.success("Audience deleted successfully!");
+    // call your API to delete audience here (unfinished)
     router.push("/audiences");
   };
 
-  if (!audienceData) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -133,6 +105,8 @@ export default function AudienceEditPage({
       </div>
     );
   }
+
+  if (!audienceData) return null;
 
   return (
     <main className="space-y-6 w-full max-w-full overflow-x-hidden">
@@ -297,88 +271,54 @@ export default function AudienceEditPage({
                 {/* Customer Count */}
                 <div className="space-y-2">
                   <Label htmlFor="customerCount">Customer Count</Label>
-                  <Input
-                    id="customerCount"
-                    type="number"
-                    value={audienceData.customerCount}
-                    onChange={(e) =>
-                      setAudienceData({
-                        ...audienceData,
-                        customerCount: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    className="h-11"
+                  <Input 
+                  id="customerCount" 
+                  type="number" 
+                  value={audienceData.customerCount} 
+                  readOnly 
+                  className="h-11 bg-gray-100" 
                   />
                 </div>
-
-                {/* Campaigns Sent */}
                 <div className="space-y-2">
                   <Label htmlFor="campaignsSent">Campaigns Sent</Label>
-                  <Input
-                    id="campaignsSent"
-                    type="number"
-                    value={audienceData.campaignsSent}
-                    onChange={(e) =>
-                      setAudienceData({
-                        ...audienceData,
-                        campaignsSent: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    className="h-11"
+                  <Input 
+                  id="campaignsSent" 
+                  type="number" 
+                  value={audienceData.campaignsSent} 
+                  readOnly 
+                  className="h-11 bg-gray-100" 
                   />
                 </div>
-
-                {/* Growth Rate */}
                 <div className="space-y-2">
                   <Label htmlFor="growthRate">Growth Rate (%)</Label>
-                  <Input
-                    id="growthRate"
-                    type="number"
-                    step="0.1"
-                    value={audienceData.growthRate}
-                    onChange={(e) =>
-                      setAudienceData({
-                        ...audienceData,
-                        growthRate: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="h-11"
+                  <Input 
+                  id="growthRate" 
+                  type="number" 
+                  step="0.1" 
+                  value={audienceData.growthRate} 
+                  readOnly 
+                  className="h-11 bg-gray-100" 
                   />
                 </div>
-
-                {/* Engagement Rate */}
                 <div className="space-y-2">
                   <Label htmlFor="engagementRate">Engagement Rate (%)</Label>
-                  <Input
-                    id="engagementRate"
-                    type="number"
-                    step="0.1"
-                    value={audienceData.engagementRate}
-                    onChange={(e) =>
-                      setAudienceData({
-                        ...audienceData,
-                        engagementRate: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="h-11"
+                  <Input 
+                  id="engagementRate" 
+                  type="number" 
+                  step="0.1" 
+                  value={audienceData.engagementRate} 
+                  readOnly 
+                  className="h-11 bg-gray-100" 
                   />
                 </div>
               </div>
-
-              {/* Last Campaign */}
               <div className="space-y-2">
                 <Label htmlFor="lastCampaign">Last Campaign</Label>
-                <Input
-                  id="lastCampaign"
-                  value={audienceData.lastCampaign}
-                  onChange={(e) =>
-                    setAudienceData({
-                      ...audienceData,
-                      lastCampaign: e.target.value,
-                    })
-                  }
-                  placeholder="e.g., 2 days ago"
-                  className="h-11"
+                <Input 
+                id="lastCampaign" 
+                value={audienceData.lastCampaign} 
+                readOnly 
+                className="h-11 bg-gray-100" 
                 />
               </div>
             </div>
