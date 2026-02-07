@@ -129,12 +129,21 @@ export async function POST(
     }
 
     // Verify all customers belong to the shop
+    // prevents: adding customers from another shop/user and manually call
     const validCustomers = await db.customer.findMany({
       where: {id: {in: customerIds}, shopId: shop.id},
       select: {id: true},
     });
+    // Convert to Set for fast lookup
+    // validCustomers = [{ id: "c1" }, { id: "c3" }, { id: "c5" }]
+    // Convert to:
+    // validIds = Set [ "c1", "c3", "c5" ]
     const validIds = new Set(validCustomers.map((c) => c.id));
 
+    // checking multiple IDs with Set.has(id)
+    // array.filter((item) => condition) , condition must return true or false
+    // customerIds = ["c1", "c2", "c3","c4"], validIds = Set ["c1", "c3", "c5" ]
+    // toAdd = ["c1", "c3"]
     const toAdd = customerIds.filter((id) => validIds.has(id));
 
     if (toAdd.length === 0) {
@@ -144,7 +153,11 @@ export async function POST(
       );
     }
 
+    // existingIds = ["c1", "c2"] toAdd = ["c1", "c3"]
     const existingIds = audience.customerIds ?? [];
+    // [...existingIds, ...toAdd]
+    // ["c1", "c2", "c1", "c3"]
+    // [...new Set(...)] --> updatedIds = ["c1", "c2", "c3"]
     const updatedIds = [...new Set([...existingIds, ...toAdd])];
 
     await db.audience.update({
@@ -158,10 +171,7 @@ export async function POST(
     });
   } catch (err) {
     console.error("Error adding customers to audience:", err);
-    return NextResponse.json(
-      {error: "Failed to add customers"},
-      {status: 500},
-    );
+    return NextResponse.json({error: "Failed to add customers"}, {status: 500});
   }
 }
 
@@ -185,6 +195,7 @@ export async function DELETE(
       return NextResponse.json({message: "Audience not found"}, {status: 404});
     }
 
+    // get the customer id string
     const {searchParams} = new URL(req.url);
     const customerId = searchParams.get("customerId");
 
@@ -195,7 +206,9 @@ export async function DELETE(
       );
     }
 
-    const updatedIds = (audience.customerIds ?? []).filter((id) => id !== customerId);
+    const updatedIds = (audience.customerIds ?? []).filter(
+      (id) => id !== customerId,
+    );
     await db.audience.update({
       where: {id: audienceId},
       data: {customerIds: updatedIds},

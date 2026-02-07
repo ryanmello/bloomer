@@ -64,6 +64,7 @@ export default function AudienceCustomersPage({
   const [addSearch, setAddSearch] = useState("");
   const [addingCustomers, setAddingCustomers] = useState(false);
 
+  // Makes it accessible to event handlers
   const [resolvedAudienceId, setResolvedAudienceId] = useState<string | null>(
     null,
   );
@@ -71,12 +72,15 @@ export default function AudienceCustomersPage({
   const isCustomAudience = audience?.type === "custom";
   const customerIdsInAudience = new Set(customers.map((c) => c.id));
 
+  // ??: use next one if null or undefined
   const getAddresses = (c: Customer) => c.addresses ?? c.address ?? [];
 
   const fetchAudiencesData = async () => {
     try {
       setLoading(true);
+      // id exists only inside this function
       const {audienceId: id} = await params;
+      // Any function can use it later
       setResolvedAudienceId(id);
 
       const cusRes = await fetch(`/api/audience/${id}/customers`);
@@ -175,10 +179,14 @@ export default function AudienceCustomersPage({
     }
   };
 
+  // Checkbox toggle
   const toggleSelect = (id: string) => {
+    // checks if this customer is already included
     if (customerIdsInAudience.has(id)) return;
     setSelectedIds((prev) => {
+      // new Set(prev) creates a copy
       const next = new Set(prev);
+      //If ID already selected --> remove it Otherwise --> add it
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
