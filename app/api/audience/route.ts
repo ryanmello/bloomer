@@ -80,53 +80,44 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const body = await req.json();
-    const { id } = body;
+    const { ids, id } = body; 
 
-    if (!id) {
+    if ((!id && (!ids || ids.length === 0))) {
       return NextResponse.json(
-        { error: "Audience ID is required" },
+        { error: "Audience ID(s) are required" },
         { status: 400 }
       );
     }
 
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json(
-        { message: "Not authenticated" },
-        { status: 401 }
-      );
+      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
     }
 
-    const shop = await db.shop.findFirst({
-      where: { userId: user.id },
-    });
-
+    const shop = await db.shop.findFirst({ where: { userId: user.id } });
     if (!shop) {
-      return NextResponse.json(
-        { message: "No shop found for user" },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: "No shop found for user" }, { status: 404 });
     }
 
-    const audience = await db.audience.findFirst({
-      where: { id, shopId: shop.id },
-    });
-
-    if (!audience) {
+    if (ids && ids.length > 0) {
+      await db.audience.deleteMany({
+        where: { id: { in: ids }, shopId: shop.id },
+      });
       return NextResponse.json(
-        { message: "Audience not found" },
-        { status: 404 }
+        { message: "Audiences deleted successfully!" },
+        { status: 200 }
+      );
+    } else if (id) {
+      const audience = await db.audience.findFirst({ where: { id, shopId: shop.id } });
+      if (!audience) {
+        return NextResponse.json({ message: "Audience not found" }, { status: 404 });
+      }
+      await db.audience.delete({ where: { id } });
+      return NextResponse.json(
+        { message: "Audience deleted successfully!" },
+        { status: 200 }
       );
     }
-
-    await db.audience.delete({
-      where: { id },
-    });
-
-    return NextResponse.json(
-      { message: "Audience deleted successfully!" },
-      { status: 200 }
-    );
   } catch (err) {
     console.error("Error deleting audience:", err);
     return NextResponse.json(

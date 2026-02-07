@@ -9,6 +9,20 @@ import {useEffect, useState} from "react";
 import {Card, CardTitle, CardDescription} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
+import { Trash2 } from "lucide-react";
+import {toast} from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 type Audiences = {
   id: string;
@@ -24,6 +38,11 @@ export default function Audiences() {
   const [searchQuery, setSearchQuery] = useState("");
   const [audiences, setAudiences] = useState<Audiences[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const [deleteMode, setDeleteMode] = useState(false); 
+  const [selectedIds, setSelectedIds] = useState<string[]>([]); 
+  
+
 
   // TODO: change to real metrics
   const metrics = {
@@ -133,6 +152,61 @@ export default function Audiences() {
     return matchesFilter && matchesSearch;
   });
 
+  const toggleDeleteMode = () => {
+    setDeleteMode(!deleteMode);
+    setSelectedIds([]); 
+  };
+
+  const toggleSelect = (id: string) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter((sid) => sid !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+ const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+
+    try {
+      const res = await fetch("/api/audience", {
+        method: "DELETE",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ids: selectedIds}),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.message || "Failed to delete audiences");
+        return;
+      }
+
+      toast.success(
+      selectedIds.length === 1
+        ? "Audience deleted successfully!"
+        : `${selectedIds.length} audiences deleted successfully!`
+      );
+
+      fetchAudiencesCard();
+      setSelectedIds([]);
+      setDeleteMode(false);
+    } catch (err) {
+      console.error("Bulk delete error", err);
+    }
+  };
+
+  const allSelected =
+    filteredAudiences.length > 0 &&
+    selectedIds.length === filteredAudiences.length;
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds([]); 
+    } else {
+      setSelectedIds(filteredAudiences.map((aud) => aud.id)); 
+    }
+  };
+
   return (
     <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Top Panel */}
@@ -144,6 +218,62 @@ export default function Audiences() {
             automation
           </CardDescription>
         </div>
+
+        <Button
+            variant={deleteMode ? "destructive" : "outline"}
+            onClick={toggleDeleteMode}
+            className="flex items-center gap-2"
+          >
+            {deleteMode ? "Cancel Selection" : "Select to Delete"}
+          </Button>
+          
+          {deleteMode && filteredAudiences.length > 0 && (
+          <Button
+            variant="outline"
+            onClick={toggleSelectAll}
+            className="flex items-center gap-2"
+          >
+            {allSelected ? "Deselect All" : "Select All"}
+          </Button>
+        )}
+          
+          {deleteMode && selectedIds.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Selected ({selectedIds.length})
+                </Button>
+              </AlertDialogTrigger>
+
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete audiences?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete{" "}
+                    <span className="font-semibold text-foreground">
+                      {selectedIds.length}
+                    </span> {" "}
+                    selected audiences? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+
+                <AlertDialogFooter>
+                 <AlertDialogCancel>Cancel</AlertDialogCancel>
+                 <AlertDialogAction
+                   onClick={handleBulkDelete}
+                   className="bg-destructive hover:bg-destructive/90"
+                  >
+                   Delete Audiences
+                 </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+
 
         <Button variant="default" onClick={() => router.push("/audiences/new")}>
           <Plus /> Add Audience
@@ -236,7 +366,11 @@ export default function Audiences() {
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-4">
           {filteredAudiences.length > 0 ? (
             filteredAudiences.map((audience) => (
-              <AudienceCard key={audience.id} {...audience} />
+              <AudienceCard key={audience.id} {...audience} 
+              selectable={deleteMode}
+              selected={selectedIds.includes(audience.id)}
+              onSelect={() => toggleSelect(audience.id)}
+              />
             ))
           ) : (
             <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
