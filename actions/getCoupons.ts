@@ -12,6 +12,7 @@ export async function createCoupon(formData: FormData) {
     }
 
     const codeName = formData.get("codeName") as string;
+    const description = (formData.get("description") as string)?.trim() || null;
     const discount = parseFloat(formData.get("discount") as string);
     const validUntil = new Date(formData.get("validUntil") as string);
 
@@ -36,6 +37,7 @@ export async function createCoupon(formData: FormData) {
     const coupon = await db.coupon.create({
       data: {
         codeName,
+        description,
         discount,
         validUntil,
         userId: user.id,
@@ -84,6 +86,7 @@ export async function updateCoupon(id: string, formData: FormData) {
     }
 
     const codeName = formData.get("codeName") as string;
+    const description = (formData.get("description") as string)?.trim() || null;
     const discount = parseFloat(formData.get("discount") as string);
     const validUntil = new Date(formData.get("validUntil") as string);
 
@@ -91,6 +94,7 @@ export async function updateCoupon(id: string, formData: FormData) {
       where: { id },
       data: {
         codeName,
+        description,
         discount,
         validUntil,
       },

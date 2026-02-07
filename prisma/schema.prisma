@@ -8,12 +8,13 @@ generator client {
 }
 
 model Coupon {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  codeName   String   @unique
-  discount   Float
-  validUntil DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  codeName    String   @unique
+  description String?
+  discount    Float
+  validUntil  DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
