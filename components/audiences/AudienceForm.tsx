@@ -100,23 +100,79 @@ export default function AudienceForm({mode, initialData}: Props) {
     }
   };
 
-  const handleDelete = () => {
-    // In a real app, delete from your API
+ const handleDelete = async () => {
+  try {
+    const res = await fetch("/api/audience", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: audienceData.id }), 
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      toast.error(data.message || "Failed to delete audience");
+      return;
+    }
+
     toast.success("Audience deleted successfully!");
     router.push("/audiences");
-  };
+    router.refresh();
+  } catch (error) {
+    console.error("Error deleting audience:", error);
+    toast.error("Something went wrong");
+  }
+ };
 
+  const hasChanges =
+    audienceData.name !== initialData.name ||
+    audienceData.description !== initialData.description ||
+    audienceData.status !== initialData.status ||
+    audienceData.type !== initialData.type;
+    
   return (
     <main className="space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/audiences")}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+          {hasChanges ? (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Go back">
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              </AlertDialogTrigger>
+
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Discard changes?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    You have unsaved changes. Are you sure you want to discard them?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => router.push("/audiences")}
+                    className="bg-destructive hover:bg-destructive/90"
+                  >
+                    Discard Changes
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Cancel"
+              onClick={() => router.push("/audiences")}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
+
           <div>
             <h1 className="text-3xl font-bold text-foreground">
               Edit Audience
@@ -126,6 +182,7 @@ export default function AudienceForm({mode, initialData}: Props) {
             </p>
           </div>
         </div>
+
         <div className="flex gap-2">
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -150,12 +207,14 @@ export default function AudienceForm({mode, initialData}: Props) {
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
-                  className="bg-destructive hover:bg-destructive/90">
+                  className="bg-destructive hover:bg-destructive/90"
+                >
                   Delete Audience
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
           <Button onClick={handleSave}>
             <Save className="h-4 w-4 mr-2" />
             Save Changes
@@ -192,7 +251,7 @@ export default function AudienceForm({mode, initialData}: Props) {
                   id="name"
                   value={audienceData.name}
                   onChange={(e) =>
-                    setAudienceData({...audienceData, name: e.target.value})
+                    setAudienceData({ ...audienceData, name: e.target.value })
                   }
                   placeholder="Enter audience name"
                   className="h-11"
@@ -204,7 +263,7 @@ export default function AudienceForm({mode, initialData}: Props) {
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
-                  value={audienceData.description}
+                  value={audienceData.description ?? ""}
                   onChange={(e) =>
                     setAudienceData({
                       ...audienceData,
@@ -224,8 +283,9 @@ export default function AudienceForm({mode, initialData}: Props) {
                   <Select
                     value={audienceData.status}
                     onValueChange={(value: "active" | "inactive" | "draft") =>
-                      setAudienceData({...audienceData, status: value})
-                    }>
+                      setAudienceData({ ...audienceData, status: value })
+                    }
+                  >
                     <SelectTrigger id="status" className="h-11">
                       <SelectValue />
                     </SelectTrigger>
@@ -243,8 +303,9 @@ export default function AudienceForm({mode, initialData}: Props) {
                   <Select
                     value={audienceData.type}
                     onValueChange={(value: "custom" | "predefined") =>
-                      setAudienceData({...audienceData, type: value})
-                    }>
+                      setAudienceData({ ...audienceData, type: value })
+                    }
+                  >
                     <SelectTrigger id="type" className="h-11">
                       <SelectValue />
                     </SelectTrigger>
