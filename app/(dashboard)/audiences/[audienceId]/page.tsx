@@ -28,6 +28,17 @@ import {
 import { ArrowLeft, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 
+const fieldDisplayMap: Record<string, string> = {
+  group: "Customer Group",
+  email: "Email",
+  phoneNumber: "Phone Number",
+  location: "Location",
+  totalSpent: "Total Spent",
+  totalOrders: "Total Orders",
+  lastOrderDate: "Last Order Date",
+  joinDate: "Join Date",
+};
+
 type AudienceData = {
   id: string;
   name: string;
@@ -39,12 +50,13 @@ type AudienceData = {
   status: "active" | "inactive" | "draft";
   engagementRate: number;
   type: "custom" | "predefined";
+  field?: string;
 };
 
-export default function AudienceEditPage({ 
-  params 
-}: { 
-  params: { audienceId: string } 
+export default function AudienceEditPage({
+  params
+}: {
+  params: { audienceId: string }
 }) {
   const router = useRouter();
   const { audienceId } = params;
@@ -67,6 +79,7 @@ export default function AudienceEditPage({
           description: data.description || "",
           status: data.status || "draft",
           type: data.type || "custom",
+          field: data.field ?? "",
           customerCount: data.customerCount || 0,
           campaignsSent: data.campaignsSent || 0,
           growthRate: data.growthRate || 0,
@@ -257,6 +270,16 @@ export default function AudienceEditPage({
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="field">Customer Field</Label>
+                  <Input
+                    id="field"
+                    value={fieldDisplayMap[audienceData.field || ""] || "None"}
+                    readOnly
+                    className="h-11 bg-gray-100"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -271,54 +294,54 @@ export default function AudienceEditPage({
                 {/* Customer Count */}
                 <div className="space-y-2">
                   <Label htmlFor="customerCount">Customer Count</Label>
-                  <Input 
-                  id="customerCount" 
-                  type="number" 
-                  value={audienceData.customerCount} 
-                  readOnly 
-                  className="h-11 bg-gray-100" 
+                  <Input
+                    id="customerCount"
+                    type="number"
+                    value={audienceData.customerCount}
+                    readOnly
+                    className="h-11 bg-gray-100"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="campaignsSent">Campaigns Sent</Label>
-                  <Input 
-                  id="campaignsSent" 
-                  type="number" 
-                  value={audienceData.campaignsSent} 
-                  readOnly 
-                  className="h-11 bg-gray-100" 
+                  <Input
+                    id="campaignsSent"
+                    type="number"
+                    value={audienceData.campaignsSent}
+                    readOnly
+                    className="h-11 bg-gray-100"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="growthRate">Growth Rate (%)</Label>
-                  <Input 
-                  id="growthRate" 
-                  type="number" 
-                  step="0.1" 
-                  value={audienceData.growthRate} 
-                  readOnly 
-                  className="h-11 bg-gray-100" 
+                  <Input
+                    id="growthRate"
+                    type="number"
+                    step="0.1"
+                    value={audienceData.growthRate}
+                    readOnly
+                    className="h-11 bg-gray-100"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="engagementRate">Engagement Rate (%)</Label>
-                  <Input 
-                  id="engagementRate" 
-                  type="number" 
-                  step="0.1" 
-                  value={audienceData.engagementRate} 
-                  readOnly 
-                  className="h-11 bg-gray-100" 
+                  <Input
+                    id="engagementRate"
+                    type="number"
+                    step="0.1"
+                    value={audienceData.engagementRate}
+                    readOnly
+                    className="h-11 bg-gray-100"
                   />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastCampaign">Last Campaign</Label>
-                <Input 
-                id="lastCampaign" 
-                value={audienceData.lastCampaign} 
-                readOnly 
-                className="h-11 bg-gray-100" 
+                <Input
+                  id="lastCampaign"
+                  value={audienceData.lastCampaign}
+                  readOnly
+                  className="h-11 bg-gray-100"
                 />
               </div>
             </div>

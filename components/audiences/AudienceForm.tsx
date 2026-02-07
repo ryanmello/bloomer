@@ -82,6 +82,7 @@ export default function AudienceForm({mode, initialData}: Props) {
           description: audienceData.description || null,
           status: audienceData.status,
           type: audienceData.type,
+          field: audienceData.field || null,
         }),
       });
 

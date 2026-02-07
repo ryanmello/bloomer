@@ -23,7 +23,7 @@ export async function GET() {
     }
 
     const audiences = await db.audience.findMany({
-      // can’t filter by shopId yet so return all audiences
+      where: { shopId: shop.id },
     });
 
     return NextResponse.json(audiences);
@@ -37,7 +37,19 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const user = await getCurrentUser();
-    if (!user) return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+    if (!user)
+      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+
+    const shop = await db.shop.findFirst({
+      where: { userId: user.id },
+    });
+
+    if (!shop) {
+      return NextResponse.json(
+        { message: "No shop found for user" },
+        { status: 404 }
+      );
+    }
 
     const body = await req.json();
     // create audience
@@ -48,6 +60,8 @@ export async function POST(req: Request) {
         status: body.status,
         type: body.type,
         field: body.field || null,
+        userId: user.id,
+        shopId: shop.id,
       },
     });
 

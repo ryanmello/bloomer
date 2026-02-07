@@ -180,7 +180,10 @@ export default function AudienceCard({
 
       {/* Action Buttons */}
       <div className="relative mt-4 pt-4 border-t border-border flex gap-2">
-        <Button className="flex-1 shadow-md hover:shadow-lg transition-all duration-200">
+        <Button 
+        onClick={handleViewDetails}
+        className="flex-1 shadow-md hover:shadow-lg transition-all duration-200"
+        >
           View Details
         </Button>
         <Button

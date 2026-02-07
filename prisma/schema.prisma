@@ -51,6 +51,7 @@ model User {
   coupons          Coupon[]
   campaigns        Campaign[]
   emailIntegrations EmailIntegration[]
+  audiences Audience[]
 }
 
 model Shop {
@@ -68,6 +69,7 @@ model Shop {
   customers Customer[]
   campaigns Campaign[]
   products  Product[]
+  audiences Audience[]
 }
 
 model Customer {
@@ -236,6 +238,15 @@ model Audience {
   status      AudienceStatus @default(draft)
   type        AudienceType   @default(custom)
   field       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  shopId String @db.ObjectId
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 }
 
 model EmailIntegration {
