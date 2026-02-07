@@ -60,6 +60,7 @@ export default function AudienceCustomersPage({
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
   const [addSearch, setAddSearch] = useState("");
   const [addingCustomers, setAddingCustomers] = useState(false);
 
@@ -185,8 +186,7 @@ export default function AudienceCustomersPage({
   };
 
   const filteredAllCustomers = allCustomers.filter((c) => {
-    const fullName =
-      `${c.firstName ?? ""} ${c.lastName ?? ""}`.toLowerCase();
+    const fullName = `${c.firstName ?? ""} ${c.lastName ?? ""}`.toLowerCase();
     const query = addSearch.toLowerCase();
     if (!query) return true;
     return (
@@ -206,6 +206,17 @@ export default function AudienceCustomersPage({
     );
   }
 
+  const filteredCustomers = customers.filter((c) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+
+    const fullName = `${c.firstName ?? ""} ${c.lastName ?? ""}`.toLowerCase();
+    const email = (c.email ?? "").toLowerCase();
+    const phone = (c.phoneNumber ?? "").toLowerCase();
+
+    return fullName.includes(q) || email.includes(q) || phone.includes(q);
+  });
+
   return (
     <main className="space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Header */}
@@ -224,7 +235,7 @@ export default function AudienceCustomersPage({
             <p className="text-sm text-muted-foreground">
               {audience?.description
                 ? audience.description
-                : `${customers.length} Customer${customers.length === 1 ? "" : "s"}`}
+                : `${filteredCustomers.length} Customer${filteredCustomers.length === 1 ? "" : "s"}`}
             </p>
           </div>
         </div>
@@ -320,13 +331,24 @@ export default function AudienceCustomersPage({
         )}
       </div>
 
+      {/* Search bar */}
+      <div className="relative w-full">
+        <Search className="absolute left-3 top-1/4 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search customers in this audience..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
       {!loading && customers.length === 0 && (
         <p className="text-sm text-muted-foreground">No customers found.</p>
       )}
 
       {/* Customer Cards */}
       <div className="space-y-4">
-        {customers.map((customer) => {
+        {filteredCustomers.map((customer) => {
           const initials =
             `${customer.firstName?.[0] ?? ""}${customer.lastName?.[0] ?? ""}`.toUpperCase();
           const fullName =
