@@ -243,6 +243,7 @@ model Audience {
   status      AudienceStatus @default(draft)
   type        AudienceType   @default(custom)
   customerIds String[]       @default([])
+  field       String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
