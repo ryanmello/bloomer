@@ -39,6 +39,27 @@ const audienceFields = [
   { value: "customerField", label: "Customer Field" }, // NEW
 ];
 
+// Full operator set
+const operators = [
+  {value: "equals", label: "Equals"},
+  {value: "greaterThan", label: "Greater Than"},
+  {value: "lessThan", label: "Less Than"},
+  {value: "contains", label: "Contains"},
+  {value: "between", label: "Between"},
+];
+
+// Operator mapping per field
+const fieldOperators: Record<string, string[]> = {
+  name: ["equals","contains"],
+  description: ["equals","contains"],
+  customerCount: ["equals","greaterThan","lessThan","between"],
+  campaignsSent: ["equals","greaterThan","lessThan","between"],
+  growthRate: ["equals","greaterThan","lessThan","between"],
+  engagementRate: ["equals","greaterThan","lessThan","between"],
+  lastCampaign: ["equals","contains"],
+  customerField: ["equals","contains"],
+};
+
 export default function Audiences() {
   const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState("all");
@@ -50,15 +71,6 @@ export default function Audiences() {
   const [selectedField, setSelectedField] = useState("name");
   const [selectedOperator, setSelectedOperator] = useState("equals");
   const [filterValue, setFilterValue] = useState("");
-
-  // Supported operators for filtering
-  const operators = [
-    {value: "equals", label: "Equals"},
-    {value: "greaterThan", label: "Greater Than"},
-    {value: "lessThan", label: "Less Than"},
-    {value: "contains", label: "Contains"},
-    {value: "between", label: "Between"},
-  ];
 
   // TODO: change to real metrics
   const metrics = {
@@ -222,7 +234,14 @@ export default function Audiences() {
             </Tabs>
 
             {/* Field dropdown */}
-            <Select value={selectedField} onValueChange={setSelectedField}>
+            <Select value={selectedField} onValueChange={(val) => {
+              setSelectedField(val);
+              // Update operator if current operator not allowed
+              const allowedOps = fieldOperators[val];
+              if (!allowedOps.includes(selectedOperator)) {
+                setSelectedOperator(allowedOps[0]);
+              }
+            }}>
               <SelectTrigger className="h-11 w-full sm:w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -241,7 +260,9 @@ export default function Audiences() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {operators.map((op) => (
+                {operators
+                  .filter(op => fieldOperators[selectedField].includes(op.value))
+                  .map((op) => (
                   <SelectItem key={op.value} value={op.value}>
                     {op.label}
                   </SelectItem>
