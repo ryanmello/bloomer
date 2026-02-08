@@ -39,6 +39,27 @@ const audienceFields = [
   { value: "customerField", label: "Customer Field" }, // NEW
 ];
 
+// Full operator set
+const operators = [
+  {value: "equals", label: "Equals"},
+  {value: "greaterThan", label: "Greater Than"},
+  {value: "lessThan", label: "Less Than"},
+  {value: "contains", label: "Contains"},
+  {value: "between", label: "Between"},
+];
+
+// Operator mapping per field
+const fieldOperators: Record<string, string[]> = {
+  name: ["equals","contains"],
+  description: ["equals","contains"],
+  customerCount: ["equals","greaterThan","lessThan","between"],
+  campaignsSent: ["equals","greaterThan","lessThan","between"],
+  growthRate: ["equals","greaterThan","lessThan","between"],
+  engagementRate: ["equals","greaterThan","lessThan","between"],
+  lastCampaign: ["equals","contains"],
+  customerField: ["equals","contains"],
+};
+
 export default function Audiences() {
   const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState("all");
@@ -50,15 +71,7 @@ export default function Audiences() {
   const [selectedField, setSelectedField] = useState("name");
   const [selectedOperator, setSelectedOperator] = useState("equals");
   const [filterValue, setFilterValue] = useState("");
-
-  // Supported operators for filtering
-  const operators = [
-    {value: "equals", label: "Equals"},
-    {value: "greaterThan", label: "Greater Than"},
-    {value: "lessThan", label: "Less Than"},
-    {value: "contains", label: "Contains"},
-    {value: "between", label: "Between"},
-  ];
+  const [filterValueMax, setFilterValueMax] = useState(""); // For "between" upper bound
 
   // TODO: change to real metrics
   const metrics = {
@@ -123,13 +136,36 @@ export default function Audiences() {
           const valStr = String(fieldVal).toLowerCase();
           const value = filterValue.toLowerCase();
 
-          if (selectedOperator === "equals") matchesField = valStr === value;
-          else if (selectedOperator === "contains") matchesField = valStr.includes(value);
-          else if (selectedOperator === "greaterThan") matchesField = Number(fieldVal) > Number(filterValue);
-          else if (selectedOperator === "lessThan") matchesField = Number(fieldVal) < Number(filterValue);
-          else if (selectedOperator === "between") {
-            const [min, max] = filterValue.split(",").map(Number);
-            matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
+          // Guardrails
+          const numericFields = ["customerCount","campaignsSent"];
+          const percentFields = ["growthRate","engagementRate"];
+
+          if (numericFields.includes(selectedField)) {
+            if (!/^\d*$/.test(filterValue)) matchesField = false;
+            else if (selectedOperator === "equals") matchesField = Number(fieldVal) === Number(filterValue);
+            else if (selectedOperator === "greaterThan") matchesField = Number(fieldVal) > Number(filterValue);
+            else if (selectedOperator === "lessThan") matchesField = Number(fieldVal) < Number(filterValue);
+            else if (selectedOperator === "between") {
+              const min = Number(filterValue);
+              const max = Number(filterValueMax);
+              matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
+            }
+          } else if (percentFields.includes(selectedField)) {
+            const cleanVal = filterValue.replace("%","");
+            const cleanValMax = filterValueMax.replace("%","");
+            if (!/^\d*\.?\d*$/.test(cleanVal)) matchesField = false;
+            else if (selectedOperator === "equals") matchesField = Number(fieldVal) === Number(cleanVal);
+            else if (selectedOperator === "greaterThan") matchesField = Number(fieldVal) > Number(cleanVal);
+            else if (selectedOperator === "lessThan") matchesField = Number(fieldVal) < Number(cleanVal);
+            else if (selectedOperator === "between") {
+              const min = Number(cleanVal);
+              const max = Number(cleanValMax);
+              matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
+            }
+          } else {
+            // Text fields
+            if (selectedOperator === "equals") matchesField = valStr === value;
+            else if (selectedOperator === "contains") matchesField = valStr.includes(value);
           }
         }
       }
@@ -222,7 +258,14 @@ export default function Audiences() {
             </Tabs>
 
             {/* Field dropdown */}
-            <Select value={selectedField} onValueChange={setSelectedField}>
+            <Select value={selectedField} onValueChange={(val) => {
+              setSelectedField(val);
+              // Update operator if current operator not allowed
+              const allowedOps = fieldOperators[val];
+              if (!allowedOps.includes(selectedOperator)) {
+                setSelectedOperator(allowedOps[0]);
+              }
+            }}>
               <SelectTrigger className="h-11 w-full sm:w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -241,7 +284,9 @@ export default function Audiences() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {operators.map((op) => (
+                {operators
+                  .filter(op => fieldOperators[selectedField].includes(op.value))
+                  .map((op) => (
                   <SelectItem key={op.value} value={op.value}>
                     {op.label}
                   </SelectItem>
@@ -250,12 +295,50 @@ export default function Audiences() {
             </Select>
 
             {/* Filter Value Input*/}
-            <Input
-              placeholder="Enter filter value"
-              value={filterValue}
-              onChange={(e) => setFilterValue(e.target.value)}
-              className="h-11 w-full sm:w-32 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
-            />
+            {selectedOperator === "between" ? (
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Input
+                  placeholder="Min"
+                  value={filterValue}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const numericFields = ["customerCount","campaignsSent"];
+                    const percentFields = ["growthRate","engagementRate"];
+                    if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
+                    if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
+                    setFilterValue(val);
+                  }}
+                  className="h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
+                />
+                <Input
+                  placeholder="Max"
+                  value={filterValueMax}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const numericFields = ["customerCount","campaignsSent"];
+                    const percentFields = ["growthRate","engagementRate"];
+                    if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
+                    if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
+                    setFilterValueMax(val);
+                  }}
+                  className="h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
+                />
+              </div>
+            ) : (
+              <Input
+                placeholder="Enter filter value"
+                value={filterValue}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const numericFields = ["customerCount","campaignsSent"];
+                  const percentFields = ["growthRate","engagementRate"];
+                  if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
+                  if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
+                  setFilterValue(val);
+                }}
+                className="h-11 w-full sm:w-32 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
+              />
+            )}
           </div>
 
           {/* Search Bar - Right */}
