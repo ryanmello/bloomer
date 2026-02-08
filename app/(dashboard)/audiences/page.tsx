@@ -71,6 +71,7 @@ export default function Audiences() {
   const [selectedField, setSelectedField] = useState("name");
   const [selectedOperator, setSelectedOperator] = useState("equals");
   const [filterValue, setFilterValue] = useState("");
+  const [filterValueMax, setFilterValueMax] = useState(""); // For "between" upper bound
 
   // TODO: change to real metrics
   const metrics = {
@@ -140,7 +141,8 @@ export default function Audiences() {
           else if (selectedOperator === "greaterThan") matchesField = Number(fieldVal) > Number(filterValue);
           else if (selectedOperator === "lessThan") matchesField = Number(fieldVal) < Number(filterValue);
           else if (selectedOperator === "between") {
-            const [min, max] = filterValue.split(",").map(Number);
+            const min = Number(filterValue);
+            const max = Number(filterValueMax);
             matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
           }
         }
@@ -271,12 +273,29 @@ export default function Audiences() {
             </Select>
 
             {/* Filter Value Input*/}
-            <Input
-              placeholder="Enter filter value"
-              value={filterValue}
-              onChange={(e) => setFilterValue(e.target.value)}
-              className="h-11 w-full sm:w-32 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
-            />
+            {selectedOperator === "between" ? (
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Input
+                  placeholder="Min"
+                  value={filterValue}
+                  onChange={(e) => setFilterValue(e.target.value)}
+                  className="h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
+                />
+                <Input
+                  placeholder="Max"
+                  value={filterValueMax}
+                  onChange={(e) => setFilterValueMax(e.target.value)}
+                  className="h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
+                />
+              </div>
+            ) : (
+              <Input
+                placeholder="Enter filter value"
+                value={filterValue}
+                onChange={(e) => setFilterValue(e.target.value)}
+                className="h-11 w-full sm:w-32 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
+              />
+            )}
           </div>
 
           {/* Search Bar - Right */}
