@@ -11,8 +11,9 @@ async function main() {
   console.log("Starting migration script...\n");
 
   // 1. Find customers without shopId
+  // @ts-ignore - shopId may be null in DB even though schema now requires it
   const orphanedCustomers = await prisma.customer.findMany({
-    where: { shopId: null },
+    where: { shopId: null as any },
     select: { id: true, firstName: true, lastName: true, email: true },
   });
 
@@ -27,7 +28,7 @@ async function main() {
     if (!isDryRun) {
       // Delete orphaned customers (their orders and addresses will cascade delete)
       const deleteResult = await prisma.customer.deleteMany({
-        where: { shopId: null },
+        where: { shopId: null as any },
       });
       console.log(`\nDeleted ${deleteResult.count} orphaned customers\n`);
     } else {
