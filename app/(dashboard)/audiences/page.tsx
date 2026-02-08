@@ -136,14 +136,36 @@ export default function Audiences() {
           const valStr = String(fieldVal).toLowerCase();
           const value = filterValue.toLowerCase();
 
-          if (selectedOperator === "equals") matchesField = valStr === value;
-          else if (selectedOperator === "contains") matchesField = valStr.includes(value);
-          else if (selectedOperator === "greaterThan") matchesField = Number(fieldVal) > Number(filterValue);
-          else if (selectedOperator === "lessThan") matchesField = Number(fieldVal) < Number(filterValue);
-          else if (selectedOperator === "between") {
-            const min = Number(filterValue);
-            const max = Number(filterValueMax);
-            matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
+          // Guardrails
+          const numericFields = ["customerCount","campaignsSent"];
+          const percentFields = ["growthRate","engagementRate"];
+
+          if (numericFields.includes(selectedField)) {
+            if (!/^\d*$/.test(filterValue)) matchesField = false;
+            else if (selectedOperator === "equals") matchesField = Number(fieldVal) === Number(filterValue);
+            else if (selectedOperator === "greaterThan") matchesField = Number(fieldVal) > Number(filterValue);
+            else if (selectedOperator === "lessThan") matchesField = Number(fieldVal) < Number(filterValue);
+            else if (selectedOperator === "between") {
+              const min = Number(filterValue);
+              const max = Number(filterValueMax);
+              matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
+            }
+          } else if (percentFields.includes(selectedField)) {
+            const cleanVal = filterValue.replace("%","");
+            const cleanValMax = filterValueMax.replace("%","");
+            if (!/^\d*\.?\d*$/.test(cleanVal)) matchesField = false;
+            else if (selectedOperator === "equals") matchesField = Number(fieldVal) === Number(cleanVal);
+            else if (selectedOperator === "greaterThan") matchesField = Number(fieldVal) > Number(cleanVal);
+            else if (selectedOperator === "lessThan") matchesField = Number(fieldVal) < Number(cleanVal);
+            else if (selectedOperator === "between") {
+              const min = Number(cleanVal);
+              const max = Number(cleanValMax);
+              matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
+            }
+          } else {
+            // Text fields
+            if (selectedOperator === "equals") matchesField = valStr === value;
+            else if (selectedOperator === "contains") matchesField = valStr.includes(value);
           }
         }
       }
@@ -278,13 +300,27 @@ export default function Audiences() {
                 <Input
                   placeholder="Min"
                   value={filterValue}
-                  onChange={(e) => setFilterValue(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const numericFields = ["customerCount","campaignsSent"];
+                    const percentFields = ["growthRate","engagementRate"];
+                    if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
+                    if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
+                    setFilterValue(val);
+                  }}
                   className="h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
                 />
                 <Input
                   placeholder="Max"
                   value={filterValueMax}
-                  onChange={(e) => setFilterValueMax(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const numericFields = ["customerCount","campaignsSent"];
+                    const percentFields = ["growthRate","engagementRate"];
+                    if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
+                    if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
+                    setFilterValueMax(val);
+                  }}
                   className="h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
                 />
               </div>
@@ -292,7 +328,14 @@ export default function Audiences() {
               <Input
                 placeholder="Enter filter value"
                 value={filterValue}
-                onChange={(e) => setFilterValue(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const numericFields = ["customerCount","campaignsSent"];
+                  const percentFields = ["growthRate","engagementRate"];
+                  if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
+                  if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
+                  setFilterValue(val);
+                }}
                 className="h-11 w-full sm:w-32 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
               />
             )}
