@@ -29,6 +29,17 @@ import {ArrowLeft, Trash2, Save} from "lucide-react";
 import {toast} from "sonner";
 import AudienceForm from "@/components/audiences/AudienceForm";
 
+const fieldDisplayMap: Record<string, string> = {
+  group: "Customer Group",
+  email: "Email",
+  phoneNumber: "Phone Number",
+  location: "Location",
+  totalSpent: "Total Spent",
+  totalOrders: "Total Orders",
+  lastOrderDate: "Last Order Date",
+  joinDate: "Join Date",
+};
+
 type AudienceData = {
   id: string;
   name: string;
@@ -42,6 +53,7 @@ type AudienceData = {
   growthRate: number;
   lastCampaign: string;
   engagementRate: number;
+  field?: string;
 };
 
 export default function AudienceEditPage({
@@ -59,28 +71,32 @@ export default function AudienceEditPage({
       setLoading(true);
       const {audienceId} = await params;
       const res = await fetch(`/api/audience/${audienceId}`);
-      const data: AudienceData = await res.json();
+      const data = await res.json();
 
       if (!res.ok) {
         toast.error("Audience not found");
         router.push("/audiences");
         return;
       }
+
+      // Map backend data to the frontend type
       setAudienceData({
         id: data.id,
         name: data.name,
-        description: data.description,
-        status: data.status,
-        type: data.type,
-        // metrics defaults
-        customerCount: 0,
-        campaignsSent: 0,
-        growthRate: 0,
-        lastCampaign: "",
-        engagementRate: 0,
+        description: data.description || "",
+        status: data.status || "draft",
+        type: data.type || "custom",
+        field: data.field ?? "",
+        customerCount: data.customerCount || 0,
+        campaignsSent: data.campaignsSent || 0,
+        growthRate: data.growthRate || 0,
+        lastCampaign: data.lastCampaign || "",
+        engagementRate: data.engagementRate || 0,
       });
     } catch (error) {
       console.error("Audiences data load failed", error);
+      toast.error("Failed to load audience");
+      router.push("/audiences");
     } finally {
       setLoading(false);
     }
