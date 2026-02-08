@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
@@ -85,7 +85,9 @@ export default function SignIn() {
         setError("Invalid credentials. Please try again.");
       } else {
         setError("");
-        router.replace("/dashboard");
+        // In App Router, a hard navigation is the most reliable way to ensure the
+        // new auth cookies are applied before middleware runs.
+        window.location.assign("/dashboard");
       }
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -183,6 +185,16 @@ export default function SignIn() {
                   )}
                 />
 
+                {/* Forgot Password Link */}
+                <div className="flex justify-end">
+                  <Link
+                    href="/forgot-password"
+                    className="text-sm text-muted-foreground hover:text-primary hover:underline transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+
                 {/* Error Message */}
                 {error && (
                   <div className="text-destructive text-sm text-center bg-destructive/10 border border-destructive/30 rounded-lg py-2 px-3">
@@ -204,7 +216,7 @@ export default function SignIn() {
 
           <CardFooter className="flex flex-col items-center space-y-4 pt-2 pb-6">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/sign-up"
                 className="font-semibold text-foreground hover:text-primary hover:underline transition-colors"

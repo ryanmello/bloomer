@@ -11,40 +11,54 @@ import {
   Edit,
   Pencil,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import {Badge} from "@/components/ui/badge";
+import {Button} from "@/components/ui/button";
+import {useRouter} from "next/navigation";
 
 type AudienceCardProps = {
   id?: string;
   name: string;
   description: string;
-  customerCount: number;
-  campaignsSent: number;
-  growthRate: number;
-  lastCampaign?: string;
+
   status: "active" | "inactive" | "draft";
-  engagementRate?: number;
   type?: "custom" | "predefined";
+
+  // optional metrics
+  customerCount?: number;
+  campaignsSent?: number;
+  growthRate?: number;
+  lastCampaign?: string;
+  engagementRate?: number;
 };
 
 export default function AudienceCard({
   id,
   name,
   description,
+  status,
+
   customerCount,
   campaignsSent,
   growthRate,
   lastCampaign,
-  status,
   engagementRate,
 }: AudienceCardProps) {
   const router = useRouter();
-  const isPositiveGrowth = growthRate >= 0;
+  const setCustomerCount = customerCount ?? 0;
+  const setCampaignsSent = campaignsSent ?? 0;
+  const setGrowthRate = growthRate ?? 0;
+  const setEngagementRate = engagementRate ?? 0;
+  const isPositiveGrowth = setGrowthRate >= 0;
+
+  const handleEdit = () => {
+    if (id) {
+      router.push(`/audiences/${id}`);
+    }
+  };
 
   const handleViewDetails = () => {
     if (id) {
-      router.push(`/audiences/${id}`);
+      router.push(`/audiences/${id}/customers`);
     }
   };
 
@@ -59,7 +73,7 @@ export default function AudienceCard({
     }
   };
 
-  // Get gradient colors based on status
+    // Get gradient colors based on status
   const getGradientColors = () => {
     switch (status) {
       case "active":
@@ -71,7 +85,7 @@ export default function AudienceCard({
     }
   };
 
-  // Get accent color for the top border
+    // Get accent color for the top border
   const getAccentBorder = () => {
     switch (status) {
       case "active":
@@ -85,8 +99,7 @@ export default function AudienceCard({
 
   return (
     <div
-      className={`group relative rounded-2xl border border-t-4 shadow-sm p-6 bg-gradient-to-br ${getGradientColors()} ${getAccentBorder()} bg-card hover:shadow-xl transition-all duration-300 min-w-0 overflow-hidden`}
-    >
+      className={`group relative rounded-2xl border border-t-4 shadow-sm p-6 bg-gradient-to-br ${getGradientColors()} ${getAccentBorder()} bg-card hover:shadow-xl transition-all duration-300 min-w-0 overflow-hidden`}>
       {/* Decorative gradient orb */}
       <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full blur-3xl transition-transform duration-500" />
 
@@ -104,8 +117,7 @@ export default function AudienceCard({
           </p>
         </div>
         <Badge
-          className={`ml-2 capitalize ring-1 ring-inset ${getStatusColor()} shadow-sm`}
-        >
+          className={`ml-2 capitalize ring-1 ring-inset ${getStatusColor()} shadow-sm`}>
           {status}
         </Badge>
       </div>
@@ -119,7 +131,7 @@ export default function AudienceCard({
             <p className="text-xs font-medium">Customers</p>
           </div>
           <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text">
-            {customerCount.toLocaleString()}
+            {setCustomerCount.toLocaleString()}
           </p>
         </div>
 
@@ -130,7 +142,7 @@ export default function AudienceCard({
             <p className="text-xs font-medium">Campaigns</p>
           </div>
           <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text">
-            {campaignsSent}
+            {setCampaignsSent}
           </p>
         </div>
       </div>
@@ -151,23 +163,20 @@ export default function AudienceCard({
                 isPositiveGrowth
                   ? "text-emerald-600 dark:text-emerald-400"
                   : "text-rose-600 dark:text-rose-400"
-              }`}
-            >
+              }`}>
               {isPositiveGrowth ? "+" : ""}
-              {growthRate}%
+              {setGrowthRate}%
             </span>
           </div>
         </div>
 
         {/* Engagement Rate */}
-        {engagementRate !== undefined && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Engagement</span>
-            <span className="text-sm font-medium text-foreground">
-              {engagementRate}%
-            </span>
-          </div>
-        )}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Engagement</span>
+          <span className="text-sm font-medium text-foreground">
+            {setEngagementRate}%
+          </span>
+        </div>
 
         {/* Last Campaign */}
         {lastCampaign && (
@@ -185,22 +194,22 @@ export default function AudienceCard({
 
       {/* Action Buttons */}
       <div className="relative mt-4 pt-4 border-t border-border flex gap-2">
-        <Button className="flex-1 shadow-md hover:shadow-lg transition-all duration-200">
+        <Button
+          onClick={handleViewDetails}
+          className="flex-1 shadow-md hover:shadow-lg transition-all duration-200">
           View Details
         </Button>
         <Button
-          onClick={handleViewDetails}
+          onClick={handleEdit}
           variant="outline"
           size="icon"
-          className="shadow-sm hover:shadow-md transition-all duration-200"
-        >
+          className="shadow-sm hover:shadow-md transition-all duration-200">
           <Pencil className="h-4 w-4" />
         </Button>
         <Button
           variant="outline"
           size="icon"
-          className="shadow-sm hover:shadow-md transition-all duration-200"
-        >
+          className="shadow-sm hover:shadow-md transition-all duration-200">
           <Mail className="h-4 w-4" />
         </Button>
       </div>

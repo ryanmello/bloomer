@@ -34,18 +34,25 @@ model User {
   country   String?
   postal    String?
   phone     String?
+  emailNotificationsEnabled Boolean @default(true)
 
   // Two-Factor Authentication
   twoFactorEnabled Boolean  @default(false)
   twoFactorSecret  String?
   backupCodes      String[]
 
+  // Password Reset
+  passwordResetToken      String?
+  passwordResetExpires    DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shops     Shop[]
-  coupons   Coupon[]
-  campaigns Campaign[]
+  shops            Shop[]
+  coupons          Coupon[]
+  campaigns        Campaign[]
+  emailIntegrations EmailIntegration[]
+  audiences          Audience[]
 }
 
 model Shop {
@@ -63,6 +70,7 @@ model Shop {
   customers Customer[]
   campaigns Campaign[]
   products  Product[]
+  audiences  Audience[]
 }
 
 model Customer {
@@ -78,6 +86,10 @@ model Customer {
   spendAmount    Float     @default(0)
   occasionsCount Int       @default(0)
   group          String?
+
+  dateOfBirth   DateTime?
+  birthMonth    Int?
+  birthDay      Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -230,4 +242,31 @@ model Audience {
   description String?
   status      AudienceStatus @default(draft)
   type        AudienceType   @default(custom)
+  customerIds String[]       @default([])
+  field       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shopId String? @db.ObjectId
+  shop   Shop?   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailIntegration {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform      String   // "gmail" or "outlook"
+  email         String   // The connected email address
+  accessToken   String   // Encrypted access token
+  refreshToken  String?  // Encrypted refresh token
+  expiresAt     DateTime? // Token expiration time
+  connected     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, platform])
 }
