@@ -10,6 +10,7 @@ import {Card, CardTitle, CardDescription} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
 import { toast } from "sonner";
+import {Select, SelectTrigger, SelectValue, SelectContent, SelectItem} from "@/components/ui/select";
 
 // Defines the shape of an audience object and its properties for TypeScript type checking
 type AudienceData = {
@@ -31,6 +32,16 @@ export default function Audiences() {
   const [searchQuery, setSearchQuery] = useState("");
   const [audiences, setAudiences] = useState<AudienceData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOperator, setSelectedOperator] = useState("equals");
+
+  // Supported operators for filtering
+  const operators = [
+    {value: "equals", label: "Equals"},
+    {value: "greaterThan", label: "Greater Than"},
+    {value: "lessThan", label: "Less Than"},
+    {value: "contains", label: "Contains"},
+    {value: "between", label: "Between"},
+  ];
 
   // TODO: change to real metrics
   const metrics = {
@@ -63,7 +74,7 @@ export default function Audiences() {
     return <p className="text-center mt-20 text-muted-foreground">Loading audiences...</p>;
   }
 
-  // Filter audiences based on selected filter and search query
+  // Filter audiences based on selected filter, search query, and operator
   const filteredAudiences = audiences.filter((audience) => {
     // Filter by selected tab
     let matchesFilter = true;
@@ -82,7 +93,15 @@ export default function Audiences() {
       audience.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       audience.description.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesFilter && matchesSearch;
+    // Placeholder for operator logic (currently only equals search string)
+    let matchesOperator = true;
+    if (selectedOperator === "equals" && searchQuery !== "") {
+      matchesOperator =
+        audience.name.toLowerCase() === searchQuery.toLowerCase() ||
+        audience.description.toLowerCase() === searchQuery.toLowerCase();
+    }
+
+    return matchesFilter && matchesSearch && matchesOperator;
   });
 
   return (
@@ -134,38 +153,54 @@ export default function Audiences() {
       <section>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           {/* Filter Tabs - Left */}
-          <Tabs
-            value={selectedFilter}
-            onValueChange={setSelectedFilter}
-            className="w-full sm:w-auto">
-            <TabsList className="w-full sm:w-auto">
-              <TabsTrigger
-                value="all"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial">
-                All
-              </TabsTrigger>
-              <TabsTrigger
-                value="active"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial">
-                Active
-              </TabsTrigger>
-              <TabsTrigger
-                value="inactive"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial">
-                Inactive
-              </TabsTrigger>
-              <TabsTrigger
-                value="custom"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial">
-                Custom
-              </TabsTrigger>
-              <TabsTrigger
-                value="predefined"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial">
-                Predefined
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+            <Tabs
+              value={selectedFilter}
+              onValueChange={setSelectedFilter}
+              className="w-full sm:w-auto">
+              <TabsList className="w-full sm:w-auto">
+                <TabsTrigger
+                  value="all"
+                  className="text-xs sm:text-sm flex-1 sm:flex-initial">
+                  All
+                </TabsTrigger>
+                <TabsTrigger
+                  value="active"
+                  className="text-xs sm:text-sm flex-1 sm:flex-initial">
+                  Active
+                </TabsTrigger>
+                <TabsTrigger
+                  value="inactive"
+                  className="text-xs sm:text-sm flex-1 sm:flex-initial">
+                  Inactive
+                </TabsTrigger>
+                <TabsTrigger
+                  value="custom"
+                  className="text-xs sm:text-sm flex-1 sm:flex-initial">
+                  Custom
+                </TabsTrigger>
+                <TabsTrigger
+                  value="predefined"
+                  className="text-xs sm:text-sm flex-1 sm:flex-initial">
+                  Predefined
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {/* Operator Dropdown */}
+            <Select value={selectedOperator} onValueChange={setSelectedOperator}>
+              <SelectTrigger className="h-11 w-full sm:w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {operators.map((op) => (
+                  <SelectItem key={op.value} value={op.value}>
+                    {op.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Search Bar - Right */}
           <div className="relative w-full sm:w-80">
