@@ -33,6 +33,7 @@ export default function Audiences() {
   const [audiences, setAudiences] = useState<AudienceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOperator, setSelectedOperator] = useState("equals");
+  const [filterValue, setFilterValue] = useState(""); // NEW: filter value state
 
   // Supported operators for filtering
   const operators = [
@@ -200,6 +201,14 @@ export default function Audiences() {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Filter Value Input*/}
+            <Input
+              placeholder="Enter filter value"
+              value={filterValue}
+              onChange={(e) => setFilterValue(e.target.value)}
+              className="h-11 w-full sm:w-32 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
+            />
           </div>
 
           {/* Search Bar - Right */}
