@@ -28,7 +28,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 
-// Defines the shape of an audience object and its properties for TypeScript type checking
+
 type AudienceData = {
   id: string;
   name: string;
@@ -41,6 +41,30 @@ type AudienceData = {
   engagementRate?: number;
   type: "custom" | "predefined";
   field?: string;
+  customerIds: string[];
+  customers?: CustomerData[];
+};
+
+type CustomerData = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber?: string;
+  additionalNote?: string;
+  orderCount?: number;
+  spendAmount?: number;
+  occasionsCount?: number;
+  addresses?: AddressData[];
+};
+
+type AddressData = {
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
 };
 
 // Available fields for filtering
@@ -111,9 +135,9 @@ export default function Audiences() {
   useEffect(() => {
     const fetchAudiences = async () => {
       try {
-        const res = await fetch("/api/audience");
+        const res = await fetch("/api/audience"); 
         if (!res.ok) throw new Error("Failed to fetch audiences");
-        const data: AudienceData[] = await res.json();
+        const data: AudienceData[] = await res.json(); 
         setAudiences(data);
       } catch (err) {
         console.error(err);
@@ -273,26 +297,41 @@ export default function Audiences() {
 
 
 const handleExport = () => {
-  // If nothing is selected, alert the user
+  // Ensure at least one option is selected
   if (!exportSummary && !exportAudiences && !exportCustomers) {
     toast("Please select at least one option to export.");
     return;
   }
 
-  // Prepare audience rows only if exportAudiences is true
+  
   const audienceRows = exportAudiences
     ? filteredAudiences.map(aud => ({
-        Name: aud.name,
+        Audience: aud.name,
         Description: aud.description ?? "-",
         Status: aud.status ?? "-",
         Type: aud.type ?? "-",
-        Customers: aud.customerCount ?? 0,
-        Campaigns: aud.campaignsSent ?? 0,
-        Growth: aud.growthRate ?? 0,
+        Customers: aud.customerCount ?? "-",
+        Campaigns: aud.campaignsSent ?? "-",
+        Growth: aud.growthRate ?? "-",
       }))
     : [];
 
-  // Prepare summary rows
+  const customerRows = exportCustomers
+    ? filteredAudiences.flatMap(aud =>
+        (aud.customers || []).map(cust => ({
+          Audience: aud.name,
+          "Customer Name": `${cust.firstName} ${cust.lastName}`,
+          Email: cust.email,
+          Phone: cust.phoneNumber ?? "-",
+          Orders: cust.orderCount ?? "-",
+          Spend: cust.spendAmount ?? "-",
+          Occasions: cust.occasionsCount ?? "-",
+          Address: cust.addresses
+          ?.map(a => `${a.line1}${a.line2 ? ", " + a.line2 : ""}, ${a.city}, ${a.state} ${a.zip}, ${a.country}`).join(" | ") ?? "-",
+        }))
+      )
+    : [];
+
   const summaryRows = exportSummary
     ? [
         ["Summary Metrics"],
@@ -300,29 +339,37 @@ const handleExport = () => {
         ["Active Audiences", metrics.activeAudiences.value],
         ["Total Campaigns", metrics.totalCampaigns.value],
         ["Average Growth Rate", metrics.avgGrowthRate.value],
-        [], // blank row
+        [], 
       ]
     : [];
 
-  // ---------- Export CSV ----------
+  // Export CSV 
   if (exportFormat === "csv") {
     let csvContent = "";
 
-    // Add summary first
+    // Summary
     summaryRows.forEach(row => {
       csvContent += row.join(",") + "\n";
     });
 
-    // Add audience table only if there is data
+    // Audience table
     if (audienceRows.length > 0) {
-      // Header
       csvContent += Object.keys(audienceRows[0]).join(",") + "\n";
-      // Rows
       audienceRows.forEach(row => {
+        csvContent += Object.values(row).join(",") + "\n";
+      });
+      csvContent += "\n"; 
+    }
+
+    // Customer table
+    if (customerRows.length > 0) {
+      csvContent += Object.keys(customerRows[0]).join(",") + "\n";
+      customerRows.forEach(row => {
         csvContent += Object.values(row).join(",") + "\n";
       });
     }
 
+    // Trigger download
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -332,12 +379,12 @@ const handleExport = () => {
     URL.revokeObjectURL(url);
   }
 
-  // ---------- Export PDF ----------
+  // Export PDF 
   else if (exportFormat === "pdf") {
     const doc = new jsPDF();
     let startY = 15;
 
-    // Add summary metrics first
+    // Summary
     if (exportSummary) {
       doc.setFontSize(12);
       summaryRows.forEach(row => {
@@ -347,16 +394,33 @@ const handleExport = () => {
       startY += 5;
     }
 
-    // Add audience table only if there is data
+    // Audience table
     if (exportAudiences && audienceRows.length > 0) {
       autoTable(doc, {
         startY,
-        head: [["Name", "Description", "Status", "Type", "Customers", "Campaigns", "Growth %"]],
+        head: [["Audience", "Description", "Status", "Type", "Customers", "Campaigns", "Growth %"]],
         body: audienceRows.map(r => [
-          r.Name, r.Description, r.Status, r.Type, r.Customers, r.Campaigns, r.Growth
+          r.Audience, r.Description, r.Status, r.Type, r.Customers, r.Campaigns, r.Growth
         ]),
         styles: { fontSize: 10 },
-        headStyles: { fillColor: [22, 160, 133] },
+        headStyles: { fillColor: [255, 0, 0] },
+        margin: { left: 14, right: 14 },
+      });
+      
+      startY = (doc as any).lastAutoTable?.finalY ?? startY + 10;
+    }
+
+    // Customer table
+    if (exportCustomers && customerRows.length > 0) {
+      startY += 5; 
+      autoTable(doc, {
+        startY,
+        head: [["Audience", "Customer Name", "Email", "Phone", "Orders", "Spend", "Occasions", "Address"]],
+        body: customerRows.map(r => [
+          r.Audience, r["Customer Name"], r.Email, r.Phone, r.Orders, r.Spend, r.Occasions, r.Address
+        ]),
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [255, 0, 0] },
         margin: { left: 14, right: 14 },
       });
     }
@@ -364,7 +428,7 @@ const handleExport = () => {
     doc.save("audiences_export.pdf");
   }
 
-  // Close the export dialog
+  
   setExportOpen(false);
  };
 
@@ -470,7 +534,6 @@ const handleExport = () => {
                </div>
              </label>
 
-             {/* Summary */}
              <label className="flex items-start gap-2">
                <input
                  type="checkbox"
@@ -485,7 +548,6 @@ const handleExport = () => {
                </div>
              </label>
 
-             {/* Customers */}
              <label className="flex items-start gap-2">
                <input
                  type="checkbox"
@@ -495,7 +557,7 @@ const handleExport = () => {
                <div>
                  <p className="font-medium">Customers</p>
                  <p className="text-sm text-muted-foreground">
-                   Export customers in selected audiences (large file)
+                   Export customers in selected audiences (may be a large file)
                  </p>
                </div>
              </label>

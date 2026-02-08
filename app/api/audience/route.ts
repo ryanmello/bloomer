@@ -26,7 +26,44 @@ export async function GET() {
       where: {shopId: shop.id},
     });
 
-    return NextResponse.json(audiences || []);
+    const allCustomerIds = Array.from(
+      new Set(audiences.flatMap(aud => aud.customerIds))
+    );
+    
+    const customers = allCustomerIds.length > 0
+      ? await db.customer.findMany({
+          where: { id: { in: allCustomerIds } },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phoneNumber: true,
+            additionalNote: true,
+            orderCount: true,
+            spendAmount: true,
+            occasionsCount: true,
+            addresses: {
+              select: {
+                line1: true,
+                line2: true,
+                city: true,
+                state: true,
+                zip: true,
+                country: true,
+            },
+          }
+         }, 
+        })
+      : [];
+
+        const customerMap = new Map(customers.map(c => [c.id, c]));
+        const audiencesWithCustomers = audiences.map(aud => ({...aud,customers: aud.customerIds.map(id => customerMap.get(id)).filter(Boolean),
+        
+      })
+    );
+    
+    return NextResponse.json(audiencesWithCustomers);
   } catch (err) {
     console.error("Error fetching audience:", err);
     return NextResponse.json([], {status: 500});
