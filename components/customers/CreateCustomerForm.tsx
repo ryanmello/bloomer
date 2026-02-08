@@ -37,6 +37,7 @@ interface FormCustomerProps {
   additionalNote?: string;
   squareId?: string;
   address: AddressProps;
+  dateOfBirth?: string;
 }
 
 export default function CreateCustomerForm() {
@@ -46,6 +47,7 @@ export default function CreateCustomerForm() {
     lastName: "",
     email: "",
     phoneNumber: "",
+    dateOfBirth: "",
     additionalNote: "",
     address: {
       line1: "",
@@ -61,7 +63,7 @@ export default function CreateCustomerForm() {
   // (handleChange in TypeScript)
   // handle change for normal inputs
   function handleInputChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) {
     const {name, value} = e.target;
     setFormData((prev) => ({
@@ -71,7 +73,7 @@ export default function CreateCustomerForm() {
   }
 
   function handleAddressChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) {
     const {name, value} = e.target;
     setFormData((prev) => ({
@@ -92,6 +94,7 @@ export default function CreateCustomerForm() {
       lastName: "",
       email: "",
       phoneNumber: "",
+      dateOfBirth: "",
       additionalNote: "",
       address: {
         line1: "",
@@ -146,7 +149,7 @@ export default function CreateCustomerForm() {
     <DialogPortal>
       <DialogOverlay />
 
-      <DialogContent className="fixed top-110 w-full p-6 overflow-auto">
+      <DialogContent className="fixed top-10 w-full p-6 overflow-auto">
         <DialogHeader>
           <DialogTitle>Add New Customer</DialogTitle>
           <DialogDescription>
@@ -180,6 +183,13 @@ export default function CreateCustomerForm() {
             name="phoneNumber"
             placeholder="Phone Number"
             value={formData.phoneNumber}
+            onChange={handleInputChange}
+            required
+          />
+          <Input
+            name="dateOfBirth"
+            placeholder="Date of Birth (YYYY-MM-DD)"
+            value={formData.dateOfBirth}
             onChange={handleInputChange}
             required
           />

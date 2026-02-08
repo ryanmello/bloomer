@@ -21,14 +21,15 @@ export async function GET() {
       );
     }
 
-    const audience = await db.audience.findMany({
+    // fetch all audiences including their customerIds array
+    const audiences = await db.audience.findMany({
       where: {shopId: shop.id},
     });
 
-    return NextResponse.json(audience || []);
+    return NextResponse.json(audiences || []);
   } catch (err) {
     console.error("Error fetching audience:", err);
-    return NextResponse.json([]);
+    return NextResponse.json([], {status: 500});
   }
 }
 
@@ -53,12 +54,15 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
+    // include the new customerIds field if provided
     const newAudience = await db.audience.create({
       data: {
         name: body.name,
         description: body.description,
         status: body.status,
         type: body.type,
+        field: body.field || null,
+        customerIds: body.customerIds || [],
         userId: user.id,
         shopId: shop.id,
       },

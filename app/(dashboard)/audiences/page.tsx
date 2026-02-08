@@ -9,8 +9,9 @@ import {useEffect, useState} from "react";
 import {Card, CardTitle, CardDescription} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
+import { toast } from "sonner";
+import {Select, SelectTrigger, SelectValue, SelectContent, SelectItem} from "@/components/ui/select";
 import { Trash2 } from "lucide-react";
-import {toast} from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,23 +28,66 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 
-type Audiences = {
+// Defines the shape of an audience object and its properties for TypeScript type checking
+type AudienceData = {
   id: string;
   name: string;
   description: string;
+  customerCount?: number;
+  campaignsSent?: number;
+  growthRate?: number;
+  lastCampaign?: string;
   status: "active" | "inactive" | "draft";
+  engagementRate?: number;
   type: "custom" | "predefined";
-  customerCount?: number;  
-  campaignsSent?: number;   
-  growthRate?: number;  
+  field?: string;
+};
+
+// Available fields for filtering
+const audienceFields = [
+  { value: "name", label: "Name" },
+  { value: "description", label: "Description" },
+  { value: "customerCount", label: "Customer Count" },
+  { value: "campaignsSent", label: "Campaigns Sent" },
+  { value: "growthRate", label: "Growth Rate" },
+  { value: "engagementRate", label: "Engagement Rate" },
+  { value: "lastCampaign", label: "Last Campaign" },
+  { value: "customerField", label: "Customer Field" }, // NEW
+];
+
+// Full operator set
+const operators = [
+  {value: "equals", label: "Equals"},
+  {value: "greaterThan", label: "Greater Than"},
+  {value: "lessThan", label: "Less Than"},
+  {value: "contains", label: "Contains"},
+  {value: "between", label: "Between"},
+];
+
+// Operator mapping per field
+const fieldOperators: Record<string, string[]> = {
+  name: ["equals","contains"],
+  description: ["equals","contains"],
+  customerCount: ["equals","greaterThan","lessThan","between"],
+  campaignsSent: ["equals","greaterThan","lessThan","between"],
+  growthRate: ["equals","greaterThan","lessThan","between"],
+  engagementRate: ["equals","greaterThan","lessThan","between"],
+  lastCampaign: ["equals","contains"],
+  customerField: ["equals","contains"],
 };
 
 export default function Audiences() {
   const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [audiences, setAudiences] = useState<Audiences[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [audiences, setAudiences] = useState<AudienceData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Field + operator + value for filtering
+  const [selectedField, setSelectedField] = useState("name");
+  const [selectedOperator, setSelectedOperator] = useState("equals");
+  const [filterValue, setFilterValue] = useState("");
+  const [filterValueMax, setFilterValueMax] = useState(""); // For "between" upper bound
 
   const [deleteMode, setDeleteMode] = useState(false); 
   const [selectedIds, setSelectedIds] = useState<string[]>([]); 
@@ -63,69 +107,35 @@ export default function Audiences() {
     avgGrowthRate: {value: "12.4%", change: 3.2},
   };
 
-  /*
-  const audiences = [
-    {
-      id: "new-customers",
-      name: "New Customers",
-      description:
-        "Customers who made their first purchase in the last 30 days",
-      customerCount: 287,
-      campaignsSent: 8,
-      growthRate: 24.5,
-      lastCampaign: "2 days ago",
-      status: "active" as const,
-      engagementRate: 68.3,
-      type: "predefined" as const,
-    },
-    {
-      id: "high-spenders",
-      name: "High Spenders",
-      description:
-        "Top 20% of customers by lifetime value and purchase frequency",
-      customerCount: 156,
-      campaignsSent: 15,
-      growthRate: 12.8,
-      lastCampaign: "5 days ago",
-      status: "active" as const,
-      engagementRate: 82.4,
-      type: "predefined" as const,
-    },
-    {
-      id: "inactive-customers",
-      name: "Inactive Customers",
-      description:
-        "Haven't made a purchase in the last 90 days - win them back!",
-      customerCount: 423,
-      campaignsSent: 6,
-      growthRate: -8.2,
-      lastCampaign: "1 week ago",
-      status: "inactive" as const,
-      engagementRate: 34.2,
-      type: "custom" as const,
-    },
-    {
-      id: "birthday-club",
-      name: "Birthday Club",
-      description:
-        "Customers with birthdays in the next 30 days for special offers",
-      customerCount: 94,
-      campaignsSent: 3,
-      growthRate: 5.6,
-      lastCampaign: "3 days ago",
-      status: "active" as const,
-      engagementRate: 91.5,
-      type: "custom" as const,
-    },
-  ];
-  */
+  // Loads audience data from the API when the page mounts
+  useEffect(() => {
+    const fetchAudiences = async () => {
+      try {
+        const res = await fetch("/api/audience");
+        if (!res.ok) throw new Error("Failed to fetch audiences");
+        const data: AudienceData[] = await res.json();
+        setAudiences(data);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load audiences");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // get audiences from database
+    fetchAudiences();
+  }, []);
+
+  if (loading) {
+    return <p className="text-center mt-20 text-muted-foreground">Loading audiences...</p>;
+  }
+
+// get audiences from database
   const fetchAudiencesCard = async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/audience");
-      const data: Audiences[] = await res.json();
+      const data: AudienceData[] = await res.json();
       if (res.ok) {
         setAudiences(data);
       }
@@ -136,12 +146,7 @@ export default function Audiences() {
     }
   };
 
-  useEffect(() => {
-    fetchAudiencesCard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
-  }, []);
-
-  // Filter audiences based on selected filter and search query
+  // Filter audiences based on selected filter, search query, and operator
   const filteredAudiences = audiences.filter((audience) => {
     // Filter by selected tab
     let matchesFilter = true;
@@ -160,7 +165,55 @@ export default function Audiences() {
       audience.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       audience.description.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesFilter && matchesSearch;
+    // Field + operator + value filter
+    let matchesField = true;
+    if (filterValue !== "") {
+      if (selectedField === "customerField") {
+        // Match against the audience.field property
+        const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, "");
+        matchesField = normalize(audience.field ?? "") === normalize(filterValue);
+      } else {
+        const fieldVal = (audience as any)[selectedField];
+        if (fieldVal !== undefined) {
+          const valStr = String(fieldVal).toLowerCase();
+          const value = filterValue.toLowerCase();
+
+          // Guardrails
+          const numericFields = ["customerCount","campaignsSent"];
+          const percentFields = ["growthRate","engagementRate"];
+
+          if (numericFields.includes(selectedField)) {
+            if (!/^\d*$/.test(filterValue)) matchesField = false;
+            else if (selectedOperator === "equals") matchesField = Number(fieldVal) === Number(filterValue);
+            else if (selectedOperator === "greaterThan") matchesField = Number(fieldVal) > Number(filterValue);
+            else if (selectedOperator === "lessThan") matchesField = Number(fieldVal) < Number(filterValue);
+            else if (selectedOperator === "between") {
+              const min = Number(filterValue);
+              const max = Number(filterValueMax);
+              matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
+            }
+          } else if (percentFields.includes(selectedField)) {
+            const cleanVal = filterValue.replace("%","");
+            const cleanValMax = filterValueMax.replace("%","");
+            if (!/^\d*\.?\d*$/.test(cleanVal)) matchesField = false;
+            else if (selectedOperator === "equals") matchesField = Number(fieldVal) === Number(cleanVal);
+            else if (selectedOperator === "greaterThan") matchesField = Number(fieldVal) > Number(cleanVal);
+            else if (selectedOperator === "lessThan") matchesField = Number(fieldVal) < Number(cleanVal);
+            else if (selectedOperator === "between") {
+              const min = Number(cleanVal);
+              const max = Number(cleanValMax);
+              matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
+            }
+          } else {
+            // Text fields
+            if (selectedOperator === "equals") matchesField = valStr === value;
+            else if (selectedOperator === "contains") matchesField = valStr.includes(value);
+          }
+        }
+      }
+    }
+
+    return matchesFilter && matchesSearch && matchesField;
   });
 
   const toggleDeleteMode = () => {
@@ -523,38 +576,123 @@ const handleExport = () => {
       <section>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           {/* Filter Tabs - Left */}
-          <Tabs
-            value={selectedFilter}
-            onValueChange={setSelectedFilter}
-            className="w-full sm:w-auto">
-            <TabsList className="w-full sm:w-auto">
-              <TabsTrigger
-                value="all"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial">
-                All
-              </TabsTrigger>
-              <TabsTrigger
-                value="active"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial">
-                Active
-              </TabsTrigger>
-              <TabsTrigger
-                value="inactive"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial">
-                Inactive
-              </TabsTrigger>
-              <TabsTrigger
-                value="custom"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial">
-                Custom
-              </TabsTrigger>
-              <TabsTrigger
-                value="predefined"
-                className="text-xs sm:text-sm flex-1 sm:flex-initial">
-                Predefined
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+            <Tabs
+              value={selectedFilter}
+              onValueChange={setSelectedFilter}
+              className="w-full sm:w-auto">
+              <TabsList className="w-full sm:w-auto">
+                <TabsTrigger
+                  value="all"
+                  className="text-xs sm:text-sm flex-1 sm:flex-initial">
+                  All
+                </TabsTrigger>
+                <TabsTrigger
+                  value="active"
+                  className="text-xs sm:text-sm flex-1 sm:flex-initial">
+                  Active
+                </TabsTrigger>
+                <TabsTrigger
+                  value="inactive"
+                  className="text-xs sm:text-sm flex-1 sm:flex-initial">
+                  Inactive
+                </TabsTrigger>
+                <TabsTrigger
+                  value="custom"
+                  className="text-xs sm:text-sm flex-1 sm:flex-initial">
+                  Custom
+                </TabsTrigger>
+                <TabsTrigger
+                  value="predefined"
+                  className="text-xs sm:text-sm flex-1 sm:flex-initial">
+                  Predefined
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {/* Field dropdown */}
+            <Select value={selectedField} onValueChange={(val) => {
+              setSelectedField(val);
+              // Update operator if current operator not allowed
+              const allowedOps = fieldOperators[val];
+              if (!allowedOps.includes(selectedOperator)) {
+                setSelectedOperator(allowedOps[0]);
+              }
+            }}>
+              <SelectTrigger className="h-11 w-full sm:w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {audienceFields.map((f) => (
+                  <SelectItem key={f.value} value={f.value}>
+                    {f.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Operator Dropdown */}
+            <Select value={selectedOperator} onValueChange={setSelectedOperator}>
+              <SelectTrigger className="h-11 w-full sm:w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {operators
+                  .filter(op => fieldOperators[selectedField].includes(op.value))
+                  .map((op) => (
+                  <SelectItem key={op.value} value={op.value}>
+                    {op.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Filter Value Input*/}
+            {selectedOperator === "between" ? (
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Input
+                  placeholder="Min"
+                  value={filterValue}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const numericFields = ["customerCount","campaignsSent"];
+                    const percentFields = ["growthRate","engagementRate"];
+                    if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
+                    if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
+                    setFilterValue(val);
+                  }}
+                  className="h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
+                />
+                <Input
+                  placeholder="Max"
+                  value={filterValueMax}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const numericFields = ["customerCount","campaignsSent"];
+                    const percentFields = ["growthRate","engagementRate"];
+                    if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
+                    if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
+                    setFilterValueMax(val);
+                  }}
+                  className="h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
+                />
+              </div>
+            ) : (
+              <Input
+                placeholder="Enter filter value"
+                value={filterValue}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const numericFields = ["customerCount","campaignsSent"];
+                  const percentFields = ["growthRate","engagementRate"];
+                  if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
+                  if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
+                  setFilterValue(val);
+                }}
+                className="h-11 w-full sm:w-32 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
+              />
+            )}
+          </div>
 
           {/* Search Bar - Right */}
           <div className="relative w-full sm:w-80">

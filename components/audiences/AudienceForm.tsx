@@ -1,6 +1,6 @@
 "use client";
 
-import {use, useState, useEffect} from "react";
+import {useState, useEffect} from "react";
 import {useRouter} from "next/navigation";
 import AudienceCard from "@/components/audiences/AudienceCard";
 import {Button} from "@/components/ui/button";
@@ -34,6 +34,7 @@ type AudienceData = {
   description: string;
   status: "active" | "inactive" | "draft";
   type: "custom" | "predefined";
+  field?: string;
   customerCount: number;
   campaignsSent: number;
   growthRate: number;
@@ -51,12 +52,22 @@ export default function AudienceForm({mode, initialData}: Props) {
   const [audienceData, setAudienceData] = useState<AudienceData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Supported customer fields for the dropdown
+  const supportedFields = [
+    {value: "customerGroup", label: "Customer Group"},
+    {value: "totalSpent", label: "Total Spent"},
+    {value: "totalOrders", label: "Total Orders"},
+    {value: "lastOrderDate", label: "Last Order Date"},
+    {value: "joinDate", label: "Join Date"},
+    {value: "location", label: "Location"},
+  ];
+
   const handleSave = async () => {
-    // In a real app, save to your
     setIsLoading(true);
 
     if (!audienceData.name.trim()) {
       toast.error("Please enter an audience name");
+      setIsLoading(false);
       return;
     }
 
@@ -75,6 +86,12 @@ export default function AudienceForm({mode, initialData}: Props) {
           description: audienceData.description || null,
           status: audienceData.status,
           type: audienceData.type,
+          field: audienceData.field || null,
+          customerCount: audienceData.customerCount,
+          campaignsSent: audienceData.campaignsSent,
+          growthRate: audienceData.growthRate,
+          lastCampaign: audienceData.lastCampaign,
+          engagementRate: audienceData.engagementRate,
         }),
       });
 
@@ -82,19 +99,13 @@ export default function AudienceForm({mode, initialData}: Props) {
 
       if (!res.ok) {
         toast.error(data.message || "Something went wrong");
-        return;
-      }
-
-      if (res.ok) {
-        toast.success("Audience created successfully!");
       } else {
-        toast.error("Failed to create Audience");
+        toast.success("Audience saved successfully!");
+        router.push("/audiences");
+        router.refresh();
       }
-
-      router.push("/audiences");
-      router.refresh();
     } catch (error) {
-      console.error("Error creating Audience:", error);
+      console.error("Error saving Audience:", error);
     } finally {
       setIsLoading(false);
     }
@@ -132,7 +143,6 @@ export default function AudienceForm({mode, initialData}: Props) {
     
   return (
     <main className="space-y-6 w-full max-w-full overflow-x-hidden">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
           {hasChanges ? (
@@ -315,6 +325,34 @@ export default function AudienceForm({mode, initialData}: Props) {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Field Selection: lets the user pick which customer attribute this audience will focus on */}
+              <div className="space-y-2">
+                {/* The label the user sees above the dropdown */}
+                <Label htmlFor="field">Customer Field</Label>
+
+                {/* The dropdown where the user selects a customer field */}
+                <Select
+                  value={audienceData.field ?? ""}
+                  onValueChange={(value) =>
+                    setAudienceData({...audienceData, field: value})
+                  }>
+                  {/* The visible button the user clicks to open the dropdown */}
+                  <SelectTrigger id="field" className="h-11">
+                    <SelectValue placeholder="Select customer field" />
+                  </SelectTrigger>
+
+                  {/* The options the user can choose from */}
+                  <SelectContent>
+                    {/* Choosing one of these sets which customer attribute this audience will track */}
+                    {supportedFields.map((field) => (
+                      <SelectItem key={field.value} value={field.value}>
+                        {field.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

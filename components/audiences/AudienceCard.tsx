@@ -23,7 +23,7 @@ type AudienceCardProps = {
   status: "active" | "inactive" | "draft";
   type?: "custom" | "predefined";
 
-  // change these optional since database do not store metrics
+  // optional metrics
   customerCount?: number;
   campaignsSent?: number;
   growthRate?: number;
@@ -54,10 +54,10 @@ export default function AudienceCard({
 
 }: AudienceCardProps) {
   const router = useRouter();
-  // set audience props. If customerCount is null or undefined, use 0 instead.
   const setCustomerCount = customerCount ?? 0;
   const setCampaignsSent = campaignsSent ?? 0;
   const setGrowthRate = growthRate ?? 0;
+  const setEngagementRate = engagementRate ?? 0;
   const isPositiveGrowth = setGrowthRate >= 0;
 
   const handleEdit = () => {
@@ -83,7 +83,7 @@ export default function AudienceCard({
     }
   };
 
-  // Get gradient colors based on status
+    // Get gradient colors based on status
   const getGradientColors = () => {
     switch (status) {
       case "active":
@@ -95,7 +95,7 @@ export default function AudienceCard({
     }
   };
 
-  // Get accent color for the top border
+    // Get accent color for the top border
   const getAccentBorder = () => {
     switch (status) {
       case "active":
@@ -187,20 +187,18 @@ export default function AudienceCard({
                   : "text-rose-600 dark:text-rose-400"
               }`}>
               {isPositiveGrowth ? "+" : ""}
-              {growthRate}%
+              {setGrowthRate}%
             </span>
           </div>
         </div>
 
         {/* Engagement Rate */}
-        {engagementRate !== undefined && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Engagement</span>
-            <span className="text-sm font-medium text-foreground">
-              {engagementRate}%
-            </span>
-          </div>
-        )}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Engagement</span>
+          <span className="text-sm font-medium text-foreground">
+            {setEngagementRate}%
+          </span>
+        </div>
 
         {/* Last Campaign */}
         {lastCampaign && (
