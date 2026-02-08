@@ -44,7 +44,7 @@ export async function GET(
     if (audience.type === "custom" && audience.field) {
       if (scalarFields.includes(audience.field)) {
         customerCount = await db.customer.count({
-          where: { shopId: shop.id, [audience.field]: { not: null } },
+          where: { shopId: shop.id, [audience.field]: { not: undefined } },
         });
       } else if (audience.field === "location") {
         customerCount = await db.customer.count({
@@ -71,7 +71,7 @@ export async function GET(
           customerCount = customers.filter(c => c.orders.length > 0).length;
         } else if (audience.field === "joinDate") {
           const customers = await db.customer.findMany({
-            where: { shopId: shop.id, createdAt: { not: null } },
+            where: { shopId: shop.id, createdAt: { not: undefined } },
             select: { id: true },
           });
           customerCount = customers.length;
@@ -150,7 +150,7 @@ export async function PUT(
         description: body.description,
         status: body.status,
         type: body.type,
-        field: body.field || null,
+        field: body.field ?? undefined,
         customerIds: body.customerIds || [],
       },
     });
