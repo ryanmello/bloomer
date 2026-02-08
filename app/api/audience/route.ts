@@ -26,7 +26,44 @@ export async function GET() {
       where: {shopId: shop.id},
     });
 
-    return NextResponse.json(audiences || []);
+    const allCustomerIds = Array.from(
+      new Set(audiences.flatMap(aud => aud.customerIds))
+    );
+    
+    const customers = allCustomerIds.length > 0
+      ? await db.customer.findMany({
+          where: { id: { in: allCustomerIds } },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phoneNumber: true,
+            additionalNote: true,
+            orderCount: true,
+            spendAmount: true,
+            occasionsCount: true,
+            addresses: {
+              select: {
+                line1: true,
+                line2: true,
+                city: true,
+                state: true,
+                zip: true,
+                country: true,
+            },
+          }
+         }, 
+        })
+      : [];
+
+        const customerMap = new Map(customers.map(c => [c.id, c]));
+        const audiencesWithCustomers = audiences.map(aud => ({...aud,customers: aud.customerIds.map(id => customerMap.get(id)).filter(Boolean),
+        
+      })
+    );
+    
+    return NextResponse.json(audiencesWithCustomers);
   } catch (err) {
     console.error("Error fetching audience:", err);
     return NextResponse.json([], {status: 500});
@@ -77,6 +114,56 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {error: "Failed to create audience"},
       {status: 500},
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const body = await req.json();
+    const { ids, id } = body; 
+
+    if ((!id && (!ids || ids.length === 0))) {
+      return NextResponse.json(
+        { error: "Audience ID(s) are required" },
+        { status: 400 }
+      );
+    }
+
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+    }
+
+    const shop = await db.shop.findFirst({ where: { userId: user.id } });
+    if (!shop) {
+      return NextResponse.json({ message: "No shop found for user" }, { status: 404 });
+    }
+
+    if (ids && ids.length > 0) {
+      await db.audience.deleteMany({
+        where: { id: { in: ids }, shopId: shop.id },
+      });
+      return NextResponse.json(
+        { message: "Audiences deleted successfully!" },
+        { status: 200 }
+      );
+    } else if (id) {
+      const audience = await db.audience.findFirst({ where: { id, shopId: shop.id } });
+      if (!audience) {
+        return NextResponse.json({ message: "Audience not found" }, { status: 404 });
+      }
+      await db.audience.delete({ where: { id } });
+      return NextResponse.json(
+        { message: "Audience deleted successfully!" },
+        { status: 200 }
+      );
+    }
+  } catch (err) {
+    console.error("Error deleting audience:", err);
+    return NextResponse.json(
+      { message: "Failed to delete audience" },
+      { status: 500 }
     );
   }
 }
