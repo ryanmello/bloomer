@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 type Coupon = {
   id: string;
   codeName: string;
+  description: string | null;
   discount: number;
   validUntil: Date;
   createdAt: Date;
@@ -51,10 +52,12 @@ export default function CouponList({ coupons }: { coupons: Coupon[] }) {
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <CardTitle>{coupon.codeName}</CardTitle>
-                    {isExpired && (
+                    {isExpired ? (
                       <Badge variant="danger">Expired</Badge>
+                    ) : (
+                      <Badge variant="success">Active</Badge>
                     )}
                   </div>
                   <p className="text-2xl font-bold text-primary">
@@ -72,6 +75,11 @@ export default function CouponList({ coupons }: { coupons: Coupon[] }) {
               </div>
             </CardHeader>
             <CardContent>
+              {coupon.description && (
+                <p className="text-sm text-muted-foreground mb-3 pb-3 border-b">
+                  {coupon.description}
+                </p>
+              )}
               <div className="space-y-1 text-sm text-muted-foreground">
                 <p>
                   Valid until: {new Date(coupon.validUntil).toLocaleString()}

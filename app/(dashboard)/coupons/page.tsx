@@ -35,6 +35,7 @@ export default async function CouponsPage() {
           <CardContent>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>• Create unique coupon codes for your customers</li>
+              <li>• Add a description for what the coupon is for</li>
               <li>• Set discount percentages (0-100%)</li>
               <li>• Choose expiration dates for time-limited offers</li>
               <li>• Manage all your coupons in one place</li>
