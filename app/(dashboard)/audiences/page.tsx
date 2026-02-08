@@ -17,14 +17,27 @@ type AudienceData = {
   id: string;
   name: string;
   description: string;
-  customerCount: number;
-  campaignsSent: number;
-  growthRate: number;
-  lastCampaign: string;
+  customerCount?: number;
+  campaignsSent?: number;
+  growthRate?: number;
+  lastCampaign?: string;
   status: "active" | "inactive" | "draft";
-  engagementRate: number;
+  engagementRate?: number;
   type: "custom" | "predefined";
+  field?: string;
 };
+
+// Available fields for filtering
+const audienceFields = [
+  { value: "name", label: "Name" },
+  { value: "description", label: "Description" },
+  { value: "customerCount", label: "Customer Count" },
+  { value: "campaignsSent", label: "Campaigns Sent" },
+  { value: "growthRate", label: "Growth Rate" },
+  { value: "engagementRate", label: "Engagement Rate" },
+  { value: "lastCampaign", label: "Last Campaign" },
+  { value: "customerField", label: "Customer Field" }, // NEW
+];
 
 export default function Audiences() {
   const router = useRouter();
@@ -32,8 +45,11 @@ export default function Audiences() {
   const [searchQuery, setSearchQuery] = useState("");
   const [audiences, setAudiences] = useState<AudienceData[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Field + operator + value for filtering
+  const [selectedField, setSelectedField] = useState("name");
   const [selectedOperator, setSelectedOperator] = useState("equals");
-  const [filterValue, setFilterValue] = useState(""); // NEW: filter value state
+  const [filterValue, setFilterValue] = useState("");
 
   // Supported operators for filtering
   const operators = [
@@ -94,15 +110,32 @@ export default function Audiences() {
       audience.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       audience.description.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Placeholder for operator logic (currently only equals search string)
-    let matchesOperator = true;
-    if (selectedOperator === "equals" && searchQuery !== "") {
-      matchesOperator =
-        audience.name.toLowerCase() === searchQuery.toLowerCase() ||
-        audience.description.toLowerCase() === searchQuery.toLowerCase();
+    // Field + operator + value filter
+    let matchesField = true;
+    if (filterValue !== "") {
+      if (selectedField === "customerField") {
+        // Match against the audience.field property
+        const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, "");
+        matchesField = normalize(audience.field ?? "") === normalize(filterValue);
+      } else {
+        const fieldVal = (audience as any)[selectedField];
+        if (fieldVal !== undefined) {
+          const valStr = String(fieldVal).toLowerCase();
+          const value = filterValue.toLowerCase();
+
+          if (selectedOperator === "equals") matchesField = valStr === value;
+          else if (selectedOperator === "contains") matchesField = valStr.includes(value);
+          else if (selectedOperator === "greaterThan") matchesField = Number(fieldVal) > Number(filterValue);
+          else if (selectedOperator === "lessThan") matchesField = Number(fieldVal) < Number(filterValue);
+          else if (selectedOperator === "between") {
+            const [min, max] = filterValue.split(",").map(Number);
+            matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
+          }
+        }
+      }
     }
 
-    return matchesFilter && matchesSearch && matchesOperator;
+    return matchesFilter && matchesSearch && matchesField;
   });
 
   return (
@@ -187,6 +220,20 @@ export default function Audiences() {
                 </TabsTrigger>
               </TabsList>
             </Tabs>
+
+            {/* Field dropdown */}
+            <Select value={selectedField} onValueChange={setSelectedField}>
+              <SelectTrigger className="h-11 w-full sm:w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {audienceFields.map((f) => (
+                  <SelectItem key={f.value} value={f.value}>
+                    {f.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Operator Dropdown */}
             <Select value={selectedOperator} onValueChange={setSelectedOperator}>
