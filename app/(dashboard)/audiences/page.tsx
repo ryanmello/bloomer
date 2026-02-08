@@ -9,12 +9,19 @@ import {useEffect, useState} from "react";
 import {Card, CardTitle, CardDescription} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
+import { toast } from "sonner";
 
-type Audiences = {
+// Defines the shape of an audience object and its properties for TypeScript type checking
+type AudienceData = {
   id: string;
   name: string;
   description: string;
+  customerCount: number;
+  campaignsSent: number;
+  growthRate: number;
+  lastCampaign: string;
   status: "active" | "inactive" | "draft";
+  engagementRate: number;
   type: "custom" | "predefined";
 };
 
@@ -22,8 +29,8 @@ export default function Audiences() {
   const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [audiences, setAudiences] = useState<Audiences[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [audiences, setAudiences] = useState<AudienceData[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // TODO: change to real metrics
   const metrics = {
@@ -33,83 +40,28 @@ export default function Audiences() {
     avgGrowthRate: {value: "12.4%", change: 3.2},
   };
 
-  /*
-  const audiences = [
-    {
-      id: "new-customers",
-      name: "New Customers",
-      description:
-        "Customers who made their first purchase in the last 30 days",
-      customerCount: 287,
-      campaignsSent: 8,
-      growthRate: 24.5,
-      lastCampaign: "2 days ago",
-      status: "active" as const,
-      engagementRate: 68.3,
-      type: "predefined" as const,
-    },
-    {
-      id: "high-spenders",
-      name: "High Spenders",
-      description:
-        "Top 20% of customers by lifetime value and purchase frequency",
-      customerCount: 156,
-      campaignsSent: 15,
-      growthRate: 12.8,
-      lastCampaign: "5 days ago",
-      status: "active" as const,
-      engagementRate: 82.4,
-      type: "predefined" as const,
-    },
-    {
-      id: "inactive-customers",
-      name: "Inactive Customers",
-      description:
-        "Haven't made a purchase in the last 90 days - win them back!",
-      customerCount: 423,
-      campaignsSent: 6,
-      growthRate: -8.2,
-      lastCampaign: "1 week ago",
-      status: "inactive" as const,
-      engagementRate: 34.2,
-      type: "custom" as const,
-    },
-    {
-      id: "birthday-club",
-      name: "Birthday Club",
-      description:
-        "Customers with birthdays in the next 30 days for special offers",
-      customerCount: 94,
-      campaignsSent: 3,
-      growthRate: 5.6,
-      lastCampaign: "3 days ago",
-      status: "active" as const,
-      engagementRate: 91.5,
-      type: "custom" as const,
-    },
-  ];
-  */
-
-  // get audiences from database
-  const fetchAudiencesCard = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/audience");
-      const data: Audiences[] = await res.json();
-      if (res.ok) {
-        setAudiences(data);
-      }
-    } catch (error) {
-      console.error("Audiences load failed", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Loads audience data from the API when the page mounts
   useEffect(() => {
-    fetchAudiencesCard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
+    const fetchAudiences = async () => {
+      try {
+        const res = await fetch("/api/audience");
+        if (!res.ok) throw new Error("Failed to fetch audiences");
+        const data: AudienceData[] = await res.json();
+        setAudiences(data);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load audiences");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAudiences();
   }, []);
+
+  if (loading) {
+    return <p className="text-center mt-20 text-muted-foreground">Loading audiences...</p>;
+  }
 
   // Filter audiences based on selected filter and search query
   const filteredAudiences = audiences.filter((audience) => {

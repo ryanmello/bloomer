@@ -63,11 +63,11 @@ export default function AudienceForm({mode, initialData}: Props) {
   ];
 
   const handleSave = async () => {
-    // In a real app, save to your
     setIsLoading(true);
 
     if (!audienceData.name.trim()) {
       toast.error("Please enter an audience name");
+      setIsLoading(false);
       return;
     }
 
@@ -87,6 +87,11 @@ export default function AudienceForm({mode, initialData}: Props) {
           status: audienceData.status,
           type: audienceData.type,
           field: audienceData.field || null,
+          customerCount: audienceData.customerCount,
+          campaignsSent: audienceData.campaignsSent,
+          growthRate: audienceData.growthRate,
+          lastCampaign: audienceData.lastCampaign,
+          engagementRate: audienceData.engagementRate,
         }),
       });
 
@@ -94,33 +99,25 @@ export default function AudienceForm({mode, initialData}: Props) {
 
       if (!res.ok) {
         toast.error(data.message || "Something went wrong");
-        return;
-      }
-
-      if (res.ok) {
-        toast.success("Audience created successfully!");
       } else {
-        toast.error("Failed to create Audience");
+        toast.success("Audience saved successfully!");
+        router.push("/audiences");
+        router.refresh();
       }
-
-      router.push("/audiences");
-      router.refresh();
     } catch (error) {
-      console.error("Error creating Audience:", error);
+      console.error("Error saving Audience:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDelete = () => {
-    // In a real app, delete from your API
     toast.success("Audience deleted successfully!");
     router.push("/audiences");
   };
 
   return (
     <main className="space-y-6 w-full max-w-full overflow-x-hidden">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button
