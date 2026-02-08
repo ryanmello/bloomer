@@ -22,6 +22,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Download } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 
 type Audiences = {
@@ -30,6 +33,9 @@ type Audiences = {
   description: string;
   status: "active" | "inactive" | "draft";
   type: "custom" | "predefined";
+  customerCount?: number;  
+  campaignsSent?: number;   
+  growthRate?: number;  
 };
 
 export default function Audiences() {
@@ -42,7 +48,12 @@ export default function Audiences() {
   const [deleteMode, setDeleteMode] = useState(false); 
   const [selectedIds, setSelectedIds] = useState<string[]>([]); 
   
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportSummary, setExportSummary] = useState(true);
+  const [exportCustomers, setExportCustomers] = useState(false);
+  const [exportAudiences, setExportAudiences] = useState(true);
 
+  const [exportFormat, setExportFormat] = useState<"csv" | "pdf">("csv");
 
   // TODO: change to real metrics
   const metrics = {
@@ -207,6 +218,104 @@ export default function Audiences() {
     }
   };
 
+
+const handleExport = () => {
+  // If nothing is selected, alert the user
+  if (!exportSummary && !exportAudiences && !exportCustomers) {
+    toast("Please select at least one option to export.");
+    return;
+  }
+
+  // Prepare audience rows only if exportAudiences is true
+  const audienceRows = exportAudiences
+    ? filteredAudiences.map(aud => ({
+        Name: aud.name,
+        Description: aud.description ?? "-",
+        Status: aud.status ?? "-",
+        Type: aud.type ?? "-",
+        Customers: aud.customerCount ?? 0,
+        Campaigns: aud.campaignsSent ?? 0,
+        Growth: aud.growthRate ?? 0,
+      }))
+    : [];
+
+  // Prepare summary rows
+  const summaryRows = exportSummary
+    ? [
+        ["Summary Metrics"],
+        ["Total Customers", metrics.totalCustomers.value],
+        ["Active Audiences", metrics.activeAudiences.value],
+        ["Total Campaigns", metrics.totalCampaigns.value],
+        ["Average Growth Rate", metrics.avgGrowthRate.value],
+        [], // blank row
+      ]
+    : [];
+
+  // ---------- Export CSV ----------
+  if (exportFormat === "csv") {
+    let csvContent = "";
+
+    // Add summary first
+    summaryRows.forEach(row => {
+      csvContent += row.join(",") + "\n";
+    });
+
+    // Add audience table only if there is data
+    if (audienceRows.length > 0) {
+      // Header
+      csvContent += Object.keys(audienceRows[0]).join(",") + "\n";
+      // Rows
+      audienceRows.forEach(row => {
+        csvContent += Object.values(row).join(",") + "\n";
+      });
+    }
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "audiences_export.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------- Export PDF ----------
+  else if (exportFormat === "pdf") {
+    const doc = new jsPDF();
+    let startY = 15;
+
+    // Add summary metrics first
+    if (exportSummary) {
+      doc.setFontSize(12);
+      summaryRows.forEach(row => {
+        doc.text(row.join(": "), 14, startY);
+        startY += 7;
+      });
+      startY += 5;
+    }
+
+    // Add audience table only if there is data
+    if (exportAudiences && audienceRows.length > 0) {
+      autoTable(doc, {
+        startY,
+        head: [["Name", "Description", "Status", "Type", "Customers", "Campaigns", "Growth %"]],
+        body: audienceRows.map(r => [
+          r.Name, r.Description, r.Status, r.Type, r.Customers, r.Campaigns, r.Growth
+        ]),
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [22, 160, 133] },
+        margin: { left: 14, right: 14 },
+      });
+    }
+
+    doc.save("audiences_export.pdf");
+  }
+
+  // Close the export dialog
+  setExportOpen(false);
+ };
+
+ 
   return (
     <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Top Panel */}
@@ -273,6 +382,108 @@ export default function Audiences() {
               </AlertDialogContent>
             </AlertDialog>
           )}
+
+
+        <Button
+            variant="outline"
+            onClick={() => setExportOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Export
+        </Button>
+          
+        <AlertDialog open={exportOpen} onOpenChange={setExportOpen}>
+         <AlertDialogContent>
+           <AlertDialogHeader>
+             <AlertDialogTitle>Export Audiences</AlertDialogTitle>
+             <AlertDialogDescription>
+               Choose what data you want to export.
+             </AlertDialogDescription>
+           </AlertDialogHeader>
+
+           <div className="space-y-4 py-2">
+          
+             <label className="flex items-start gap-2">
+               <input type="checkbox" 
+               checked={exportAudiences}
+               onChange={(e) => setExportAudiences(e.target.checked)}
+               />
+               <div>
+                 <p className="font-medium">Audiences</p>
+                 <p className="text-sm text-muted-foreground">
+                   Name, status, type, customer counts
+                 </p>
+               </div>
+             </label>
+
+             {/* Summary */}
+             <label className="flex items-start gap-2">
+               <input
+                 type="checkbox"
+                 checked={exportSummary}
+                 onChange={(e) => setExportSummary(e.target.checked)}
+               />
+               <div>
+                 <p className="font-medium">Summary metrics</p>
+                 <p className="text-sm text-muted-foreground">
+                   Total customers, active audiences, campaigns
+                 </p>
+               </div>
+             </label>
+
+             {/* Customers */}
+             <label className="flex items-start gap-2">
+               <input
+                 type="checkbox"
+                 checked={exportCustomers}
+                 onChange={(e) => setExportCustomers(e.target.checked)}
+               />
+               <div>
+                 <p className="font-medium">Customers</p>
+                 <p className="text-sm text-muted-foreground">
+                   Export customers in selected audiences (large file)
+                 </p>
+               </div>
+             </label>
+           </div>
+
+          <div className="space-y-2 py-2 pl-[14ch]">
+            <p className="font-medium">Export format:</p>
+
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="exportFormat"
+                value="csv"
+                checked={exportFormat === "csv"}
+                onChange={() => setExportFormat("csv")}
+              />
+              CSV
+            </label>
+
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="exportFormat"
+                value="pdf"
+                checked={exportFormat === "pdf"}
+                onChange={() => setExportFormat("pdf")}
+              />
+              PDF
+            </label>
+           </div>
+  
+
+           <AlertDialogFooter>
+             <AlertDialogCancel>Cancel</AlertDialogCancel>
+             <Button onClick={handleExport} variant="default">
+              Export
+             </Button>
+           </AlertDialogFooter>
+         </AlertDialogContent>
+       </AlertDialog>
+
 
 
         <Button variant="default" onClick={() => router.push("/audiences/new")}>
