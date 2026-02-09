@@ -70,9 +70,9 @@ export async function POST(req: Request) {
     }
 
     // Prisma database transaction -- API for running multiple operations
-    const result = await db.$transaction(async (tx) => {
+    const shop = await db.$transaction(async (tx) => {
       // Create the shop and link it to the authenticated user
-      const shop = await tx.shop.create({
+      const newShop = await tx.shop.create({
         data: {
           name,
           phone,
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
 
       // create predefined audience card
       const audienceExisting = await db.audience.findFirst({
-        where: {shopId: shop.id, type: "predefined"},
+        where: {shopId: newShop.id, type: "predefined"},
       });
       if (!audienceExisting) {
         await tx.audience.createMany({
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
               description: "Everyone who has interacted with your store",
               status: "active",
               type: "predefined",
-              shopId: shop.id,
+              shopId: newShop.id,
               userId: user.id,
             },
             {
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
               description: "Customers created in the last 30 days",
               status: "active",
               type: "predefined",
-              shopId: shop.id,
+              shopId: newShop.id,
               userId: user.id,
             },
             {
@@ -111,7 +111,7 @@ export async function POST(req: Request) {
                 "Haven't made a purchase in the last 90 days - win them back!",
               status: "inactive",
               type: "predefined",
-              shopId: shop.id,
+              shopId: newShop.id,
               userId: user.id,
             },
             {
@@ -119,7 +119,7 @@ export async function POST(req: Request) {
               description: "Customers in VIP group",
               status: "active",
               type: "predefined",
-              shopId: shop.id,
+              shopId: newShop.id,
               userId: user.id,
             },
             {
@@ -128,7 +128,7 @@ export async function POST(req: Request) {
                 "Top 20% of customers by lifetime value and purchase frequency",
               status: "active",
               type: "predefined",
-              shopId: shop.id,
+              shopId: newShop.id,
               userId: user.id,
             },
             {
@@ -137,17 +137,19 @@ export async function POST(req: Request) {
                 "Customers with birthdays in the next 30 days for special offers",
               status: "active",
               type: "predefined",
-              shopId: shop.id,
+              shopId: newShop.id,
               userId: user.id,
             },
           ],
         });
       }
+
+      // Return the shop from the transaction
+      return newShop;
     });
-    return NextResponse.json(
-      {message: "Created shop and predefined audiences"},
-      {status: 201},
-    );
+
+    // Return the created shop object (includes id, name, etc.)
+    return NextResponse.json(shop, {status: 201});
   } catch (error) {
     console.error("Error creating shop:", error);
     return NextResponse.json(
