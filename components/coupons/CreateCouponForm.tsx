@@ -5,6 +5,7 @@ import { createCoupon } from "@/actions/getCoupons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
 export default function CreateCouponForm() {
@@ -45,6 +46,17 @@ export default function CreateCouponForm() {
               name="codeName"
               required
               placeholder="SUMMER2025"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (optional)</Label>
+            <Textarea
+              id="description"
+              name="description"
+              placeholder="e.g. Summer sale for returning customers, 10% off first order"
+              rows={3}
+              className="resize-none"
             />
           </div>
 

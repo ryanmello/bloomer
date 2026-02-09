@@ -29,6 +29,11 @@ type AudienceCardProps = {
   growthRate?: number;
   lastCampaign?: string;
   engagementRate?: number;
+
+  //bulk delete
+  selectable?: boolean; // show checkbox only in delete mode
+  selected?: boolean;   // whether this card is selected
+  onSelect?: (id: string) => void; 
 };
 
 export default function AudienceCard({
@@ -42,6 +47,11 @@ export default function AudienceCard({
   growthRate,
   lastCampaign,
   engagementRate,
+
+  selectable,
+  selected,
+  onSelect,
+
 }: AudienceCardProps) {
   const router = useRouter();
   const setCustomerCount = customerCount ?? 0;
@@ -99,7 +109,19 @@ export default function AudienceCard({
 
   return (
     <div
+      onClick={() => selectable && id && onSelect?.(id)}
       className={`group relative rounded-2xl border border-t-4 shadow-sm p-6 bg-gradient-to-br ${getGradientColors()} ${getAccentBorder()} bg-card hover:shadow-xl transition-all duration-300 min-w-0 overflow-hidden`}>
+      
+      {/* Bulk delete checkbox*/}
+      {selectable && id && (
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onSelect && onSelect(id)}
+          className="absolute top-2 left-2 h-4 w-4"
+        />
+      )}
+      
       {/* Decorative gradient orb */}
       <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full blur-3xl transition-transform duration-500" />
 
