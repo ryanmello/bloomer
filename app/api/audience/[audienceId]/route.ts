@@ -1,10 +1,16 @@
 import {NextResponse, NextRequest} from "next/server";
 import db from "@/lib/prisma";
 import {getCurrentUser} from "@/actions/getCurrentUser";
+import {cookies} from "next/headers";
 
 const scalarFields = ["group", "email", "phoneNumber"];
 const relationFields = ["location"]; // addresses
-const derivedFields = ["totalSpent", "totalOrders", "lastOrderDate", "joinDate"];
+const derivedFields = [
+  "totalSpent",
+  "totalOrders",
+  "lastOrderDate",
+  "joinDate",
+];
 
 // fetch audience data
 export async function GET(
@@ -22,20 +28,50 @@ export async function GET(
       return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
-    const shop = await db.shop.findFirst({
-      where: {userId: user.id},
-    });
+    // Get the active shop ID from cookie
+    const cookieStore = await cookies();
+    const activeShopId = cookieStore.get("activeShopId")?.value;
 
-    if (!shop) {
-      return NextResponse.json({message: "No shop found for user"}, {status: 404});
+    let shop;
+
+    // Try to get the active shop if one is set
+    if (activeShopId) {
+      shop = await db.shop.findFirst({
+        where: {
+          id: activeShopId,
+          userId: user.id, // Security: ensure shop belongs to authenticated user
+        },
+      });
     }
+
+    // Fallback: if no active shop or it doesn't exist, get user's first shop
+    if (!shop) {
+      shop = await db.shop.findFirst({
+        where: {
+          userId: user.id,
+        },
+      });
+    }
+
+    // Return empty array if user has no shops
+    if (!shop) {
+      return NextResponse.json({error: "No shop found"}, {status: 404});
+    }
+
+    // const shop = await db.shop.findFirst({
+    //   where: {userId: user.id},
+    // });
+
+    // if (!shop) {
+    //   return NextResponse.json({message: "No shop found for user"}, {status: 404});
+    // }
 
     const audience = await db.audience.findFirst({
       where: {id: audienceId, userId: user.id, shopId: shop.id},
     });
 
     if (!audience) {
-      return NextResponse.json({ message: "Audience not found" }, { status: 404 });
+      return NextResponse.json({message: "Audience not found"}, {status: 404});
     }
 
     let customerCount = 0;
@@ -44,53 +80,56 @@ export async function GET(
     if (audience.type === "custom" && audience.field) {
       if (scalarFields.includes(audience.field)) {
         customerCount = await db.customer.count({
-          where: { shopId: shop.id, [audience.field]: { not: undefined } },
+          where: {shopId: shop.id, [audience.field]: {not: undefined}},
         });
       } else if (audience.field === "location") {
         customerCount = await db.customer.count({
-          where: { shopId: shop.id, addresses: { some: {} } },
+          where: {shopId: shop.id, addresses: {some: {}}},
         });
       } else if (derivedFields.includes(audience.field)) {
         if (audience.field === "totalSpent") {
           const customers = await db.customer.findMany({
-            where: { shopId: shop.id },
-            select: { spendAmount: true },
+            where: {shopId: shop.id},
+            select: {spendAmount: true},
           });
-          customerCount = customers.filter(c => c.spendAmount > 0).length;
+          customerCount = customers.filter((c) => c.spendAmount > 0).length;
         } else if (audience.field === "totalOrders") {
           const customers = await db.customer.findMany({
-            where: { shopId: shop.id },
-            select: { orderCount: true },
+            where: {shopId: shop.id},
+            select: {orderCount: true},
           });
-          customerCount = customers.filter(c => c.orderCount > 0).length;
+          customerCount = customers.filter((c) => c.orderCount > 0).length;
         } else if (audience.field === "lastOrderDate") {
           const customers = await db.customer.findMany({
-            where: { shopId: shop.id },
-            select: { orders: { select: { createdAt: true } } },
+            where: {shopId: shop.id},
+            select: {orders: {select: {createdAt: true}}},
           });
-          customerCount = customers.filter(c => c.orders.length > 0).length;
+          customerCount = customers.filter((c) => c.orders.length > 0).length;
         } else if (audience.field === "joinDate") {
           const customers = await db.customer.findMany({
-            where: { shopId: shop.id, createdAt: { not: undefined } },
-            select: { id: true },
+            where: {shopId: shop.id, createdAt: {not: undefined}},
+            select: {id: true},
           });
           customerCount = customers.length;
         }
       } else {
-        return NextResponse.json({ message: "Invalid audience field" }, { status: 400 });
+        return NextResponse.json(
+          {message: "Invalid audience field"},
+          {status: 400},
+        );
       }
     } else {
       // not custom or no field => all shop customers
-      customerCount = await db.customer.count({ where: { shopId: shop.id } });
+      customerCount = await db.customer.count({where: {shopId: shop.id}});
     }
 
     const campaignsSent = await db.campaign.count({
-      where: { shopId: shop.id, audienceType: audience.type },
+      where: {shopId: shop.id, audienceType: audience.type},
     });
 
     const lastCampaignObj = await db.campaign.findFirst({
-      where: { shopId: shop.id, audienceType: audience.type },
-      orderBy: { createdAt: "desc" },
+      where: {shopId: shop.id, audienceType: audience.type},
+      orderBy: {createdAt: "desc"},
     });
 
     return NextResponse.json({
@@ -102,7 +141,9 @@ export async function GET(
       field: audience.field,
       customerCount,
       campaignsSent,
-      lastCampaign: lastCampaignObj ? lastCampaignObj.createdAt.toISOString() : "",
+      lastCampaign: lastCampaignObj
+        ? lastCampaignObj.createdAt.toISOString()
+        : "",
       growthRate: 0, // placeholder
       engagementRate: 0, // placeholder
     });
@@ -125,12 +166,34 @@ export async function PUT(
       return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
-    const shop = await db.shop.findFirst({
-      where: {userId: user.id},
-    });
+    // Get the active shop ID from cookie
+    const cookieStore = await cookies();
+    const activeShopId = cookieStore.get("activeShopId")?.value;
 
+    let shop;
+
+    // Try to get the active shop if one is set
+    if (activeShopId) {
+      shop = await db.shop.findFirst({
+        where: {
+          id: activeShopId,
+          userId: user.id, // Security: ensure shop belongs to authenticated user
+        },
+      });
+    }
+
+    // Fallback: if no active shop or it doesn't exist, get user's first shop
     if (!shop) {
-      return NextResponse.json({message: "No shop found"}, {status: 404});
+      shop = await db.shop.findFirst({
+        where: {
+          userId: user.id,
+        },
+      });
+    }
+
+    // Return empty array if user has no shops
+    if (!shop) {
+      return NextResponse.json({error: "No shop found"}, {status: 404});
     }
 
     const existing = await db.audience.findFirst({

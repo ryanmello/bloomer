@@ -1,23 +1,27 @@
-import { NextResponse } from "next/server";
+import {NextResponse} from "next/server";
 import db from "@/lib/prisma";
-import { getCurrentUser } from "@/actions/getCurrentUser";
+import {getCurrentUser} from "@/actions/getCurrentUser";
+import {cookies} from "next/headers";
 
 const SQUARE_ACCESS_TOKEN = process.env.SQUARE_SANDBOX_TOKEN!;
 const SQUARE_LOCATION_ID = process.env.SQUARE_LOCATION_ID!;
 
 // Fetch orders for a customer
 async function fetchOrders(customerId: string) {
-  const res = await fetch("https://connect.squareupsandbox.com/v2/orders/search", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${SQUARE_ACCESS_TOKEN}`,
-      "Content-Type": "application/json",
+  const res = await fetch(
+    "https://connect.squareupsandbox.com/v2/orders/search",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${SQUARE_ACCESS_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        location_ids: [SQUARE_LOCATION_ID],
+        query: {filter: {customer_filter: {customer_ids: [customerId]}}},
+      }),
     },
-    body: JSON.stringify({
-      location_ids: [SQUARE_LOCATION_ID],
-      query: { filter: { customer_filter: { customer_ids: [customerId] } } },
-    }),
-  });
+  );
 
   const data = await res.json();
   return Array.isArray(data.orders) ? data.orders : [];
@@ -27,36 +31,53 @@ export async function POST() {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json(
-        { message: "Not authenticated" },
-        { status: 401 }
-      );
+      return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
-    // Get the user's shop
-    const shop = await db.shop.findFirst({
-      where: { userId: user.id }
-    });
+    // Get the active shop ID from cookie
+    const cookieStore = await cookies();
+    const activeShopId = cookieStore.get("activeShopId")?.value;
 
+    let shop;
+
+    // Try to get the active shop if one is set
+    if (activeShopId) {
+      shop = await db.shop.findFirst({
+        where: {
+          id: activeShopId,
+          userId: user.id, // Security: ensure shop belongs to authenticated user
+        },
+      });
+    }
+
+    // Fallback: if no active shop or it doesn't exist, get user's first shop
     if (!shop) {
-      return NextResponse.json(
-        { message: "No shop found for user" },
-        { status: 404 }
-      );
+      shop = await db.shop.findFirst({
+        where: {
+          userId: user.id,
+        },
+      });
     }
 
+    // Return empty array if user has no shops
+    if (!shop) {
+      return NextResponse.json({error: "No shop found"}, {status: 404});
+    }
     // Fetch customers from Square
-    const res = await fetch("https://connect.squareupsandbox.com/v2/customers", {
-      headers: {
-        Authorization: `Bearer ${SQUARE_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
+    const res = await fetch(
+      "https://connect.squareupsandbox.com/v2/customers",
+      {
+        headers: {
+          Authorization: `Bearer ${SQUARE_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     const data = await res.json();
     const customers = Array.isArray(data.customers) ? data.customers : [];
 
-    const result: { customerId: string; orderCount: number }[] = [];
+    const result: {customerId: string; orderCount: number}[] = [];
 
     for (const c of customers) {
       if (!c.id) continue;
@@ -79,8 +100,8 @@ export async function POST() {
 
       // Check if customer already exists by squareId
       const existingCustomer = await db.customer.findFirst({
-        where: { squareId: c.id },
-        include: { addresses: true },
+        where: {squareId: c.id},
+        include: {addresses: true},
       });
 
       let customerId: string;
@@ -88,7 +109,7 @@ export async function POST() {
       if (existingCustomer) {
         // Update existing customer
         await db.customer.update({
-          where: { id: existingCustomer.id },
+          where: {id: existingCustomer.id},
           data: {
             firstName: c.given_name || "",
             lastName: c.family_name || "",
@@ -125,30 +146,32 @@ export async function POST() {
       let totalSpend = 0;
 
       for (const order of orders) {
-        const amount = order.total_money?.amount ?? order.net_total_money?.amount ?? 0;
+        const amount =
+          order.total_money?.amount ?? order.net_total_money?.amount ?? 0;
         totalSpend += amount;
       }
 
       const spendInDollars = totalSpend / 100;
-      const occasions = orderCount; 
+      const occasions = orderCount;
 
       await db.customer.update({
-        where: { id: customerId },
-        data: {  orderCount: orders.length,             
-                 spendAmount: spendInDollars,         
-                 occasionsCount: orders.length },
+        where: {id: customerId},
+        data: {
+          orderCount: orders.length,
+          spendAmount: spendInDollars,
+          occasionsCount: orders.length,
+        },
       });
     }
-     
 
     return NextResponse.json({
       message: "Customers imported successfully.",
     });
   } catch (err) {
-       console.error("Error importing customers:", err);
-      return NextResponse.json(
-      { error: "Failed to import customers" },
-      { status: 500 }
+    console.error("Error importing customers:", err);
+    return NextResponse.json(
+      {error: "Failed to import customers"},
+      {status: 500},
     );
   }
 }
