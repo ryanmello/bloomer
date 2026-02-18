@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import Flower from "@/public/flower.png";
+import { LEGAL_CONTACT } from "@/lib/legal-contact";
 
 export const metadata = {
   title: "Terms of Service | Bloomer",
@@ -29,7 +30,7 @@ export default function TermsOfServicePage() {
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 md:px-8 py-12">
         <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
         <p className="text-muted-foreground text-sm mb-10">
-          Last updated: February 18, 2026
+          Last updated: February 1, 2025
         </p>
 
         <div className="prose prose-neutral dark:prose-invert max-w-none space-y-8 text-sm">
@@ -179,10 +180,10 @@ export default function TermsOfServicePage() {
             <p className="text-muted-foreground leading-relaxed">
               For questions about these Terms of Service, contact us at{" "}
               <a
-                href="mailto:legal@gobloomer.com"
+                href={`mailto:${LEGAL_CONTACT.legalEmail}`}
                 className="text-primary hover:underline"
               >
-                legal@gobloomer.com
+                {LEGAL_CONTACT.legalEmail}
               </a>
               .
             </p>

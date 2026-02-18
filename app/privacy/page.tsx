@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import Flower from "@/public/flower.png";
+import { LEGAL_CONTACT } from "@/lib/legal-contact";
 
 export const metadata = {
   title: "Privacy Policy | Bloomer",
@@ -29,7 +30,7 @@ export default function PrivacyPolicyPage() {
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 md:px-8 py-12">
         <h1 className="text-3xl font-bold mb-2">Privacy Policy</h1>
         <p className="text-muted-foreground text-sm mb-10">
-          Last updated: February 18, 2026
+          Last updated: February 1, 2025
         </p>
 
         <div className="prose prose-neutral dark:prose-invert max-w-none space-y-8 text-sm">
@@ -187,10 +188,10 @@ export default function PrivacyPolicyPage() {
               For questions about this Privacy Policy or our data practices,
               contact us at{" "}
               <a
-                href="mailto:placeholder-privacy@gobloomer.com"
+                href={`mailto:${LEGAL_CONTACT.privacyEmail}`}
                 className="text-primary hover:underline"
               >
-                privacy@gobloomer.com
+                {LEGAL_CONTACT.privacyEmail}
               </a>
               .
             </p>
