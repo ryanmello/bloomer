@@ -1,14 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield } from "lucide-react";
 import ResetPasswordModal from "./ResetPasswordModal";
 import TwoFactorAuthModal from "./TwoFactorAuthModal";
+import axios from "axios";
 
 export default function SecurityTile() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchTwoFactorStatus = useCallback(async () => {
+    try {
+      const response = await axios.get("/api/user/2fa/status");
+      setTwoFactorEnabled(response.data.enabled);
+    } catch {
+      // Silently fail — badge just won't show
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTwoFactorStatus();
+  }, [fetchTwoFactorStatus]);
+
+  const handleTwoFactorSuccess = () => {
+    fetchTwoFactorStatus();
+  };
 
   return (
     <>
@@ -62,23 +84,38 @@ export default function SecurityTile() {
               <div className="text-left">
                 <h3 className="font-semibold">Two-Factor Authentication</h3>
                 <p className="text-sm text-muted-foreground">
-                  Add an extra layer of security to your account
+                  {twoFactorEnabled
+                    ? "Manage your two-factor authentication"
+                    : "Add an extra layer of security to your account"}
                 </p>
               </div>
             </div>
-            <svg
-              className="h-5 w-5 text-muted-foreground group-hover:text-primary"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            <div className="flex items-center gap-2">
+              {!isLoading && (
+                <span
+                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    twoFactorEnabled
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {twoFactorEnabled ? "Enabled" : "Disabled"}
+                </span>
+              )}
+              <svg
+                className="h-5 w-5 text-muted-foreground group-hover:text-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
           </button>
         </div>
         </CardContent>
@@ -94,8 +131,9 @@ export default function SecurityTile() {
       <TwoFactorAuthModal
         isOpen={showTwoFactorModal}
         onClose={() => setShowTwoFactorModal(false)}
+        mode={twoFactorEnabled ? "disable" : "enable"}
+        onSuccess={handleTwoFactorSuccess}
       />
     </>
   );
 }
-
