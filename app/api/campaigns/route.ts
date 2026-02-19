@@ -65,11 +65,18 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { campaignName, subject, emailBody, audienceType, status, scheduledFor, sentAt } = body;
+    const { campaignName, subject, emailBody, audienceType, status, scheduledFor, sentAt, customerId } = body;
 
     if (!campaignName || !subject || !emailBody || !audienceType) {
       return NextResponse.json(
         { message: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    if (audienceType === 'single' && !customerId) {
+      return NextResponse.json(
+        { message: "Please select a customer for the test email" },
         { status: 400 }
       );
     }
@@ -88,32 +95,49 @@ export async function POST(req: NextRequest) {
 
     const shopId = shop.id;
 
-    // Get target customers based on audience type
-    const whereClause: any = {
-      shopId: shopId
-    };
+    let targetCustomers: { id: string; email: string; firstName: string; lastName: string }[];
 
-    // Handle audience type filtering (case-insensitive matching)
-    if (audienceType === 'vip') {
-      whereClause.group = { in: ['VIP', 'vip', 'Vip'] };
-    } else if (audienceType === 'new') {
-      whereClause.group = { in: ['New', 'new', 'NEW'] };
-    } else if (audienceType === 'potential') {
-      whereClause.group = { in: ['Potential', 'potential', 'POTENTIAL'] };
-    }
-    // If audienceType is 'all' or anything else, don't filter by group
-
-    console.log(`Querying customers with whereClause:`, JSON.stringify(whereClause, null, 2));
-    
-    const targetCustomers = await db.customer.findMany({
-      where: whereClause,
-      select: { 
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true
+    // Single customer mode - for testing before scaling up
+    if (audienceType === 'single' && customerId) {
+      const customer = await db.customer.findFirst({
+        where: { id: customerId, shopId },
+        select: { id: true, email: true, firstName: true, lastName: true }
+      });
+      if (!customer) {
+        return NextResponse.json(
+          { message: "Customer not found or does not belong to your shop" },
+          { status: 400 }
+        );
       }
-    });
+      targetCustomers = [customer];
+    } else {
+      // Get target customers based on audience type
+      const whereClause: any = {
+        shopId: shopId
+      };
+
+      // Handle audience type filtering (case-insensitive matching)
+      if (audienceType === 'vip') {
+        whereClause.group = { in: ['VIP', 'vip', 'Vip'] };
+      } else if (audienceType === 'new') {
+        whereClause.group = { in: ['New', 'new', 'NEW'] };
+      } else if (audienceType === 'potential') {
+        whereClause.group = { in: ['Potential', 'potential', 'POTENTIAL'] };
+      }
+      // If audienceType is 'all' or anything else, don't filter by group
+
+      console.log(`Querying customers with whereClause:`, JSON.stringify(whereClause, null, 2));
+      
+      targetCustomers = await db.customer.findMany({
+        where: whereClause,
+        select: { 
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true
+        }
+      });
+    }
 
     console.log(`Found ${targetCustomers.length} customers for audience type: ${audienceType}`);
     

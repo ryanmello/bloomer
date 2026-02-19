@@ -65,6 +65,7 @@ async function getAudiences(shopId: string) {
     ]);
 
     return [
+      { id: 'single', name: 'Single customer (test)', count: 1 },
       { id: 'all', name: 'All Customers', count: allCustomers },
       { id: 'vip', name: 'VIP Customers', count: vipCustomers },
       { id: 'new', name: 'New Customers', count: newCustomers },

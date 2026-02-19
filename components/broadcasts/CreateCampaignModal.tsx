@@ -1,12 +1,19 @@
 'use client';
-import { useState } from 'react';
-import { Send, Users, Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Send, Users, Calendar, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Audience {
   id: string;
   name: string;
   count: number;
+}
+
+interface Customer {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
 }
 
 interface CreateCampaignModalProps {
@@ -24,6 +31,9 @@ export default function CreateCampaignModal({
 }: CreateCampaignModalProps) {
   const [campaignName, setCampaignName] = useState('');
   const [selectedAudience, setSelectedAudience] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customersLoading, setCustomersLoading] = useState(false);
   const [subject, setSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -32,9 +42,30 @@ export default function CreateCampaignModal({
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
 
+  // Fetch customers when "single" audience is selected
+  useEffect(() => {
+    if (isOpen && selectedAudience === 'single') {
+      setCustomersLoading(true);
+      fetch('/api/customer')
+        .then((res) => res.json())
+        .then((data: Customer[]) => {
+          setCustomers(Array.isArray(data) ? data : []);
+        })
+        .catch(() => setCustomers([]))
+        .finally(() => setCustomersLoading(false));
+    } else {
+      setSelectedCustomerId('');
+    }
+  }, [isOpen, selectedAudience]);
+
   const createCampaign = async (actionType: 'draft' | 'send' | 'schedule') => {
     if (!campaignName || !selectedAudience || !subject || !emailBody) {
       toast.error('Please fill in all fields');
+      return;
+    }
+
+    if (selectedAudience === 'single' && !selectedCustomerId) {
+      toast.error('Please select a customer to send the test email to');
       return;
     }
 
@@ -53,6 +84,9 @@ export default function CreateCampaignModal({
         emailBody,
         audienceType: selectedAudience,
       };
+      if (selectedAudience === 'single' && selectedCustomerId) {
+        payload.customerId = selectedCustomerId;
+      }
 
       if (actionType === 'send') {
         payload.status = 'Sent';
@@ -97,6 +131,7 @@ export default function CreateCampaignModal({
       // Reset form
       setCampaignName('');
       setSelectedAudience('');
+      setSelectedCustomerId('');
       setSubject('');
       setEmailBody('');
       setScheduledDate('');
@@ -181,11 +216,33 @@ export default function CreateCampaignModal({
               <option value="">Select an audience</option>
               {audiences.map((audience) => (
                 <option key={audience.id} value={audience.id}>
-                  {audience.name} ({audience.count.toLocaleString()} customers)
+                  {audience.name} ({audience.count.toLocaleString()} {audience.id === 'single' ? 'recipient' : 'customers'})
                 </option>
               ))}
             </select>
           </div>
+
+          {selectedAudience === 'single' && (
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">
+                <User className="w-4 h-4 inline mr-1" />
+                Select customer
+              </label>
+              <select
+                value={selectedCustomerId}
+                onChange={(e) => setSelectedCustomerId(e.target.value)}
+                disabled={isSending || isSaving || customersLoading}
+                className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition appearance-none cursor-pointer disabled:opacity-50"
+              >
+                <option value="">{customersLoading ? 'Loading customers...' : 'Select a customer'}</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.firstName} {customer.lastName} ({customer.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-semibold text-foreground mb-2">

@@ -38,6 +38,7 @@ export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
 
   const getAudienceName = (audienceType: string) => {
     const audienceMap: { [key: string]: string } = {
+      single: 'Single customer (test)',
       all: 'All Customers',
       vip: 'VIP Customers',
       new: 'New Customers',
