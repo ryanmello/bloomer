@@ -18,10 +18,13 @@ import { Button } from '@/components/ui/button';
 import { PreviewDisplay } from './PreviewDisplay';
 import { Plus } from 'lucide-react';
 import { AutomationSettings } from './AutomationSettings';
+import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface CreateAutomationModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onSuccess?: () => void;
 }
 
 // Define the Zod schema for validation
@@ -42,7 +45,9 @@ const automationFormSchema = z.object({
 // Export the type inferred from the schema
 export type AutomationFormData = z.infer<typeof automationFormSchema>;
 
-export function CreateAutomationModal({ isOpen, onClose }: CreateAutomationModalProps) {
+export function CreateAutomationModal({ isOpen, onClose, onSuccess }: CreateAutomationModalProps) {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     // Initialize React Hook Form with Zod validation
     const form = useForm<AutomationFormData>({
         resolver: zodResolver(automationFormSchema),
@@ -65,10 +70,38 @@ export function CreateAutomationModal({ isOpen, onClose }: CreateAutomationModal
     const formData = form.watch();
 
     // This function will be called when form is submitted
-    const onSubmit = (data: AutomationFormData) => {
-        console.log(data);
-        onClose();
-        form.reset(); // Reset form on save/close
+    const onSubmit = async (data: AutomationFormData) => {
+        setIsSubmitting(true);
+        try {
+            const response = await fetch('/api/automation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: data.automationName,
+                    description: data.description || null,
+                    category: data.category,
+                    triggerType: data.triggerType,
+                    timing: parseInt(data.timing) || 0,
+                    actionType: data.actionType,
+                    status: data.activateImmediately ? 'active' : 'paused',
+                }),
+            });
+
+            if (response.ok) {
+                toast.success('Automation created successfully');
+                onClose();
+                form.reset();
+                onSuccess?.();
+            } else {
+                const errorData = await response.json();
+                toast.error(errorData.error || 'Failed to create automation');
+            }
+        } catch (error) {
+            console.error('Error creating automation:', error);
+            toast.error('Failed to create automation');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     // Make sure to reset form data when closing via X or Cancel
@@ -110,11 +143,11 @@ export function CreateAutomationModal({ isOpen, onClose }: CreateAutomationModal
                             <AutomationSettings />
                         </div>
                         <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={handleClose}>
+                            <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting}>
                                 Cancel
                             </Button>
-                            <Button type="submit">
-                                Create Automation
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? 'Creating...' : 'Create Automation'}
                             </Button>
                         </DialogFooter>
                     </form>

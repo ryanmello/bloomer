@@ -72,6 +72,7 @@ model Shop {
   campaigns Campaign[]
   products  Product[]
   audiences  Audience[]
+  automations Automation[]
 }
 
 model Customer {
@@ -101,7 +102,6 @@ model Customer {
   campaignRecipients CampaignRecipient[]
 
   orders Order[]
-  
 }
 
 model Order {
@@ -271,4 +271,22 @@ model EmailIntegration {
   updatedAt     DateTime @updatedAt
 
   @@unique([userId, platform])
+}
+
+model Automation {
+  id              String  @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  description     String?
+  category        String  // "lifecycle", "marketing", "transactional"
+  triggerType     String  // "birthday", "inactive", "new_customer"
+  timing          Int     // Days before/after trigger
+  actionType      String  // "send_email"
+  messageTemplate String? // Email template content with merge tags (e.g., {{firstName}}, {{shopName}})
+  status          String  @default("active") // "active" or "paused"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shopId String @db.ObjectId
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 }
