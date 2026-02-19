@@ -19,7 +19,8 @@ export default auth((req) => {
     nextUrl.pathname.startsWith("/sign-up") ||
     nextUrl.pathname.startsWith("/verify-2fa") ||
     nextUrl.pathname.startsWith("/privacy") ||
-    nextUrl.pathname.startsWith("/terms");
+    nextUrl.pathname.startsWith("/terms") ||
+    nextUrl.pathname === "/google2b1334b95428e077.html";
 
   // Redirect authenticated users away from auth pages to dashboard
   if (isLoggedIn && isAuthPage) {
