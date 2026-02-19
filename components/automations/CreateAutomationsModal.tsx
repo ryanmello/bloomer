@@ -16,10 +16,10 @@ import { FormFields } from "./FormFields";
 import { ActionConfiguration } from "./ActionConfiguration";
 import { Button } from '@/components/ui/button';
 import { PreviewDisplay } from './PreviewDisplay';
-import { Plus } from 'lucide-react';
 import { AutomationSettings } from './AutomationSettings';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Coupon } from '@/types/coupon';
 
 interface CreateAutomationModalProps {
     isOpen: boolean;
@@ -29,17 +29,15 @@ interface CreateAutomationModalProps {
 
 // Define the Zod schema for validation
 const automationFormSchema = z.object({
-    automationName: z.string().min(1, "Automation name is required"),
-    description: z.string().optional(),
-    category: z.string().min(1, "Category is required"),
-    triggerType: z.string().min(1, "Trigger type is required"),
-    timing: z.string().min(1, "Timing is required"),
-    additionalConditions: z.string().optional(),
-    actionType: z.string().min(1, "Action type is required"),
-    messageTemplate: z.string().min(1, "Message template is required"),
-    sendTo: z.string().min(1, "Recipient is required"),
+    automationName: z.string().min(1, "Give your automation a name"),
+    category: z.string().optional(), // Auto-set from trigger
+    triggerType: z.string().min(1, "Select a trigger event"),
+    timing: z.string().min(1, "Select when to send"),
+    messageTemplate: z.string().min(1, "Select an email template"),
+    emailSubject: z.string().optional(),
+    couponId: z.string().optional(),
+    emailBody: z.string().optional(),
     activateImmediately: z.boolean(),
-    trackEmailClicks: z.boolean(),
 });
 
 // Export the type inferred from the schema
@@ -47,27 +45,65 @@ export type AutomationFormData = z.infer<typeof automationFormSchema>;
 
 export function CreateAutomationModal({ isOpen, onClose, onSuccess }: CreateAutomationModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [shopName, setShopName] = useState<string>('Your Shop');
+    const [coupons, setCoupons] = useState<Coupon[]>([]);
+
+    // Fetch shop name and coupons when modal opens
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                // Get active shop ID and name
+                const activeRes = await fetch('/api/shop/active');
+                if (activeRes.ok) {
+                    const { activeShopId } = await activeRes.json();
+                    if (activeShopId) {
+                        const shopsRes = await fetch('/api/shop');
+                        if (shopsRes.ok) {
+                            const shops = await shopsRes.json();
+                            const activeShop = shops.find((s: { id: string }) => s.id === activeShopId);
+                            if (activeShop) {
+                                setShopName(activeShop.name);
+                            }
+                        }
+                    }
+                }
+
+                // Fetch coupons
+                const couponsRes = await fetch('/api/coupon');
+                if (couponsRes.ok) {
+                    const couponsData = await couponsRes.json();
+                    setCoupons(couponsData);
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+        if (isOpen) {
+            fetchData();
+        }
+    }, [isOpen]);
 
     // Initialize React Hook Form with Zod validation
     const form = useForm<AutomationFormData>({
         resolver: zodResolver(automationFormSchema),
         defaultValues: {
             automationName: "",
-            description: "",
             category: "",
             triggerType: "",
             timing: "",
-            additionalConditions: "",
-            actionType: "",
             messageTemplate: "",
-            sendTo: "",
-            activateImmediately: false,
-            trackEmailClicks: true,
+            emailSubject: "",
+            couponId: "",
+            emailBody: "",
+            activateImmediately: true,
         },
     });
 
     // Watch the form values for the preview
     const formData = form.watch();
+
+    // Get selected coupon for preview
+    const selectedCoupon = coupons.find(c => c.id === formData.couponId) || null;
 
     // This function will be called when form is submitted
     const onSubmit = async (data: AutomationFormData) => {
@@ -78,11 +114,14 @@ export function CreateAutomationModal({ isOpen, onClose, onSuccess }: CreateAuto
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: data.automationName,
-                    description: data.description || null,
-                    category: data.category,
+                    category: data.category || 'lifecycle',
                     triggerType: data.triggerType,
                     timing: parseInt(data.timing) || 0,
-                    actionType: data.actionType,
+                    actionType: 'send_email',
+                    messageTemplate: data.messageTemplate || null,
+                    emailSubject: data.emailSubject || null,
+                    emailBody: data.emailBody || null,
+                    couponId: data.couponId || null,
                     status: data.activateImmediately ? 'active' : 'paused',
                 }),
             });
@@ -111,38 +150,21 @@ export function CreateAutomationModal({ isOpen, onClose, onSuccess }: CreateAuto
     };
 
     return (
-        // Use handleClose for onOpenChange to reset state
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>Create New Automation</DialogTitle>
+                    <DialogTitle>Create Automation</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)}>
-                        <div className="flex flex-col gap-8 py-6 max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin">
+                        <div className="flex flex-col gap-6 py-4 max-h-[65vh] overflow-y-auto pr-2">
                             <FormFields />
-                            
-                            <div className="space-y-6">
-                                <TriggerConfiguration />
-                                <ActionConfiguration />
-                                
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-fit"
-                                    onClick={() => console.log("TODO: Add another action")}
-                                >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Add Another Action
-                                </Button>
-                            </div>
-
-                            <PreviewDisplay data={formData} />
-                            
+                            <TriggerConfiguration />
+                            <ActionConfiguration coupons={coupons} />
+                            <PreviewDisplay data={formData} shopName={shopName} coupon={selectedCoupon ?? undefined} />
                             <AutomationSettings />
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="pt-4">
                             <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting}>
                                 Cancel
                             </Button>

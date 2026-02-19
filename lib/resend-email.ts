@@ -271,3 +271,73 @@ export async function sendPasswordResetEmail(
     throw error;
   }
 }
+
+/**
+ * Supported merge tags for emails
+ */
+export const MERGE_TAGS = ['{{firstName}}', '{{lastName}}', '{{email}}', '{{shopName}}'] as const;
+
+/**
+ * Replace merge tags in content with actual values
+ */
+export function replaceMergeTags(
+  content: string,
+  data: { firstName?: string; lastName?: string; email?: string; shopName?: string }
+): string {
+  return content
+    .replace(/\{\{firstName\}\}/g, data.firstName || 'Customer')
+    .replace(/\{\{lastName\}\}/g, data.lastName || '')
+    .replace(/\{\{email\}\}/g, data.email || '')
+    .replace(/\{\{shopName\}\}/g, data.shopName || 'Our Shop');
+}
+
+/**
+ * Send automation email to a customer and increment sent count
+ */
+export async function sendAutomationEmail(
+  automationId: string,
+  customer: { id: string; email: string; firstName: string; lastName: string },
+  subject: string,
+  emailBody: string,
+  shopName: string
+): Promise<{ success: boolean; emailId?: string; error?: string }> {
+  try {
+    if (!customer.email?.includes('@')) {
+      return { success: false, error: 'Invalid email address' };
+    }
+
+    if (!process.env.RESEND_API_KEY) {
+      console.warn(`⚠️ RESEND_API_KEY not set. Would send to ${customer.email}`);
+      return { success: true, emailId: 'dev-mode' };
+    }
+
+    const resend = getResendClient();
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+
+    const personalizedSubject = replaceMergeTags(subject, { ...customer, shopName });
+    const personalizedBody = replaceMergeTags(emailBody, { ...customer, shopName });
+
+    const { data, error } = await resend.emails.send({
+      from: `${shopName} <${fromEmail}>`,
+      to: [customer.email],
+      subject: personalizedSubject,
+      html: personalizedBody,
+    });
+
+    if (error) {
+      console.error(`❌ Automation email failed for ${customer.email}:`, error);
+      return { success: false, error: error.message };
+    }
+
+    // Increment sent count
+    await db.automation.update({
+      where: { id: automationId },
+      data: { sentCount: { increment: 1 } },
+    });
+
+    console.log(`✅ Automation email sent to ${customer.email}, ID: ${data?.id}`);
+    return { success: true, emailId: data?.id };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'Unknown error' };
+  }
+}

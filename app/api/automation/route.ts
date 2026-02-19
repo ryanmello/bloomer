@@ -79,7 +79,19 @@ export async function POST(req: Request) {
 
     // Parse request body
     const body = await req.json();
-    const { name, description, category, triggerType, timing, actionType, messageTemplate, status } = body;
+    const {
+      name,
+      description,
+      category,
+      triggerType,
+      timing,
+      actionType,
+      messageTemplate,
+      emailSubject,
+      emailBody,
+      couponId,
+      status
+    } = body;
 
     // Validate required fields
     if (!name || !category || !triggerType || timing === undefined || !actionType) {
@@ -99,6 +111,9 @@ export async function POST(req: Request) {
         timing: Number(timing),
         actionType,
         messageTemplate: messageTemplate || null,
+        emailSubject: emailSubject || null,
+        emailBody: emailBody || null,
+        couponId: couponId || null,
         status: status || "active",
         shopId: activeShopId,
       },
