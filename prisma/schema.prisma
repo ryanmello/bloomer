@@ -18,6 +18,8 @@ model Coupon {
 
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  automations Automation[]
 }
 
 model User {
@@ -283,8 +285,19 @@ model Automation {
   triggerType     String  // "birthday", "inactive", "new_customer"
   timing          Int     // Days before/after trigger
   actionType      String  // "send_email"
-  messageTemplate String? // Email template content with merge tags (e.g., {{firstName}}, {{shopName}})
+  messageTemplate String? // Template key for predefined templates (e.g., "birthday_v1")
   status          String  @default("active") // "active" or "paused"
+
+  // Email content
+  emailSubject String? // Email subject line with merge tags (e.g., "Happy Birthday {{firstName}}!")
+  emailBody    String? // HTML email body with merge tags
+
+  // Coupon link
+  couponId String? @db.ObjectId
+  coupon   Coupon? @relation(fields: [couponId], references: [id])
+
+  // Tracking
+  sentCount Int @default(0) // Number of emails sent by this automation
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

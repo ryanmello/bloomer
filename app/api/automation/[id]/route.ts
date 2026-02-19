@@ -44,7 +44,18 @@ export async function PUT(
 
     // Parse request body
     const body = await req.json();
-    const { name, description, category, triggerType, timing, actionType, messageTemplate, status } = body;
+    const {
+      name,
+      description,
+      category,
+      triggerType,
+      timing,
+      actionType,
+      messageTemplate,
+      emailSubject,
+      emailBody,
+      status
+    } = body;
 
     // Update automation
     const automation = await db.automation.update({
@@ -57,6 +68,8 @@ export async function PUT(
         timing: timing !== undefined ? Number(timing) : existingAutomation.timing,
         actionType: actionType ?? existingAutomation.actionType,
         messageTemplate: messageTemplate !== undefined ? messageTemplate : existingAutomation.messageTemplate,
+        emailSubject: emailSubject !== undefined ? emailSubject : existingAutomation.emailSubject,
+        emailBody: emailBody !== undefined ? emailBody : existingAutomation.emailBody,
         status: status ?? existingAutomation.status,
       },
     });
