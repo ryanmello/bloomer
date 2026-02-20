@@ -69,6 +69,7 @@ export async function GET(
     if (audience.type === "predefined") {
       switch (audience.name) {
         case "All Customers":
+          // { id: "1", firstName: "John", ... },{ id: "2", firstName: "Jane", ... }
           customers = await getAllCustomers(shop.id);
           break;
         case "New Customers":

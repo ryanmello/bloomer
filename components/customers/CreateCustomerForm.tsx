@@ -188,7 +188,8 @@ export default function CreateCustomerForm() {
           />
           <Input
             name="dateOfBirth"
-            placeholder="Date of Birth (YYYY-MM-DD)"
+            type="date"
+            placeholder="Date of Birth"
             value={formData.dateOfBirth}
             onChange={handleInputChange}
             required

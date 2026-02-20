@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 import db from "../../../lib/prisma";
 import {getCurrentUser} from "@/actions/getCurrentUser";
 import {cookies} from "next/headers";
+import {parseISO} from "date-fns";
 
 export async function GET() {
   try {
@@ -168,6 +169,10 @@ export async function PUT(req: Request) {
       );
     }
 
+    // If dateOfBirth exists AND is not an empty string, convert it to a Date Otherwise set it to null
+    const dob =
+      dateOfBirth && dateOfBirth.trim() !== "" ? parseISO(dateOfBirth) : null;
+
     const updatedCustomer = await db.customer.update({
       where: {id},
       data: {
@@ -176,7 +181,9 @@ export async function PUT(req: Request) {
         email,
         phoneNumber,
         additionalNote,
-        dateOfBirth,
+        dateOfBirth: dob,
+        birthMonth: dob ? dob.getMonth() + 1 : null,
+        birthDay: dob ? dob.getDate() : null,
         addresses: addresses
           ? {
               deleteMany: {},
@@ -251,7 +258,7 @@ export async function POST(req: Request) {
     }
 
     // If dateOfBirth exists -> do something Otherwise -> use null”
-    // new Date(dateOfBirth): new Date("1998-03-21") -convert to prisma in db-> Date(1998-03-21T00:00:00.000Z)
+    // new Date(dateOfBirth): new Date("1998-03-21") -convert to prisma in db-> Date(1998-03-21T00:00:00.000)
     const dob = body.dateOfBirth ? new Date(body.dateOfBirth) : null;
 
     // create customer
