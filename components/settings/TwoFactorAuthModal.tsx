@@ -20,11 +20,15 @@ import axios from "axios";
 interface TwoFactorAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  mode?: "enable" | "disable";
+  onSuccess?: () => void;
 }
 
 export default function TwoFactorAuthModal({
   isOpen,
   onClose,
+  mode = "enable",
+  onSuccess,
 }: TwoFactorAuthModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<"setup" | "verify" | "complete">("setup");
@@ -37,9 +41,13 @@ export default function TwoFactorAuthModal({
   const [secret, setSecret] = useState<string>("");
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
 
-  // Fetch 2FA setup data when modal opens
+  // Disable flow state
+  const [disablePassword, setDisablePassword] = useState("");
+  const [disableBackupCode, setDisableBackupCode] = useState("");
+
+  // Fetch 2FA setup data when modal opens (enable mode only)
   useEffect(() => {
-    if (isOpen && currentStep === "setup" && !secret) {
+    if (isOpen && mode === "enable" && currentStep === "setup" && !secret) {
       const fetch2FAData = async () => {
         setIsLoading(true);
         try {
@@ -59,7 +67,7 @@ export default function TwoFactorAuthModal({
 
       fetch2FAData();
     }
-  }, [isOpen, currentStep, secret, onClose]);
+  }, [isOpen, mode, currentStep, secret, onClose]);
 
   const handleCopySecret = () => {
     navigator.clipboard.writeText(secret);
@@ -112,6 +120,7 @@ export default function TwoFactorAuthModal({
     setSecret("");
     setQrCodeUrl("");
     setBackupCodes([]);
+    onSuccess?.();
     onClose();
   };
 
@@ -121,7 +130,36 @@ export default function TwoFactorAuthModal({
     setSecret("");
     setQrCodeUrl("");
     setBackupCodes([]);
+    setDisablePassword("");
+    setDisableBackupCode("");
     onClose();
+  };
+
+  const handleDisable = async () => {
+    if (!disablePassword && !disableBackupCode) {
+      toast.error("Please enter your password or a backup code");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await axios.post("/api/user/2fa/disable", {
+        password: disablePassword || undefined,
+        backupCode: disableBackupCode || undefined,
+      });
+
+      toast.success("Two-factor authentication disabled");
+      setDisablePassword("");
+      setDisableBackupCode("");
+      onSuccess?.();
+      onClose();
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to disable two-factor authentication"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -130,14 +168,83 @@ export default function TwoFactorAuthModal({
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            <DialogTitle>Two-Factor Authentication</DialogTitle>
+            <DialogTitle>
+              {mode === "disable" ? "Disable" : "Enable"} Two-Factor Authentication
+            </DialogTitle>
           </div>
           <DialogDescription>
-            Add an extra layer of security to your account
+            {mode === "disable"
+              ? "Confirm your identity to disable two-factor authentication"
+              : "Add an extra layer of security to your account"}
           </DialogDescription>
         </DialogHeader>
 
-        {currentStep === "setup" && (
+        {mode === "disable" && (
+          <div className="space-y-6">
+            <div className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 p-4">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  Disabling 2FA will remove the extra layer of security from your account. You will only need your password to sign in.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="disable-password">Password</Label>
+                <Input
+                  id="disable-password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={disablePassword}
+                  onChange={(e) => setDisablePassword(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="disable-backup-code">Backup Code</Label>
+                <Input
+                  id="disable-backup-code"
+                  placeholder="Enter a backup code"
+                  value={disableBackupCode}
+                  onChange={(e) => setDisableBackupCode(e.target.value)}
+                  disabled={isLoading}
+                  className="font-mono"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDisable}
+                disabled={(!disablePassword && !disableBackupCode) || isLoading}
+              >
+                {isLoading ? "Disabling..." : "Disable 2FA"}
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+
+        {mode === "enable" && currentStep === "setup" && (
           <div className="space-y-6">
             <Tabs defaultValue="app" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
@@ -268,7 +375,7 @@ export default function TwoFactorAuthModal({
           </div>
         )}
 
-        {currentStep === "complete" && (
+        {mode === "enable" && currentStep === "complete" && (
           <div className="space-y-6">
             <div className="flex flex-col items-center justify-center py-4 space-y-3">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
