@@ -259,6 +259,8 @@ model Audience {
 
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  automations Automation[]
 }
 
 model EmailIntegration {
@@ -295,6 +297,10 @@ model Automation {
   // Coupon link
   couponId String? @db.ObjectId
   coupon   Coupon? @relation(fields: [couponId], references: [id])
+
+  // Audience link (optional - filters which customers receive the automation)
+  audienceId String?   @db.ObjectId
+  audience   Audience? @relation(fields: [audienceId], references: [id])
 
   // Tracking
   sentCount Int @default(0) // Number of emails sent by this automation

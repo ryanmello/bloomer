@@ -20,6 +20,15 @@ import { AutomationSettings } from './AutomationSettings';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { Coupon } from '@/types/coupon';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Users } from 'lucide-react';
+
+type Audience = {
+    id: string;
+    name: string;
+    description?: string | null;
+};
 
 interface CreateAutomationModalProps {
     isOpen: boolean;
@@ -33,6 +42,7 @@ const automationFormSchema = z.object({
     category: z.string().optional(), // Auto-set from trigger
     triggerType: z.string().min(1, "Select a trigger event"),
     timing: z.string().min(1, "Select when to send"),
+    audienceId: z.string().optional(), // Optional audience filter
     messageTemplate: z.string().min(1, "Select an email template"),
     emailSubject: z.string().optional(),
     couponId: z.string().optional(),
@@ -47,6 +57,7 @@ export function CreateAutomationModal({ isOpen, onClose, onSuccess }: CreateAuto
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [shopName, setShopName] = useState<string>('Your Shop');
     const [coupons, setCoupons] = useState<Coupon[]>([]);
+    const [audiences, setAudiences] = useState<Audience[]>([]);
 
     // Fetch shop name and coupons when modal opens
     useEffect(() => {
@@ -74,6 +85,13 @@ export function CreateAutomationModal({ isOpen, onClose, onSuccess }: CreateAuto
                     const couponsData = await couponsRes.json();
                     setCoupons(couponsData);
                 }
+
+                // Fetch audiences
+                const audiencesRes = await fetch('/api/audience');
+                if (audiencesRes.ok) {
+                    const audiencesData = await audiencesRes.json();
+                    setAudiences(audiencesData);
+                }
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
@@ -91,6 +109,7 @@ export function CreateAutomationModal({ isOpen, onClose, onSuccess }: CreateAuto
             category: "",
             triggerType: "",
             timing: "",
+            audienceId: "",
             messageTemplate: "",
             emailSubject: "",
             couponId: "",
@@ -122,6 +141,7 @@ export function CreateAutomationModal({ isOpen, onClose, onSuccess }: CreateAuto
                     emailSubject: data.emailSubject || null,
                     emailBody: data.emailBody || null,
                     couponId: data.couponId || null,
+                    audienceId: data.audienceId || null,
                     status: data.activateImmediately ? 'active' : 'paused',
                 }),
             });
@@ -160,6 +180,42 @@ export function CreateAutomationModal({ isOpen, onClose, onSuccess }: CreateAuto
                         <div className="flex flex-col gap-6 py-4 max-h-[65vh] overflow-y-auto pr-2">
                             <FormFields />
                             <TriggerConfiguration />
+
+                            {/* Audience Selection */}
+                            <FormField
+                                control={form.control}
+                                name="audienceId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="flex items-center gap-2">
+                                            <Users className="w-4 h-4" />
+                                            Target Audience
+                                        </FormLabel>
+                                        <Select
+                                            onValueChange={(value) => field.onChange(value === "all" ? "" : value)}
+                                            value={field.value || "all"}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="All Customers (no filter)" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Customers</SelectItem>
+                                                {audiences.map((audience) => (
+                                                    <SelectItem key={audience.id} value={audience.id}>
+                                                        {audience.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-muted-foreground">
+                                            Select an audience to target specific customers, or leave as &quot;All Customers&quot; to include everyone.
+                                        </p>
+                                    </FormItem>
+                                )}
+                            />
+
                             <ActionConfiguration coupons={coupons} />
                             <PreviewDisplay data={formData} shopName={shopName} coupon={selectedCoupon ?? undefined} />
                             <AutomationSettings />

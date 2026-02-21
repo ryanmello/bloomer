@@ -32,10 +32,18 @@ export async function GET() {
       return NextResponse.json({ error: "Shop not found" }, { status: 404 });
     }
 
-    // Fetch automations for this shop
+    // Fetch automations for this shop with audience data
     const automations = await db.automation.findMany({
       where: { shopId: activeShopId },
       orderBy: { createdAt: "desc" },
+      include: {
+        audience: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json(automations);
@@ -90,6 +98,7 @@ export async function POST(req: Request) {
       emailSubject,
       emailBody,
       couponId,
+      audienceId,
       status
     } = body;
 
@@ -114,8 +123,17 @@ export async function POST(req: Request) {
         emailSubject: emailSubject || null,
         emailBody: emailBody || null,
         couponId: couponId || null,
+        audienceId: audienceId || null,
         status: status || "active",
         shopId: activeShopId,
+      },
+      include: {
+        audience: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
