@@ -3,14 +3,9 @@ import db from "../../../../lib/prisma";
 
 export async function GET(
   req: Request,
-  context: { params?: { id?: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const params = await context.params;
-  const id = params?.id;
-
-  if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
-  }
+  const { id } = await context.params;
 
   const form = await db.form.findUnique({ where: { id } });
 
@@ -23,14 +18,10 @@ export async function GET(
 
 export async function PUT(
   req: Request,
-  context: { params?: { id?: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const params = await context.params;
-  const id = params?.id;
-
-  if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
-  }
+  
+  const { id } = await context.params;
 
   const body = await req.json();
 
@@ -55,9 +46,9 @@ export async function PUT(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await context.params;
 
   try {
     await db.form.delete({ where: { id } });
@@ -70,9 +61,9 @@ export async function DELETE(
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await context.params;
 
   try {
     const original = await db.form.findUnique({ where: { id } });
