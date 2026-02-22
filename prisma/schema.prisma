@@ -311,3 +311,16 @@ model Automation {
   shopId String @db.ObjectId
   shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 }
+
+model Form {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?  
+  status      String    // "active" | "template" | "custom"
+  access      String    // "public" | "verified"
+  questions   Json      
+  views       Int       @default(0)
+  submissions Int       @default(0)
+  conversions Int       @default(0)
+  updatedAt   DateTime  @updatedAt
+}
