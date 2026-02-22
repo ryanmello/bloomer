@@ -167,6 +167,7 @@ model Campaign {
   shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   recipients CampaignRecipient[]
+  audiences Audience[]
 }
 
 model CampaignRecipient {
@@ -259,6 +260,9 @@ model Audience {
 
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  campaignId String? @db.ObjectId
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
 }
 
 model EmailIntegration {
