@@ -54,6 +54,11 @@ type AutomationDB = {
   createdAt: string;
   updatedAt: string;
   shopId: string;
+  audienceId?: string | null;
+  audience?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 // UI display type (extends DB with computed/placeholder fields)
@@ -66,6 +71,8 @@ type AutomationRow = {
   triggerType: string;
   timing: number;
   actionType: string;
+  audienceId?: string | null;
+  audienceName?: string | null;
   // Placeholder metrics
   triggers: number;
   submissions: number;
@@ -86,6 +93,8 @@ function toAutomationRow(db: AutomationDB): AutomationRow {
     triggerType: db.triggerType,
     timing: db.timing,
     actionType: db.actionType,
+    audienceId: db.audienceId,
+    audienceName: db.audience?.name || null,
     triggers: 0,
     submissions: 0,
     opened: 0,
@@ -238,6 +247,7 @@ export default function AutomationsPage() {
           triggerType: automation.triggerType,
           timing: automation.timing,
           actionType: automation.actionType,
+          audienceId: automation.audienceId,
           status: 'active',
         }),
       });
@@ -639,7 +649,7 @@ export default function AutomationsPage() {
                                   )}
 
                                   {/* Timing and Action info */}
-                                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                                  <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
                                     <div className="flex items-center gap-1">
                                       <Clock className="w-4 h-4" />
                                       <span>{a.timing} days</span>
@@ -651,6 +661,10 @@ export default function AutomationsPage() {
                                     <div className="flex items-center gap-1">
                                       <Send className="w-4 h-4" />
                                       <span>{a.actionType.replace('_', ' ')}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <User className="w-4 h-4" />
+                                      <span>{a.audienceName || 'All Customers'}</span>
                                     </div>
                                   </div>
                                 </div>
