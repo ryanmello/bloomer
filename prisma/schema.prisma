@@ -262,6 +262,7 @@ model Audience {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   campaigns Campaign[]
+  automations Automation[]
 }
 
 model EmailIntegration {
@@ -299,6 +300,10 @@ model Automation {
   couponId String? @db.ObjectId
   coupon   Coupon? @relation(fields: [couponId], references: [id])
 
+  // Audience link (optional - filters which customers receive the automation)
+  audienceId String?   @db.ObjectId
+  audience   Audience? @relation(fields: [audienceId], references: [id])
+
   // Tracking
   sentCount Int @default(0) // Number of emails sent by this automation
 
@@ -307,4 +312,17 @@ model Automation {
 
   shopId String @db.ObjectId
   shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+}
+
+model Form {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?  
+  status      String    // "active" | "template" | "custom"
+  access      String    // "public" | "verified"
+  questions   Json      
+  views       Int       @default(0)
+  submissions Int       @default(0)
+  conversions Int       @default(0)
+  updatedAt   DateTime  @updatedAt
 }

@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             emailNotificationsEnabled: user.emailNotificationsEnabled,
+            twoFactorEnabled: user.twoFactorEnabled
         });
     } catch (error) {
         console.error("Error fetching user preferences:", error);
