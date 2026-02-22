@@ -33,7 +33,9 @@ export async function GET(req: NextRequest) {
       include: {
         recipients: {
           select: {
-            status: true
+            id: true,
+            status: true,
+            customerId: true
           }
         }
       },
