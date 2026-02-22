@@ -2,15 +2,15 @@
 
 import MetricCard from "@/components/dashboard/MetricCard";
 import AudienceCard from "@/components/audiences/AudienceCard";
-import {Users, Target, Send, TrendingUp, Search, Plus} from "lucide-react";
-import {Tabs, TabsList, TabsTrigger} from "@/components/ui/tabs";
-import {Input} from "@/components/ui/input";
-import {useEffect, useState} from "react";
-import {Card, CardTitle, CardDescription} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {useRouter} from "next/navigation";
+import { Users, Target, Send, TrendingUp, Search, Plus } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { useEffect, useState } from "react";
+import { Card, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {Select, SelectTrigger, SelectValue, SelectContent, SelectItem} from "@/components/ui/select";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -26,8 +26,6 @@ import {
 import { Download } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-
-
 
 type AudienceData = {
   id: string;
@@ -81,23 +79,23 @@ const audienceFields = [
 
 // Full operator set
 const operators = [
-  {value: "equals", label: "Equals"},
-  {value: "greaterThan", label: "Greater Than"},
-  {value: "lessThan", label: "Less Than"},
-  {value: "contains", label: "Contains"},
-  {value: "between", label: "Between"},
+  { value: "equals", label: "Equals" },
+  { value: "greaterThan", label: "Greater Than" },
+  { value: "lessThan", label: "Less Than" },
+  { value: "contains", label: "Contains" },
+  { value: "between", label: "Between" },
 ];
 
 // Operator mapping per field
 const fieldOperators: Record<string, string[]> = {
-  name: ["equals","contains"],
-  description: ["equals","contains"],
-  customerCount: ["equals","greaterThan","lessThan","between"],
-  campaignsSent: ["equals","greaterThan","lessThan","between"],
-  growthRate: ["equals","greaterThan","lessThan","between"],
-  engagementRate: ["equals","greaterThan","lessThan","between"],
-  lastCampaign: ["equals","contains"],
-  customerField: ["equals","contains"],
+  name: ["equals", "contains"],
+  description: ["equals", "contains"],
+  customerCount: ["equals", "greaterThan", "lessThan", "between"],
+  campaignsSent: ["equals", "greaterThan", "lessThan", "between"],
+  growthRate: ["equals", "greaterThan", "lessThan", "between"],
+  engagementRate: ["equals", "greaterThan", "lessThan", "between"],
+  lastCampaign: ["equals", "contains"],
+  customerField: ["equals", "contains"],
 };
 
 export default function Audiences() {
@@ -112,10 +110,11 @@ export default function Audiences() {
   const [selectedOperator, setSelectedOperator] = useState("equals");
   const [filterValue, setFilterValue] = useState("");
   const [filterValueMax, setFilterValueMax] = useState(""); // For "between" upper bound
+  const [filterError, setFilterError] = useState("");
 
-  const [deleteMode, setDeleteMode] = useState(false); 
-  const [selectedIds, setSelectedIds] = useState<string[]>([]); 
-  
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   const [exportOpen, setExportOpen] = useState(false);
   const [exportSummary, setExportSummary] = useState(true);
   const [exportCustomers, setExportCustomers] = useState(false);
@@ -125,19 +124,19 @@ export default function Audiences() {
 
   // TODO: change to real metrics
   const metrics = {
-    totalCustomers: {value: "1,842", change: 8.3},
-    activeAudiences: {value: 12, change: 20.0},
-    totalCampaigns: {value: 47, change: 15.5},
-    avgGrowthRate: {value: "12.4%", change: 3.2},
+    totalCustomers: { value: "1,842", change: 8.3 },
+    activeAudiences: { value: 12, change: 20.0 },
+    totalCampaigns: { value: 47, change: 15.5 },
+    avgGrowthRate: { value: "12.4%", change: 3.2 },
   };
 
   // Loads audience data from the API when the page mounts
   useEffect(() => {
     const fetchAudiences = async () => {
       try {
-        const res = await fetch("/api/audience"); 
+        const res = await fetch("/api/audience");
         if (!res.ok) throw new Error("Failed to fetch audiences");
-        const data: AudienceData[] = await res.json(); 
+        const data: AudienceData[] = await res.json();
         setAudiences(data);
       } catch (err) {
         console.error(err);
@@ -154,7 +153,7 @@ export default function Audiences() {
     return <p className="text-center mt-20 text-muted-foreground">Loading audiences...</p>;
   }
 
-// get audiences from database
+  // get audiences from database
   const fetchAudiencesCard = async () => {
     try {
       setLoading(true);
@@ -203,8 +202,8 @@ export default function Audiences() {
           const value = filterValue.toLowerCase();
 
           // Guardrails
-          const numericFields = ["customerCount","campaignsSent"];
-          const percentFields = ["growthRate","engagementRate"];
+          const numericFields = ["customerCount", "campaignsSent"];
+          const percentFields = ["growthRate", "engagementRate"];
 
           if (numericFields.includes(selectedField)) {
             if (!/^\d*$/.test(filterValue)) matchesField = false;
@@ -217,8 +216,8 @@ export default function Audiences() {
               matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
             }
           } else if (percentFields.includes(selectedField)) {
-            const cleanVal = filterValue.replace("%","");
-            const cleanValMax = filterValueMax.replace("%","");
+            const cleanVal = filterValue.replace("%", "");
+            const cleanValMax = filterValueMax.replace("%", "");
             if (!/^\d*\.?\d*$/.test(cleanVal)) matchesField = false;
             else if (selectedOperator === "equals") matchesField = Number(fieldVal) === Number(cleanVal);
             else if (selectedOperator === "greaterThan") matchesField = Number(fieldVal) > Number(cleanVal);
@@ -242,7 +241,7 @@ export default function Audiences() {
 
   const toggleDeleteMode = () => {
     setDeleteMode(!deleteMode);
-    setSelectedIds([]); 
+    setSelectedIds([]);
   };
 
   const toggleSelect = (id: string) => {
@@ -253,14 +252,14 @@ export default function Audiences() {
     }
   };
 
- const handleBulkDelete = async () => {
+  const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
 
     try {
       const res = await fetch("/api/audience", {
         method: "DELETE",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ids: selectedIds}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds }),
       });
 
       const data = await res.json();
@@ -270,9 +269,9 @@ export default function Audiences() {
       }
 
       toast.success(
-      selectedIds.length === 1
-        ? "Audience deleted successfully!"
-        : `${selectedIds.length} audiences deleted successfully!`
+        selectedIds.length === 1
+          ? "Audience deleted successfully!"
+          : `${selectedIds.length} audiences deleted successfully!`
       );
 
       fetchAudiencesCard();
@@ -289,23 +288,23 @@ export default function Audiences() {
 
   const toggleSelectAll = () => {
     if (allSelected) {
-      setSelectedIds([]); 
+      setSelectedIds([]);
     } else {
-      setSelectedIds(filteredAudiences.map((aud) => aud.id)); 
+      setSelectedIds(filteredAudiences.map((aud) => aud.id));
     }
   };
 
 
-const handleExport = () => {
-  // Ensure at least one option is selected
-  if (!exportSummary && !exportAudiences && !exportCustomers) {
-    toast("Please select at least one option to export.");
-    return;
-  }
+  const handleExport = () => {
+    // Ensure at least one option is selected
+    if (!exportSummary && !exportAudiences && !exportCustomers) {
+      toast("Please select at least one option to export.");
+      return;
+    }
 
-  
-  const audienceRows = exportAudiences
-    ? filteredAudiences.map(aud => ({
+
+    const audienceRows = exportAudiences
+      ? filteredAudiences.map(aud => ({
         Audience: aud.name,
         Description: aud.description ?? "-",
         Status: aud.status ?? "-",
@@ -314,10 +313,10 @@ const handleExport = () => {
         Campaigns: aud.campaignsSent ?? "-",
         Growth: aud.growthRate ?? "-",
       }))
-    : [];
+      : [];
 
-  const customerRows = exportCustomers
-    ? filteredAudiences.flatMap(aud =>
+    const customerRows = exportCustomers
+      ? filteredAudiences.flatMap(aud =>
         (aud.customers || []).map(cust => ({
           Audience: aud.name,
           "Customer Name": `${cust.firstName} ${cust.lastName}`,
@@ -327,112 +326,112 @@ const handleExport = () => {
           Spend: cust.spendAmount ?? "-",
           Occasions: cust.occasionsCount ?? "-",
           Address: cust.addresses
-          ?.map(a => `${a.line1}${a.line2 ? ", " + a.line2 : ""}, ${a.city}, ${a.state} ${a.zip}, ${a.country}`).join(" | ") ?? "-",
+            ?.map(a => `${a.line1}${a.line2 ? ", " + a.line2 : ""}, ${a.city}, ${a.state} ${a.zip}, ${a.country}`).join(" | ") ?? "-",
         }))
       )
-    : [];
+      : [];
 
-  const summaryRows = exportSummary
-    ? [
+    const summaryRows = exportSummary
+      ? [
         ["Summary Metrics"],
         ["Total Customers", metrics.totalCustomers.value],
         ["Active Audiences", metrics.activeAudiences.value],
         ["Total Campaigns", metrics.totalCampaigns.value],
         ["Average Growth Rate", metrics.avgGrowthRate.value],
-        [], 
+        [],
       ]
-    : [];
+      : [];
 
-  // Export CSV 
-  if (exportFormat === "csv") {
-    let csvContent = "";
+    // Export CSV 
+    if (exportFormat === "csv") {
+      let csvContent = "";
 
-    // Summary
-    summaryRows.forEach(row => {
-      csvContent += row.join(",") + "\n";
-    });
-
-    // Audience table
-    if (audienceRows.length > 0) {
-      csvContent += Object.keys(audienceRows[0]).join(",") + "\n";
-      audienceRows.forEach(row => {
-        csvContent += Object.values(row).join(",") + "\n";
-      });
-      csvContent += "\n"; 
-    }
-
-    // Customer table
-    if (customerRows.length > 0) {
-      csvContent += Object.keys(customerRows[0]).join(",") + "\n";
-      customerRows.forEach(row => {
-        csvContent += Object.values(row).join(",") + "\n";
-      });
-    }
-
-    // Trigger download
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "audiences_export.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  // Export PDF 
-  else if (exportFormat === "pdf") {
-    const doc = new jsPDF();
-    let startY = 15;
-
-    // Summary
-    if (exportSummary) {
-      doc.setFontSize(12);
+      // Summary
       summaryRows.forEach(row => {
-        doc.text(row.join(": "), 14, startY);
-        startY += 7;
+        csvContent += row.join(",") + "\n";
       });
-      startY += 5;
+
+      // Audience table
+      if (audienceRows.length > 0) {
+        csvContent += Object.keys(audienceRows[0]).join(",") + "\n";
+        audienceRows.forEach(row => {
+          csvContent += Object.values(row).join(",") + "\n";
+        });
+        csvContent += "\n";
+      }
+
+      // Customer table
+      if (customerRows.length > 0) {
+        csvContent += Object.keys(customerRows[0]).join(",") + "\n";
+        customerRows.forEach(row => {
+          csvContent += Object.values(row).join(",") + "\n";
+        });
+      }
+
+      // Trigger download
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "audiences_export.csv";
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
-    // Audience table
-    if (exportAudiences && audienceRows.length > 0) {
-      autoTable(doc, {
-        startY,
-        head: [["Audience", "Description", "Status", "Type", "Customers", "Campaigns", "Growth %"]],
-        body: audienceRows.map(r => [
-          r.Audience, r.Description, r.Status, r.Type, r.Customers, r.Campaigns, r.Growth
-        ]),
-        styles: { fontSize: 10 },
-        headStyles: { fillColor: [255, 0, 0] },
-        margin: { left: 14, right: 14 },
-      });
-      
-      startY = (doc as any).lastAutoTable?.finalY ?? startY + 10;
+    // Export PDF 
+    else if (exportFormat === "pdf") {
+      const doc = new jsPDF();
+      let startY = 15;
+
+      // Summary
+      if (exportSummary) {
+        doc.setFontSize(12);
+        summaryRows.forEach(row => {
+          doc.text(row.join(": "), 14, startY);
+          startY += 7;
+        });
+        startY += 5;
+      }
+
+      // Audience table
+      if (exportAudiences && audienceRows.length > 0) {
+        autoTable(doc, {
+          startY,
+          head: [["Audience", "Description", "Status", "Type", "Customers", "Campaigns", "Growth %"]],
+          body: audienceRows.map(r => [
+            r.Audience, r.Description, r.Status, r.Type, r.Customers, r.Campaigns, r.Growth
+          ]),
+          styles: { fontSize: 10 },
+          headStyles: { fillColor: [255, 0, 0] },
+          margin: { left: 14, right: 14 },
+        });
+
+        startY = (doc as any).lastAutoTable?.finalY ?? startY + 10;
+      }
+
+      // Customer table
+      if (exportCustomers && customerRows.length > 0) {
+        startY += 5;
+        autoTable(doc, {
+          startY,
+          head: [["Audience", "Customer Name", "Email", "Phone", "Orders", "Spend", "Occasions", "Address"]],
+          body: customerRows.map(r => [
+            r.Audience, r["Customer Name"], r.Email, r.Phone, r.Orders, r.Spend, r.Occasions, r.Address
+          ]),
+          styles: { fontSize: 10 },
+          headStyles: { fillColor: [255, 0, 0] },
+          margin: { left: 14, right: 14 },
+        });
+      }
+
+      doc.save("audiences_export.pdf");
     }
 
-    // Customer table
-    if (exportCustomers && customerRows.length > 0) {
-      startY += 5; 
-      autoTable(doc, {
-        startY,
-        head: [["Audience", "Customer Name", "Email", "Phone", "Orders", "Spend", "Occasions", "Address"]],
-        body: customerRows.map(r => [
-          r.Audience, r["Customer Name"], r.Email, r.Phone, r.Orders, r.Spend, r.Occasions, r.Address
-        ]),
-        styles: { fontSize: 10 },
-        headStyles: { fillColor: [255, 0, 0] },
-        margin: { left: 14, right: 14 },
-      });
-    }
 
-    doc.save("audiences_export.pdf");
-  }
+    setExportOpen(false);
+  };
 
-  
-  setExportOpen(false);
- };
 
- 
   return (
     <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Top Panel */}
@@ -446,14 +445,14 @@ const handleExport = () => {
         </div>
 
         <Button
-            variant={deleteMode ? "destructive" : "outline"}
-            onClick={toggleDeleteMode}
-            className="flex items-center gap-2"
-          >
-            {deleteMode ? "Cancel Selection" : "Select to Delete"}
-          </Button>
-          
-          {deleteMode && filteredAudiences.length > 0 && (
+          variant={deleteMode ? "destructive" : "outline"}
+          onClick={toggleDeleteMode}
+          className="flex items-center gap-2"
+        >
+          {deleteMode ? "Cancel Selection" : "Select to Delete"}
+        </Button>
+
+        {deleteMode && filteredAudiences.length > 0 && (
           <Button
             variant="outline"
             onClick={toggleSelectAll}
@@ -462,142 +461,142 @@ const handleExport = () => {
             {allSelected ? "Deselect All" : "Select All"}
           </Button>
         )}
-          
-          {deleteMode && selectedIds.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  className="flex items-center gap-2"
+
+        {deleteMode && selectedIds.length > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Selected ({selectedIds.length})
+              </Button>
+            </AlertDialogTrigger>
+
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete audiences?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-foreground">
+                    {selectedIds.length}
+                  </span> {" "}
+                  selected audiences? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleBulkDelete}
+                  className="bg-destructive hover:bg-destructive/90"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  Delete Selected ({selectedIds.length})
-                </Button>
-              </AlertDialogTrigger>
-
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete audiences?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete{" "}
-                    <span className="font-semibold text-foreground">
-                      {selectedIds.length}
-                    </span> {" "}
-                    selected audiences? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-
-                <AlertDialogFooter>
-                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                 <AlertDialogAction
-                   onClick={handleBulkDelete}
-                   className="bg-destructive hover:bg-destructive/90"
-                  >
-                   Delete Audiences
-                 </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+                  Delete Audiences
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
 
 
         <Button
-            variant="outline"
-            onClick={() => setExportOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Export
+          variant="outline"
+          onClick={() => setExportOpen(true)}
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Export
         </Button>
-          
+
         <AlertDialog open={exportOpen} onOpenChange={setExportOpen}>
-         <AlertDialogContent>
-           <AlertDialogHeader>
-             <AlertDialogTitle>Export Audiences</AlertDialogTitle>
-             <AlertDialogDescription>
-               Choose what data you want to export.
-             </AlertDialogDescription>
-           </AlertDialogHeader>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Export Audiences</AlertDialogTitle>
+              <AlertDialogDescription>
+                Choose what data you want to export.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
 
-           <div className="space-y-4 py-2">
-          
-             <label className="flex items-start gap-2">
-               <input type="checkbox" 
-               checked={exportAudiences}
-               onChange={(e) => setExportAudiences(e.target.checked)}
-               />
-               <div>
-                 <p className="font-medium">Audiences</p>
-                 <p className="text-sm text-muted-foreground">
-                   Name, status, type, customer counts
-                 </p>
-               </div>
-             </label>
+            <div className="space-y-4 py-2">
 
-             <label className="flex items-start gap-2">
-               <input
-                 type="checkbox"
-                 checked={exportSummary}
-                 onChange={(e) => setExportSummary(e.target.checked)}
-               />
-               <div>
-                 <p className="font-medium">Summary metrics</p>
-                 <p className="text-sm text-muted-foreground">
-                   Total customers, active audiences, campaigns
-                 </p>
-               </div>
-             </label>
+              <label className="flex items-start gap-2">
+                <input type="checkbox"
+                  checked={exportAudiences}
+                  onChange={(e) => setExportAudiences(e.target.checked)}
+                />
+                <div>
+                  <p className="font-medium">Audiences</p>
+                  <p className="text-sm text-muted-foreground">
+                    Name, status, type, customer counts
+                  </p>
+                </div>
+              </label>
 
-             <label className="flex items-start gap-2">
-               <input
-                 type="checkbox"
-                 checked={exportCustomers}
-                 onChange={(e) => setExportCustomers(e.target.checked)}
-               />
-               <div>
-                 <p className="font-medium">Customers</p>
-                 <p className="text-sm text-muted-foreground">
-                   Export customers in selected audiences (may be a large file)
-                 </p>
-               </div>
-             </label>
-           </div>
+              <label className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={exportSummary}
+                  onChange={(e) => setExportSummary(e.target.checked)}
+                />
+                <div>
+                  <p className="font-medium">Summary metrics</p>
+                  <p className="text-sm text-muted-foreground">
+                    Total customers, active audiences, campaigns
+                  </p>
+                </div>
+              </label>
 
-          <div className="space-y-2 py-2 pl-[14ch]">
-            <p className="font-medium">Export format:</p>
+              <label className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={exportCustomers}
+                  onChange={(e) => setExportCustomers(e.target.checked)}
+                />
+                <div>
+                  <p className="font-medium">Customers</p>
+                  <p className="text-sm text-muted-foreground">
+                    Export customers in selected audiences (may be a large file)
+                  </p>
+                </div>
+              </label>
+            </div>
 
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="exportFormat"
-                value="csv"
-                checked={exportFormat === "csv"}
-                onChange={() => setExportFormat("csv")}
-              />
-              CSV
-            </label>
+            <div className="space-y-2 py-2 pl-[14ch]">
+              <p className="font-medium">Export format:</p>
 
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="exportFormat"
-                value="pdf"
-                checked={exportFormat === "pdf"}
-                onChange={() => setExportFormat("pdf")}
-              />
-              PDF
-            </label>
-           </div>
-  
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="exportFormat"
+                  value="csv"
+                  checked={exportFormat === "csv"}
+                  onChange={() => setExportFormat("csv")}
+                />
+                CSV
+              </label>
 
-           <AlertDialogFooter>
-             <AlertDialogCancel>Cancel</AlertDialogCancel>
-             <Button onClick={handleExport} variant="default">
-              Export
-             </Button>
-           </AlertDialogFooter>
-         </AlertDialogContent>
-       </AlertDialog>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="exportFormat"
+                  value="pdf"
+                  checked={exportFormat === "pdf"}
+                  onChange={() => setExportFormat("pdf")}
+                />
+                PDF
+              </label>
+            </div>
+
+
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <Button onClick={handleExport} variant="default">
+                Export
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
 
 
@@ -675,6 +674,9 @@ const handleExport = () => {
             {/* Field dropdown */}
             <Select value={selectedField} onValueChange={(val) => {
               setSelectedField(val);
+              setFilterError(""); // clear error when field changes
+              setFilterValue("");
+              setFilterValueMax("");
               // Update operator if current operator not allowed
               const allowedOps = fieldOperators[val];
               if (!allowedOps.includes(selectedOperator)) {
@@ -694,7 +696,10 @@ const handleExport = () => {
             </Select>
 
             {/* Operator Dropdown */}
-            <Select value={selectedOperator} onValueChange={setSelectedOperator}>
+            <Select value={selectedOperator} onValueChange={(val) => {
+              setSelectedOperator(val);
+              setFilterError(""); // clear error when operator changes
+            }}>
               <SelectTrigger className="h-11 w-full sm:w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -702,10 +707,10 @@ const handleExport = () => {
                 {operators
                   .filter(op => fieldOperators[selectedField].includes(op.value))
                   .map((op) => (
-                  <SelectItem key={op.value} value={op.value}>
-                    {op.label}
-                  </SelectItem>
-                ))}
+                    <SelectItem key={op.value} value={op.value}>
+                      {op.label}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 
@@ -717,8 +722,8 @@ const handleExport = () => {
                   value={filterValue}
                   onChange={(e) => {
                     const val = e.target.value;
-                    const numericFields = ["customerCount","campaignsSent"];
-                    const percentFields = ["growthRate","engagementRate"];
+                    const numericFields = ["customerCount", "campaignsSent"];
+                    const percentFields = ["growthRate", "engagementRate"];
                     if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
                     if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
                     setFilterValue(val);
@@ -730,8 +735,8 @@ const handleExport = () => {
                   value={filterValueMax}
                   onChange={(e) => {
                     const val = e.target.value;
-                    const numericFields = ["customerCount","campaignsSent"];
-                    const percentFields = ["growthRate","engagementRate"];
+                    const numericFields = ["customerCount", "campaignsSent"];
+                    const percentFields = ["growthRate", "engagementRate"];
                     if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
                     if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
                     setFilterValueMax(val);
@@ -740,31 +745,51 @@ const handleExport = () => {
                 />
               </div>
             ) : (
-              <Input
-                placeholder="Enter filter value"
-                value={filterValue}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  const numericFields = ["customerCount","campaignsSent"];
-                  const percentFields = ["growthRate","engagementRate"];
-                  if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
-                  if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
-                  setFilterValue(val);
-                }}
-                className="h-11 w-full sm:w-32 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
-              />
-            )}
-          </div>
+              <div className="relative w-full sm:w-auto">
+                <Input
+                  placeholder="Enter filter value"
+                  value={filterValue}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const numericFields = ["customerCount", "campaignsSent"];
+                    const percentFields = ["growthRate", "engagementRate"];
 
-          {/* Search Bar - Right */}
-          <div className="relative w-full sm:w-80">
-            <Search className="z-1 absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search audiences..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-11 rounded-xl border-border/50 bg-muted/50 backdrop-blur-sm focus-visible:ring-ring"
-            />
+                    setFilterError("");
+
+                    if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) {
+                      setFilterError("Numbers only allowed");
+                      return;
+                    }
+
+                    if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) {
+                      setFilterError("Invalid percentage format");
+                      return;
+                    }
+
+                    setFilterValue(val);
+                  }}
+                  className={`h-11 w-full sm:w-32 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${filterError ? "border-red-500 text-red-500" : ""
+                    }`}
+                />
+
+                {/* This formats the input field and error message correctly, horizontally and vertically */}
+                {filterError && (
+                  <p className="absolute left-0 top-full mt-1 text-xs text-red-500 whitespace-nowrap">
+                    {filterError}
+                  </p>
+                )}
+              </div>
+            )}
+            {/* Search Bar - Right */}
+            <div className="relative w-full sm:w-80">
+              <Search className="z-1 absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search audiences..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-11 rounded-xl border-border/50 bg-muted/50 backdrop-blur-sm focus-visible:ring-ring"
+              />
+            </div>
           </div>
         </div>
 
@@ -777,10 +802,10 @@ const handleExport = () => {
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-4">
           {filteredAudiences.length > 0 ? (
             filteredAudiences.map((audience) => (
-              <AudienceCard key={audience.id} {...audience} 
-              selectable={deleteMode}
-              selected={selectedIds.includes(audience.id)}
-              onSelect={() => toggleSelect(audience.id)}
+              <AudienceCard key={audience.id} {...audience}
+                selectable={deleteMode}
+                selected={selectedIds.includes(audience.id)}
+                onSelect={() => toggleSelect(audience.id)}
               />
             ))
           ) : (
