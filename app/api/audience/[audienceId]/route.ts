@@ -1,6 +1,6 @@
-import {NextResponse, NextRequest} from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import db from "@/lib/prisma";
-import {getCurrentUser} from "@/actions/getCurrentUser";
+import { getCurrentUser } from "@/actions/getCurrentUser";
 
 const scalarFields = ["group", "email", "phoneNumber"];
 const relationFields = ["location"]; // addresses
@@ -12,26 +12,26 @@ export async function GET(
   // route [audienceId]
   // Next.js, audienceId = "abc123" as params
   // params = { audienceId: "abc123" }
-  {params}: {params: Promise<{audienceId: string}>},
+  { params }: { params: Promise<{ audienceId: string }> },
 ) {
-  const {audienceId} = await params;
+  const { audienceId } = await params;
 
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({message: "Not authenticated"}, {status: 401});
+      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
     }
 
     const shop = await db.shop.findFirst({
-      where: {userId: user.id},
+      where: { userId: user.id },
     });
 
     if (!shop) {
-      return NextResponse.json({message: "No shop found for user"}, {status: 404});
+      return NextResponse.json({ message: "No shop found for user" }, { status: 404 });
     }
 
     const audience = await db.audience.findFirst({
-      where: {id: audienceId, userId: user.id, shopId: shop.id},
+      where: { id: audienceId, userId: user.id, shopId: shop.id },
     });
 
     if (!audience) {
@@ -44,7 +44,7 @@ export async function GET(
     if (audience.type === "custom" && audience.field) {
       if (scalarFields.includes(audience.field)) {
         customerCount = await db.customer.count({
-          where: { shopId: shop.id, [audience.field]: { not: undefined } },
+          where: { shopId: shop.id, [audience.field]: { not: null } },
         });
       } else if (audience.field === "location") {
         customerCount = await db.customer.count({
@@ -70,11 +70,9 @@ export async function GET(
           });
           customerCount = customers.filter(c => c.orders.length > 0).length;
         } else if (audience.field === "joinDate") {
-          const customers = await db.customer.findMany({
-            where: { shopId: shop.id, createdAt: { not: undefined } },
-            select: { id: true },
+          const customerCount = await db.customer.count({
+            where: { shopId: shop.id },
           });
-          customerCount = customers.length;
         }
       } else {
         return NextResponse.json({ message: "Invalid audience field" }, { status: 400 });
@@ -85,11 +83,17 @@ export async function GET(
     }
 
     const campaignsSent = await db.campaign.count({
-      where: { shopId: shop.id, audienceType: audience.type },
+      where: {
+        shopId: shop.id,
+        audienceId: audience.id,
+      },
     });
 
     const lastCampaignObj = await db.campaign.findFirst({
-      where: { shopId: shop.id, audienceType: audience.type },
+      where: {
+        shopId: shop.id,
+        audienceId: audience.id,
+      },
       orderBy: { createdAt: "desc" },
     });
 
@@ -108,43 +112,46 @@ export async function GET(
     });
   } catch (err) {
     console.error("Error fetching audience:", err);
-    return NextResponse.json([]);
+    return NextResponse.json(
+      { message: "Failed to fetch audience" },
+      { status: 500 }
+    );
   }
 }
 
 // update audience data
 export async function PUT(
   req: NextRequest,
-  {params}: {params: Promise<{audienceId: string}>},
+  { params }: { params: Promise<{ audienceId: string }> },
 ) {
-  const {audienceId} = await params;
+  const { audienceId } = await params;
 
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({message: "Not authenticated"}, {status: 401});
+      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
     }
 
     const shop = await db.shop.findFirst({
-      where: {userId: user.id},
+      where: { userId: user.id },
     });
 
     if (!shop) {
-      return NextResponse.json({message: "No shop found"}, {status: 404});
+      return NextResponse.json({ message: "No shop found" }, { status: 404 });
     }
 
     const existing = await db.audience.findFirst({
-      where: {id: audienceId, userId: user.id, shopId: shop.id},
+      where: { id: audienceId, userId: user.id, shopId: shop.id },
     });
 
     if (!existing) {
-      return NextResponse.json({message: "Audience not found"}, {status: 404});
+      return NextResponse.json({ message: "Audience not found" }, { status: 404 });
     }
 
     const body = await req.json();
 
     const updateAudience = await db.audience.update({
-      where: {id: audienceId},
+      where: { id: audienceId },
       data: {
         name: body.name,
         description: body.description,
@@ -160,7 +167,7 @@ export async function PUT(
         message: "Audience updated successfully!",
       });
 
-    return NextResponse.json(updateAudience, {status: 201});
+    return NextResponse.json(updateAudience, { status: 201 });
   } catch (err) {
     console.error("Error update audience:", err);
     return NextResponse.json([]);
