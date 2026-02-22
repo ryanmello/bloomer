@@ -15,7 +15,7 @@ function getResendClient() {
 // GET - Fetch a single campaign
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -27,7 +27,7 @@ export async function GET(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const campaign = await db.campaign.findUnique({
       where: { id },
@@ -67,7 +67,7 @@ export async function GET(
 // PATCH - Update campaign (e.g., mark as sent)
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -79,7 +79,7 @@ export async function PATCH(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { status, sentAt } = body;
 
@@ -178,7 +178,7 @@ export async function PATCH(
 // DELETE - Delete campaign
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -190,7 +190,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const campaign = await db.campaign.findUnique({
       where: { id }

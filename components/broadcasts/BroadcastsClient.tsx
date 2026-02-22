@@ -6,31 +6,26 @@ import CampaignsTable from './CampaignsTable';
 import CreateCampaignModal from './CreateCampaignModal';
 import { useRouter } from 'next/navigation';
 
+interface CampaignRow {
+  id: string;
+  campaignName: string;
+  status: "Failed" | "Draft" | "Scheduled" | "Sent";
+  sentAt: string | null;
+  createdAt: string;
+  audience: {
+    id: string;
+    name: string;
+  } | null;
+}
+
 interface Audience {
   id: string;
   name: string;
   count: number;
 }
 
-interface Campaign {
-  id: string;
-  campaignName: string;
-  status: "Draft" | "Scheduled" | "Sent" | "Failed";
-  sentAt: string | null;
-  createdAt: string;
-  audience?: {
-    id: string;
-    name: string;
-  } | null;
-  recipients: Array<{
-    id: string;
-    status: string;
-    customerId: string;
-  }>;
-}
-
 interface BroadcastsClientProps {
-  campaigns: Campaign[];
+  campaigns: CampaignRow[];
   audiences: Audience[];
 }
 
