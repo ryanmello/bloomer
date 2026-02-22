@@ -112,13 +112,22 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000  # or your production URL
 - The current implementation stores tokens in plain text - consider encrypting them for production use
 - Use environment variables for all sensitive data
 
+## Local setup checklist
+
+1. **Copy credentials** from Vercel (or Google Cloud) into `bloomer/.env`:
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
+2. **Google Cloud** → Credentials → your OAuth client → ensure `http://localhost:3000/api/inbox/oauth/gmail/callback` is in **Authorized redirect URIs**
+3. **NEXTAUTH_URL** in `.env` must be `http://localhost:3000` for local dev
+
 ## Testing
 
 1. Start your development server: `npm run dev`
-2. Navigate to `/inbox`
-3. Click on either "Gmail" or "Outlook" to connect
-4. You'll be redirected to the provider's login page
-5. After authorizing, you'll be redirected back and your emails will load
+2. Sign in to Bloomer (if not already)
+3. Navigate to `/inbox`
+4. Click **Gmail** to connect
+5. You'll be redirected to Google's login page
+6. After authorizing, you'll be redirected back and your emails will load
 
 ## Troubleshooting
 

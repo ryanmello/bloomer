@@ -95,7 +95,6 @@ export async function POST(req: Request) {
               status: "active",
               type: "predefined",
               shopId: shop.id,
-              userId: user.id,
             },
             {
               name: "New Customers",
@@ -103,7 +102,6 @@ export async function POST(req: Request) {
               status: "active",
               type: "predefined",
               shopId: shop.id,
-              userId: user.id,
             },
             {
               name: "Inactive Customers",
@@ -112,7 +110,6 @@ export async function POST(req: Request) {
               status: "inactive",
               type: "predefined",
               shopId: shop.id,
-              userId: user.id,
             },
             {
               name: "VIP Customers",
@@ -120,7 +117,6 @@ export async function POST(req: Request) {
               status: "active",
               type: "predefined",
               shopId: shop.id,
-              userId: user.id,
             },
             {
               name: "High Spenders",
@@ -129,7 +125,6 @@ export async function POST(req: Request) {
               status: "active",
               type: "predefined",
               shopId: shop.id,
-              userId: user.id,
             },
             {
               name: "Birthday Club",
@@ -138,7 +133,6 @@ export async function POST(req: Request) {
               status: "active",
               type: "predefined",
               shopId: shop.id,
-              userId: user.id,
             },
           ],
         });

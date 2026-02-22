@@ -31,7 +31,7 @@ export async function GET(
     }
 
     const audience = await db.audience.findFirst({
-      where: {id: audienceId, userId: user.id, shopId: shop.id},
+      where: {id: audienceId, shopId: shop.id},
     });
 
     if (!audience) {
@@ -134,7 +134,7 @@ export async function PUT(
     }
 
     const existing = await db.audience.findFirst({
-      where: {id: audienceId, userId: user.id, shopId: shop.id},
+      where: {id: audienceId, shopId: shop.id},
     });
 
     if (!existing) {

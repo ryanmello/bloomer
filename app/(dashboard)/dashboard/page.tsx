@@ -6,9 +6,6 @@ import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import { DollarSign, ShoppingBag, Users, Package } from "lucide-react";
 import CustomerOccasions from "@/components/dashboard/CustomerOccasions";
 
-// Force dynamic rendering - fetch fresh data on each request
-export const dynamic = "force-dynamic";
-
 export default async function DashboardPage() {
   const metrics = {
     revenue: { value: "$42,380", change: 12.5 },

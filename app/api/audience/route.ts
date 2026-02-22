@@ -100,7 +100,6 @@ export async function POST(req: Request) {
         type: body.type,
         field: body.field || null,
         customerIds: body.customerIds || [],
-        userId: user.id,
         shopId: shop.id,
       },
     });

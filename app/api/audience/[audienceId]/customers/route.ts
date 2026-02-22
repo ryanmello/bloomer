@@ -34,7 +34,7 @@ export async function GET(
     }
 
     const audience = await db.audience.findFirst({
-      where: {id: audienceId, userId: user.id, shopId: shop.id},
+      where: {id: audienceId, shopId: shop.id},
     });
 
     if (!audience)
@@ -104,7 +104,7 @@ export async function POST(
     }
 
     const audience = await db.audience.findFirst({
-      where: {id: audienceId, userId: user.id, shopId: shop.id},
+      where: {id: audienceId, shopId: shop.id},
     });
 
     if (!audience) {
@@ -187,8 +187,15 @@ export async function DELETE(
       return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
+    const shop = await db.shop.findFirst({
+      where: {userId: user.id},
+    });
+    if (!shop) {
+      return NextResponse.json({message: "No shop found"}, {status: 404});
+    }
+
     const audience = await db.audience.findFirst({
-      where: {id: audienceId, userId: user.id},
+      where: {id: audienceId, shopId: shop.id},
     });
 
     if (!audience) {
