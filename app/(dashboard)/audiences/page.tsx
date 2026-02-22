@@ -111,6 +111,8 @@ export default function Audiences() {
   const [filterValue, setFilterValue] = useState("");
   const [filterValueMax, setFilterValueMax] = useState(""); // For "between" upper bound
   const [filterError, setFilterError] = useState("");
+  const [minError, setMinError] = useState("");
+  const [maxError, setMaxError] = useState("");
 
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -677,6 +679,8 @@ export default function Audiences() {
               setFilterError(""); // clear error when field changes
               setFilterValue("");
               setFilterValueMax("");
+              setMinError("");
+              setMaxError("");
               // Update operator if current operator not allowed
               const allowedOps = fieldOperators[val];
               if (!allowedOps.includes(selectedOperator)) {
@@ -696,10 +700,15 @@ export default function Audiences() {
             </Select>
 
             {/* Operator Dropdown */}
-            <Select value={selectedOperator} onValueChange={(val) => {
-              setSelectedOperator(val);
-              setFilterError(""); // clear error when operator changes
-            }}>
+            <Select
+              value={selectedOperator}
+              onValueChange={(val) => {
+                setSelectedOperator(val);
+                setFilterError("");
+                setMinError("");
+                setMaxError("");
+              }}
+            >
               <SelectTrigger className="h-11 w-full sm:w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -717,32 +726,75 @@ export default function Audiences() {
             {/* Filter Value Input*/}
             {selectedOperator === "between" ? (
               <div className="flex gap-2 w-full sm:w-auto">
-                <Input
-                  placeholder="Min"
-                  value={filterValue}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const numericFields = ["customerCount", "campaignsSent"];
-                    const percentFields = ["growthRate", "engagementRate"];
-                    if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
-                    if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
-                    setFilterValue(val);
-                  }}
-                  className="h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
-                />
-                <Input
-                  placeholder="Max"
-                  value={filterValueMax}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const numericFields = ["customerCount", "campaignsSent"];
-                    const percentFields = ["growthRate", "engagementRate"];
-                    if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) return;
-                    if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) return;
-                    setFilterValueMax(val);
-                  }}
-                  className="h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
-                />
+                {/* Min */}
+                <div className="relative">
+                  <Input
+                    placeholder="Min"
+                    value={filterValue}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const numericFields = ["customerCount", "campaignsSent"];
+                      const percentFields = ["growthRate", "engagementRate"];
+
+                      setMinError("");
+
+                      if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) {
+                        setMinError("Numbers only");
+                        return;
+                      }
+
+                      if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) {
+                        setMinError("Invalid format");
+                        return;
+                      }
+
+                      setFilterValue(val);
+                    }}
+                    className={`h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${minError ? "border-red-500 text-red-500" : ""
+                      }`}
+                  />
+
+                  {minError && (
+                    <p className="absolute left-0 top-full mt-1 text-xs text-red-500 whitespace-nowrap">
+                      {minError}
+                    </p>
+                  )}
+                </div>
+
+                {/* Max */}
+                <div className="relative">
+                  <Input
+                    placeholder="Max"
+                    value={filterValueMax}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const numericFields = ["customerCount", "campaignsSent"];
+                      const percentFields = ["growthRate", "engagementRate"];
+
+                      setMaxError("");
+
+                      if (numericFields.includes(selectedField) && !/^\d*$/.test(val)) {
+                        setMaxError("Numbers only");
+                        return;
+                      }
+
+                      if (percentFields.includes(selectedField) && !/^\d*\.?\d*%?$/.test(val)) {
+                        setMaxError("Invalid format");
+                        return;
+                      }
+
+                      setFilterValueMax(val);
+                    }}
+                    className={`h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${maxError ? "border-red-500 text-red-500" : ""
+                      }`}
+                  />
+
+                  {maxError && (
+                    <p className="absolute left-0 top-full mt-1 ml-1 text-xs text-red-500 whitespace-nowrap">
+                      {maxError}
+                    </p>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="relative w-full sm:w-auto">
