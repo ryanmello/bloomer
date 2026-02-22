@@ -15,11 +15,11 @@ function getResendClient() {
 // GET - Fetch a single campaign
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return NextResponse.json(
         { message: "Not authenticated" },
@@ -27,7 +27,7 @@ export async function GET(
       );
     }
 
-    const { id } = await params;
+    const { id } = params;
 
     const campaign = await db.campaign.findUnique({
       where: { id },
@@ -47,6 +47,13 @@ export async function GET(
       );
     }
 
+    if (campaign.userId !== user.id) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(campaign);
   } catch (error) {
     console.error("Error fetching campaign:", error);
@@ -60,11 +67,11 @@ export async function GET(
 // PATCH - Update campaign (e.g., mark as sent)
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return NextResponse.json(
         { message: "Not authenticated" },
@@ -72,7 +79,7 @@ export async function PATCH(
       );
     }
 
-    const { id } = await params;
+    const { id } = params;
     const body = await req.json();
     const { status, sentAt } = body;
 
@@ -96,6 +103,13 @@ export async function PATCH(
       );
     }
 
+    if (campaign.userId !== user.id) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 403 }
+      );
+    }
+
     // Update campaign status
     const updatedCampaign = await db.campaign.update({
       where: { id },
@@ -115,7 +129,7 @@ export async function PATCH(
           data: { status: 'Failed' }
         });
         return NextResponse.json(
-          { 
+          {
             message: "Campaign updated but emails failed to send - RESEND_API_KEY is missing",
             campaign: { ...updatedCampaign, status: 'Failed' }
           },
@@ -133,7 +147,7 @@ export async function PATCH(
 
       // Import and call sendCampaignEmails function
       const { sendCampaignEmails } = await import('@/lib/resend-email');
-      
+
       // Send emails in the background
       sendCampaignEmails(
         campaign.id,
@@ -164,11 +178,11 @@ export async function PATCH(
 // DELETE - Delete campaign
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return NextResponse.json(
         { message: "Not authenticated" },
@@ -176,7 +190,25 @@ export async function DELETE(
       );
     }
 
-    const { id } = await params;
+    const { id } = params;
+
+    const campaign = await db.campaign.findUnique({
+      where: { id }
+    });
+
+    if (!campaign) {
+      return NextResponse.json(
+        { message: "Campaign not found" },
+        { status: 404 }
+      );
+    }
+
+    if (campaign.userId !== user.id) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 403 }
+      );
+    }
 
     await db.campaign.delete({
       where: { id }

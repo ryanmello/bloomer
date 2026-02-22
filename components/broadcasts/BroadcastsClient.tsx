@@ -15,10 +15,13 @@ interface Audience {
 interface Campaign {
   id: string;
   campaignName: string;
-  audienceType: string;
   status: "Draft" | "Scheduled" | "Sent" | "Failed";
   sentAt: string | null;
   createdAt: string;
+  audience?: {
+    id: string;
+    name: string;
+  } | null;
   recipients: Array<{
     id: string;
     status: string;
@@ -96,7 +99,7 @@ export default function BroadcastsClient({ campaigns, audiences }: BroadcastsCli
       <div className="max-w-7xl mx-auto space-y-6">
         <HeaderSection onNewCampaign={() => setIsModalOpen(true)} />
         <CampaignsTable campaigns={campaigns} />
-        
+
         <CreateCampaignModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
