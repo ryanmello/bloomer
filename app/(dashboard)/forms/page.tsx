@@ -30,12 +30,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner"
 import clsx from "clsx"
 
+type Question = {
+  id: string
+  text: string
+  type: "mcq" | "short" | "truefalse"
+  options?: string[]
+  multiSelect?: boolean 
+  selectedOptions?: string[]   
+}
+
+type FormAccess = "public" | "verified"
+
 type FormStatus = "active" | "template" | "custom"
 type FormRow = {
   id: string
   title: string
   description?: string
   status: FormStatus
+  access: FormAccess 
+  questions: Question[] 
   views: number
   submissions: number
   conversions: number
@@ -43,13 +56,7 @@ type FormRow = {
   changePct?: number
 }
 
-const MOCK_FORMS: FormRow[] = [
-  { id: "1", title: "Wedding Inquiry", description: "Collect wedding details", status: "active", views: 312, submissions: 84, conversions: 62, updatedAt: "2025-10-20" },
-  { id: "2", title: "Event Consultation", description: "Corporate/event intake", status: "template", views: 201, submissions: 41, conversions: 38, updatedAt: "2025-10-18" },
-  { id: "3", title: "Funeral Arrangement", description: "Sympathy orders", status: "custom", views: 97, submissions: 22, conversions: 21, updatedAt: "2025-10-12" },
-  { id: "4", title: "Birthday Request", description: "Occasion request", status: "active", views: 152, submissions: 54, conversions: 49, updatedAt: "2025-10-09" },
-  { id: "5", title: "Anniversary Flowers", description: "Recurring reminder form", status: "active", views: 117, submissions: 40, conversions: 37, updatedAt: "2025-10-03" },
-]
+
 
 // ----- Small utilities -----
 function useDebounced<T>(value: T, delay = 250) {
@@ -79,11 +86,21 @@ export default function Forms() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingForm, setEditingForm] = useState<FormRow | null>(null)
-  const [forms, setForms] = useState(MOCK_FORMS)
+  const [forms, setForms] = useState<FormRow[]>([])
+  const [loading, setLoading] = useState(true)
   const [newFormTitle, setNewFormTitle] = useState("")
   const [newFormDescription, setNewFormDescription] = useState("")
   const [newFormStatus, setNewFormStatus] = useState<FormStatus>("active")
   const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const [newFormAccess, setNewFormAccess] = useState<FormAccess>("public")
+  const [newFormQuestions, setNewFormQuestions] = useState<Question[]>([])
+  const [editQuestions, setEditQuestions] = useState<Question[]>(editingForm?.questions || [])
+
+  const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [shareForm, setShareForm] = useState<FormRow | null>(null) 
+  const [audiences, setAudiences] = useState<{ id: string; name: string }[]>([])
+  const [selectedAudiences, setSelectedAudiences] = useState<string[]>([]) 
 
   // ----- filters + search -----
   const TABS: { key: "active" | "template" | "custom" | "all"; label: string }[] = [
@@ -96,7 +113,7 @@ export default function Forms() {
   const [query, setQuery] = useState("")
   const q = useDebounced(query, 200)
 
-  // ----- NEW: view / sort / group / pagination -----
+  // view / sort / group / pagination
   type ViewMode = "grid" | "table"
   const [view, setView] = useState<ViewMode>("grid")
 
@@ -109,51 +126,93 @@ export default function Forms() {
   const [pageSize, setPageSize] = useState(12)
   const [page, setPage] = useState(1)
 
+   useEffect(() => {
+      if (editingForm) {
+        setEditQuestions(editingForm.questions || [])
+      }
+   }, [editingForm])
+
+   useEffect(() => {
+    async function fetchForms() {
+      try {
+        setLoading(true)
+        const res = await fetch("/api/forms") 
+        if (!res.ok) throw new Error("Failed to fetch forms")
+        const data: FormRow[] = await res.json()
+        setForms(data)
+      } catch (err) {
+        console.error(err)
+        toast.error("Failed to load forms")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchForms()
+  }, [])
+
   // Delete
-  const handleDeleteForm = (id: string) => {
-    setForms(prevForms => prevForms.filter(f => f.id !== id))
+  const handleDeleteForm = async (id: string) => {
+     try {
+      const res = await fetch(`/api/forms/${id}`, { method: "DELETE" }) 
+      if (!res.ok) throw new Error("Failed to delete form")
+      setForms(prev => prev.filter(f => f.id !== id))
+      toast.success("Form deleted!")
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to delete form")
+    }
   }
 
   // Duplicate
-  const handleDuplicateForm = (form: FormRow) => {
-    const duplicated: FormRow = {
-      ...form,
-      id: `form-${Date.now()}`,
-      title: `${form.title} (Copy)`,
-      views: 0,
-      submissions: 0,
-      conversions: 0,
-      updatedAt: new Date().toISOString().split("T")[0],
-    }
-    setForms(prevForms => [duplicated, ...prevForms])
+  const handleDuplicateForm = async (form: FormRow) => {
+  try {
+    const res = await fetch(`/api/forms/${form.id}`, { method: "POST" }) 
+    if (!res.ok) throw new Error("Failed to duplicate form")
+    const duplicatedForm: FormRow = await res.json() 
+    setForms(prevForms => [duplicatedForm, ...prevForms])
     toast.success("Form duplicated successfully")
+  } catch (err) {
+    console.error(err)
+    toast.error("Failed to duplicate form")
   }
+}
 
   // Create
-  const handleCreateForm = (e: React.FormEvent) => {
+   const handleCreateForm = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newFormTitle.trim()) return
 
-    const newForm: FormRow = {
-      id: `form-${Date.now()}`,
-      title: newFormTitle,
-      description: newFormDescription || undefined,
-      status: newFormStatus,
-      views: 0,
-      submissions: 0,
-      conversions: 0,
-      updatedAt: new Date().toISOString().split("T")[0],
+    try {
+      const res = await fetch("/api/forms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newFormTitle,
+          description: newFormDescription || undefined,
+          status: newFormStatus,
+          access: newFormAccess,
+          questions: newFormQuestions,
+        }),
+      })
+      if (!res.ok) throw new Error("Failed to create form")
+      const createdForm = await res.json() 
+      setForms(prev => [createdForm, ...prev])
+
+      // reset modal
+      setNewFormTitle("")
+      setNewFormDescription("")
+      setNewFormStatus("active")
+      setNewFormAccess("public")
+      setNewFormQuestions([])
+      setModalOpen(false)
+      setPage(1)
+      toast.success("Form created successfully!")
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to create form")
     }
-
-    setForms(prevForms => [newForm, ...prevForms])
-
-    // Reset form and close modal
-    setNewFormTitle("")
-    setNewFormDescription("")
-    setNewFormStatus("active")
-    setModalOpen(false)
-    setPage(1) // jump to first page where new item appears
   }
+
 
   // Edit modal
   const handleOpenEdit = (form: FormRow) => {
@@ -162,24 +221,38 @@ export default function Forms() {
   }
 
   // Update
-  const handleUpdateForm = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!editingForm) return
+  const handleUpdateForm = async (e: React.FormEvent) => {
+  e.preventDefault()
+  if (!editingForm) return
 
-    const updatedForm: FormRow = {
-      ...editingForm,
-      updatedAt: new Date().toISOString().split("T")[0],
-    }
+  try {
+    const res = await fetch(`/api/forms/${editingForm.id}`, {
+      method: "PUT", 
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...editingForm,
+        questions: editQuestions, 
+        updatedAt: new Date().toISOString(),
+      }),
+    })
+    if (!res.ok) throw new Error("Failed to update form")
 
-    setForms(prevForms => prevForms.map(f => (f.id === editingForm.id ? updatedForm : f)))
+    const updatedForm: FormRow = await res.json()
+
+    
+    setForms(prev => prev.map(f => (f.id === updatedForm.id ? updatedForm : f)))
     setEditModalOpen(false)
     setEditingForm(null)
+    toast.success("Form updated successfully!")
+  } catch (err) {
+    console.error(err)
+    toast.error("Failed to update form")
   }
-
+}
   // URL + Copy + Share helpers
   function formUrl(id: string) {
-    if (typeof window === "undefined") return `/forms/${id}`
-    return `${window.location.origin}/forms/${id}`
+    if (typeof window === "undefined") return `/fillableform/${id}`
+    return `${window.location.origin}/fillableform/${id}`
   }
 
   async function handleCopy(form: FormRow) {
@@ -190,27 +263,14 @@ export default function Forms() {
       toast.success("Link copied to clipboard!")
       setTimeout(() => setCopiedId(null), 1200)
     } catch {
-      window.prompt("Copy form link:", url) // final fallback
+      window.prompt("Copy form link:", url) 
     }
   }
 
-  const handleShare = async (form: FormRow) => {
-    const url = formUrl(form.id)
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: form.title,
-          text: `Check out this form: ${form.title}`,
-          url,
-        })
-        toast.success("Form shared successfully!")
-        return
-      } catch {
-        // user cancelled or failed; fall back to copy
-      }
-    }
-    await handleCopy(form)
-  }
+  const handleShare = (form: FormRow) => {
+  setShareForm(form)
+  setShareModalOpen(true)
+}
 
   // counts for tabs
   const counts = useMemo(() => {
@@ -311,6 +371,23 @@ export default function Forms() {
     return { totalForms, activeForms, totalViews, totalSubmissions, totalConversions, conversionRate }
   }, [filtered])
 
+  useEffect(() => {
+    if (shareModalOpen) {
+      async function fetchAudiences() {
+        try {
+          const res = await fetch("/api/audience")
+          if (!res.ok) throw new Error("Failed to fetch audiences")
+          const data: { id: string; name: string; customerCount: number}[] = await res.json()
+          setAudiences(data)
+        } catch (err) {
+          console.error(err)
+          toast.error("Failed to load audiences")
+        }
+      }
+      fetchAudiences()
+    }
+  }, [shareModalOpen])
+
   return (
     <div className="p-6 relative">
       {/* Top Panel */}
@@ -373,6 +450,145 @@ export default function Forms() {
                 </Select>
               </div>
 
+              <div>
+                <label className="text-sm font-medium mb-2 block">Access</label>
+                <Select value={newFormAccess} onValueChange={(v) => setNewFormAccess(v as FormAccess)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Public</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Questions</label>
+                <div className="max-h-60 overflow-y-auto space-y-2">
+               
+
+                </div>
+                <Button 
+                  type="button"
+                  onClick={() => setNewFormQuestions([...newFormQuestions, { id: crypto.randomUUID(), type: "short", text: "" }])}>
+                  Add Question
+                </Button>
+              </div>
+
+
+              <div className="flex flex-col gap-2 max-h-30 overflow-y-auto border p-2 rounded-md">
+              {newFormQuestions.map((q, i) => (
+                <div key={q.id} className="flex flex-col gap-2 mb-2 border p-2 rounded-md">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Question text"
+                      value={q.text}
+                      onChange={(e) => {
+                        const copy = [...newFormQuestions]
+                        copy[i].text = e.target.value
+                        setNewFormQuestions(copy)
+                      }}
+                      className="border rounded-md p-2 flex-1"
+                    />
+                    <Select
+                      value={q.type}
+                      onValueChange={(v) => {
+                        const copy = [...newFormQuestions]
+                        copy[i].type = v as Question["type"]
+                        if (v === "mcq" && !copy[i].options) 
+                          copy[i].options = ["", ""]
+                        setNewFormQuestions(copy)
+                      }}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mcq">Multiple Choice</SelectItem>
+                        <SelectItem value="short">Short Answer</SelectItem>
+                        <SelectItem value="truefalse">True/False</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="ghost"
+                      onClick={() =>
+                        setNewFormQuestions(newFormQuestions.filter((_, idx) => idx !== i))
+                      }
+                    >
+                      Delete
+                    </Button>
+                  </div>
+
+                  
+                  {q.type === "mcq" && (
+                    <div className="flex flex-col gap-2 ml-4">
+                      {/* Multi-select toggle */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <input
+                          type="checkbox"
+                          id={`multi-${q.id}`}
+                          checked={q.multiSelect || false}
+                          onChange={(e) => {
+                            const copy = [...newFormQuestions]
+                            copy[i].multiSelect = e.target.checked
+                            setNewFormQuestions(copy)
+                          }}
+                        />
+                        <label htmlFor={`multi-${q.id}`} className="text-sm">
+                          Allow multiple selections
+                        </label>
+                      </div>
+
+                      {/* Options editor */}
+                      <div className="flex flex-col gap-2 max-h-40 overflow-y-auto border p-2 rounded-md">
+                        {q.options!.map((opt, oi) => (
+                          <div key={oi} className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder={`Option ${oi + 1}`}
+                              value={opt}
+                              onChange={(e) => {
+                                const copy = [...newFormQuestions]
+                                copy[i].options![oi] = e.target.value
+                                setNewFormQuestions(copy)
+                              }}
+                              className="border rounded-md p-2 flex-1"
+                            />
+                            <Button
+                              variant="ghost"
+                              onClick={() => {
+                                const copy = [...newFormQuestions]
+                                copy[i].options!.splice(oi, 1)
+                                if (copy[i].selectedOptions)
+                                  copy[i].selectedOptions = copy[i].selectedOptions!.filter(o => o !== opt)
+                                setNewFormQuestions(copy)
+                              }}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const copy = [...newFormQuestions]
+                          copy[i].options!.push("")
+                          setNewFormQuestions(copy)
+                        }}
+                      >
+                        Add Option
+                      </Button>
+                    </div>
+                  )}
+
+                  {q.type === "truefalse" && (
+                    <div className="ml-4 text-sm text-muted-foreground">
+                     True/False question
+                   </div>
+                  )}
+                </div>
+              ))}
+              </div>
               <div className="flex gap-2 mt-2">
                 <Button type="submit" className="flex-1" disabled={!newFormTitle.trim()}>
                   Save Form
@@ -453,6 +669,133 @@ export default function Forms() {
                 </Select>
               </div>
 
+              <div>
+                <label className="text-sm font-medium mb-2 block">Questions</label>
+                <div className="flex flex-col gap-2 max-h-60 overflow-y-auto border p-2 rounded-md">
+                  {editQuestions.map((q, i) => (
+                    <div key={q.id} className="flex flex-col gap-2 mb-2 border p-2 rounded-md">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Question text"
+                          value={q.text}
+                          onChange={(e) => {
+                            const copy = [...editQuestions];
+                            copy[i].text = e.target.value;
+                            setEditQuestions(copy);
+                          }}
+                          className="border rounded-md p-2 flex-1"
+                        />
+                        <Select
+                          value={q.type}
+                          onValueChange={(v) => {
+                            const copy = [...editQuestions];
+                            copy[i].type = v as Question["type"];
+                            if (v === "mcq" && !copy[i].options) 
+                              copy[i].options = ["", ""];
+                            setEditQuestions(copy);
+                          }}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="mcq">Multiple Choice</SelectItem>
+                            <SelectItem value="short">Short Answer</SelectItem>
+                            <SelectItem value="truefalse">True/False</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="ghost"
+                          onClick={() => setEditQuestions(editQuestions.filter((_, idx) => idx !== i))}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+
+                      {/* MCQ Options + Multi-select */}
+                      {q.type === "mcq" && (
+                        <div className="flex flex-col gap-2 ml-4">
+                          {/* Multi-select toggle */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <input
+                              type="checkbox"
+                              id={`multi-${q.id}`}
+                              checked={q.multiSelect || false}
+                              onChange={(e) => {
+                                const copy = [...editQuestions];
+                                copy[i].multiSelect = e.target.checked;
+                                setEditQuestions(copy);
+                              }}
+                            />
+                            <label htmlFor={`multi-${q.id}`} className="text-sm">
+                              Allow multiple selections
+                            </label>
+                          </div>
+
+                          {/* Options editor */}
+                          <div className="flex flex-col gap-2 max-h-40 overflow-y-auto border p-2 rounded-md">
+                            {q.options!.map((opt, oi) => (
+                              <div key={oi} className="flex gap-2">
+                                <input
+                                  type="text"
+                                  placeholder={`Option ${oi + 1}`}
+                                  value={opt}
+                                  onChange={(e) => {
+                                    const copy = [...editQuestions];
+                                    copy[i].options![oi] = e.target.value;
+                                    setEditQuestions(copy);
+                                  }}
+                                  className="border rounded-md p-2 flex-1"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => {
+                                    const copy = [...editQuestions];                                    
+                                    copy[i].options!.splice(oi, 1);                                    
+                                    if (copy[i].selectedOptions)
+                                      copy[i].selectedOptions = copy[i].selectedOptions!.filter(o => o !== opt);
+                                    setEditQuestions(copy);
+                                  }}
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              const copy = [...editQuestions];
+                              copy[i].options!.push("");
+                              setEditQuestions(copy);
+                            }}
+                          >
+                            Add Option
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* True/False */}
+                      {q.type === "truefalse" && (
+                        <div className="ml-4 text-sm text-muted-foreground">
+                          True/False question
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() =>
+                    setEditQuestions([...editQuestions, { id: crypto.randomUUID(), type: "short", text: "" }])
+                  }
+                  className="mt-2"
+                >
+                  Add Question
+                </Button>
+              </div>
+
               <div className="flex gap-2 mt-2">
                 <Button type="submit" className="flex-1">
                   Update Form
@@ -471,7 +814,79 @@ export default function Forms() {
             </form>
           </Card>
         </div>
+      )
+      
+      }
+
+      {shareModalOpen && shareForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-3/4 max-w-md p-6 relative bg-background">
+            <Button size="sm" className="absolute top-4 right-4" onClick={() => setShareModalOpen(false)}>
+              <X className="w-4 h-4" />
+            </Button>
+
+            <CardTitle>Share Form</CardTitle>
+            <CardDescription className="mb-4">Share your form using a link or directly with audiences</CardDescription>
+
+            <div className="flex flex-col gap-4">
+              {/* Copy URL */}
+              <div className="flex items-center justify-between border rounded p-2">
+                <span className="truncate">{formUrl(shareForm.id)}</span>
+                <Button size="sm" onClick={async () => { await navigator.clipboard.writeText(formUrl(shareForm.id)); toast.success("Link copied!"); }}>
+                  Copy Link
+                </Button>
+              </div>
+
+              {/* Native share */}
+              {navigator.share && (
+                <Button onClick={async () => {
+                  try {
+                    await navigator.share({ title: shareForm.title, text: `Check out this form: ${shareForm.title}`, url: formUrl(shareForm.id) });
+                    toast.success("Form shared successfully!");
+                    setShareModalOpen(false);
+                  } catch { toast.error("Share cancelled or failed"); }
+                }}>
+                  Share via Device
+                </Button>
+              )}
+
+              {/* Audiences */}
+              <div>
+                <label className="block mb-2 text-sm font-medium">Select Audiences</label>
+                <div className="flex flex-col gap-2 max-h-40 overflow-y-auto border p-2 rounded-md">
+                  {audiences.map(a => (
+                    <label key={a.id} className="flex items-center gap-2">
+                     <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedAudiences.includes(a.id)}
+                        onChange={e => {
+                          if (e.target.checked) setSelectedAudiences([...selectedAudiences, a.id]);
+                          else setSelectedAudiences(selectedAudiences.filter(id => id !== a.id));
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span>{a.name}</span>
+                     </div> 
+                     <span className="ml-auto text-sm text-white">{(a as any).customerCount ?? 0} {((a as any).customerCount ?? 0) === 1 ? "customer" : "customers"}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <Button onClick={() => {
+                toast.success(`Form shared with ${selectedAudiences.length} audience(s)!`);
+                setShareModalOpen(false);
+                setSelectedAudiences([]);
+              }}>
+                Share with Audiences
+              </Button>
+            </div>
+          </Card>
+        </div>
       )}
+      
+
 
       <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
         {/* Metric cards */}

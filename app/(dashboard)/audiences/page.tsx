@@ -116,6 +116,9 @@ export default function Audiences() {
   const [selectedOperator, setSelectedOperator] = useState("equals");
   const [filterValue, setFilterValue] = useState("");
   const [filterValueMax, setFilterValueMax] = useState(""); // For "between" upper bound
+  const [filterError, setFilterError] = useState("");
+  const [minError, setMinError] = useState("");
+  const [maxError, setMaxError] = useState("");
 
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -201,9 +204,21 @@ export default function Audiences() {
             else if (selectedOperator === "lessThan")
               matchesField = Number(fieldVal) < Number(filterValue);
             else if (selectedOperator === "between") {
-              const min = Number(filterValue);
-              const max = Number(filterValueMax);
-              matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
+              // Block filtering if inputs are missing or errors exist
+              if (!filterValue || !filterValueMax || minError || maxError) {
+                matchesField = false;
+              } else {
+                const min = Number(filterValue);
+                const max = Number(filterValueMax);
+
+                // Prevent range min > max
+                if (min > max) {
+                  matchesField = false;
+                } else {
+                  matchesField =
+                    Number(fieldVal) >= min && Number(fieldVal) <= max;
+                }
+              }
             }
           } else if (percentFields.includes(selectedField)) {
             const cleanVal = filterValue.replace("%", "");
@@ -216,9 +231,21 @@ export default function Audiences() {
             else if (selectedOperator === "lessThan")
               matchesField = Number(fieldVal) < Number(cleanVal);
             else if (selectedOperator === "between") {
-              const min = Number(cleanVal);
-              const max = Number(cleanValMax);
-              matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
+              // Block filtering if inputs are missing or errors exist
+              if (!filterValue || !filterValueMax || minError || maxError) {
+                matchesField = false;
+              } else {
+                const min = Number(cleanVal);
+                const max = Number(cleanValMax);
+
+                // Prevent range min > max
+                if (min > max) {
+                  matchesField = false;
+                } else {
+                  matchesField =
+                    Number(fieldVal) >= min && Number(fieldVal) <= max;
+                }
+              }
             }
           } else {
             // Text fields
@@ -522,6 +549,39 @@ export default function Audiences() {
           </AlertDialog>
         )}
 
+        {deleteMode && selectedIds.length > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="flex items-center gap-2">
+                <Trash2 className="h-4 w-4" />
+                Delete Selected ({selectedIds.length})
+              </Button>
+            </AlertDialogTrigger>
+
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete audiences?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-foreground">
+                    {selectedIds.length}
+                  </span>{" "}
+                  selected audiences? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleBulkDelete}
+                  className="bg-destructive hover:bg-destructive/90">
+                  Delete Audiences
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+
         <Button
           variant="outline"
           onClick={() => setExportOpen(true)}
@@ -694,6 +754,11 @@ export default function Audiences() {
               value={selectedField}
               onValueChange={(val) => {
                 setSelectedField(val);
+                setFilterError(""); // clear error when field changes
+                setFilterValue("");
+                setFilterValueMax("");
+                setMinError("");
+                setMaxError("");
                 // Update operator if current operator not allowed
                 const allowedOps = fieldOperators[val];
                 if (!allowedOps.includes(selectedOperator)) {
@@ -715,7 +780,12 @@ export default function Audiences() {
             {/* Operator Dropdown */}
             <Select
               value={selectedOperator}
-              onValueChange={setSelectedOperator}>
+              onValueChange={(val) => {
+                setSelectedOperator(val);
+                setFilterError("");
+                setMinError("");
+                setMaxError("");
+              }}>
               <SelectTrigger className="h-11 w-full sm:w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -735,83 +805,173 @@ export default function Audiences() {
             {/* Filter Value Input*/}
             {selectedOperator === "between" ? (
               <div className="flex gap-2 w-full sm:w-auto">
+                {/* Min */}
+                <div className="relative">
+                  <Input
+                    placeholder="Min"
+                    value={filterValue}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const numericFields = ["customerCount", "campaignsSent"];
+                      const percentFields = ["growthRate", "engagementRate"];
+
+                      setMinError("");
+
+                      if (
+                        numericFields.includes(selectedField) &&
+                        !/^\d*$/.test(val)
+                      ) {
+                        setMinError("Numbers only");
+                        return;
+                      }
+
+                      if (
+                        percentFields.includes(selectedField) &&
+                        !/^\d*\.?\d*%?$/.test(val)
+                      ) {
+                        setMinError("Invalid format");
+                        return;
+                      }
+
+                      setFilterValue(val);
+
+                      const min = Number(val);
+                      const max = Number(filterValueMax);
+
+                      if (
+                        val &&
+                        filterValueMax &&
+                        !isNaN(min) &&
+                        !isNaN(max) &&
+                        min > max
+                      ) {
+                        setMaxError("Max must be greater than Min");
+                      } else {
+                        setMaxError("");
+                      }
+                    }}
+                    className={`h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${
+                      minError ? "border-red-500 text-red-500" : ""
+                    }`}
+                  />
+
+                  {minError && (
+                    <p className="absolute left-0 top-full mt-1 text-xs text-red-500 whitespace-nowrap">
+                      {minError}
+                    </p>
+                  )}
+                </div>
+
+                {/* Max */}
+                <div className="relative">
+                  <Input
+                    placeholder="Max"
+                    value={filterValueMax}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const numericFields = ["customerCount", "campaignsSent"];
+                      const percentFields = ["growthRate", "engagementRate"];
+
+                      setMaxError("");
+
+                      if (
+                        numericFields.includes(selectedField) &&
+                        !/^\d*$/.test(val)
+                      ) {
+                        setMaxError("Numbers only");
+                        return;
+                      }
+
+                      if (
+                        percentFields.includes(selectedField) &&
+                        !/^\d*\.?\d*%?$/.test(val)
+                      ) {
+                        setMaxError("Invalid format");
+                        return;
+                      }
+
+                      setFilterValueMax(val);
+
+                      const min = Number(filterValue);
+                      const max = Number(val);
+
+                      if (
+                        filterValue &&
+                        val &&
+                        !isNaN(min) &&
+                        !isNaN(max) &&
+                        min > max
+                      ) {
+                        setMaxError("Max must be greater than Min");
+                      } else {
+                        setMaxError("");
+                      }
+                    }}
+                    className={`h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${
+                      maxError ? "border-red-500 text-red-500" : ""
+                    }`}
+                  />
+
+                  {maxError && (
+                    <p className="absolute left-0 top-full mt-1 ml-1 text-xs text-red-500 whitespace-nowrap">
+                      {maxError}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="relative w-full sm:w-auto">
                 <Input
-                  placeholder="Min"
+                  placeholder="Enter filter value"
                   value={filterValue}
                   onChange={(e) => {
                     const val = e.target.value;
                     const numericFields = ["customerCount", "campaignsSent"];
                     const percentFields = ["growthRate", "engagementRate"];
+
+                    setFilterError("");
+
                     if (
                       numericFields.includes(selectedField) &&
                       !/^\d*$/.test(val)
-                    )
+                    ) {
+                      setFilterError("Numbers only allowed");
                       return;
+                    }
+
                     if (
                       percentFields.includes(selectedField) &&
                       !/^\d*\.?\d*%?$/.test(val)
-                    )
+                    ) {
+                      setFilterError("Invalid percentage format");
                       return;
+                    }
+
                     setFilterValue(val);
                   }}
-                  className="h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
+                  className={`h-11 w-full sm:w-32 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${
+                    filterError ? "border-red-500 text-red-500" : ""
+                  }`}
                 />
-                <Input
-                  placeholder="Max"
-                  value={filterValueMax}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const numericFields = ["customerCount", "campaignsSent"];
-                    const percentFields = ["growthRate", "engagementRate"];
-                    if (
-                      numericFields.includes(selectedField) &&
-                      !/^\d*$/.test(val)
-                    )
-                      return;
-                    if (
-                      percentFields.includes(selectedField) &&
-                      !/^\d*\.?\d*%?$/.test(val)
-                    )
-                      return;
-                    setFilterValueMax(val);
-                  }}
-                  className="h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
-                />
-              </div>
-            ) : (
-              <Input
-                placeholder="Enter filter value"
-                value={filterValue}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  const numericFields = ["customerCount", "campaignsSent"];
-                  const percentFields = ["growthRate", "engagementRate"];
-                  if (
-                    numericFields.includes(selectedField) &&
-                    !/^\d*$/.test(val)
-                  )
-                    return;
-                  if (
-                    percentFields.includes(selectedField) &&
-                    !/^\d*\.?\d*%?$/.test(val)
-                  )
-                    return;
-                  setFilterValue(val);
-                }}
-                className="h-11 w-full sm:w-32 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring"
-              />
-            )}
-          </div>
 
-          {/* Search Bar - Right */}
-          <div className="relative w-full sm:w-80">
-            <Search className="z-1 absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search audiences..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-11 rounded-xl border-border/50 bg-muted/50 backdrop-blur-sm focus-visible:ring-ring"
-            />
+                {/* This formats the input field and error message correctly, horizontally and vertically */}
+                {filterError && (
+                  <p className="absolute left-0 top-full mt-1 text-xs text-red-500 whitespace-nowrap">
+                    {filterError}
+                  </p>
+                )}
+              </div>
+            )}
+            {/* Search Bar - Right */}
+            <div className="relative w-full sm:w-80">
+              <Search className="z-1 absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search audiences..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-11 rounded-xl border-border/50 bg-muted/50 backdrop-blur-sm focus-visible:ring-ring"
+              />
+            </div>
           </div>
         </div>
 

@@ -79,12 +79,17 @@ export async function GET() {
         : [];
 
     const customerMap = new Map(customers.map((c) => [c.id, c]));
-    const audiencesWithCustomers = audiences.map((aud) => ({
-      ...aud,
-      customers: aud.customerIds
+    const audiencesWithCustomers = audiences.map((aud) => {
+      const customersInAud = (aud.customerIds || [])
         .map((id) => customerMap.get(id))
-        .filter(Boolean),
-    }));
+        .filter(Boolean);
+
+      return {
+        ...aud,
+        customers: customersInAud,
+        customerCount: customersInAud.length,
+      };
+    });
 
     return NextResponse.json(audiencesWithCustomers);
   } catch (err) {

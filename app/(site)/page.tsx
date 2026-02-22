@@ -359,12 +359,12 @@ export default function LandingPage() {
             <h4 className="font-semibold mb-4">Legal</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="#" className="hover:text-primary">
+                <Link href="/privacy" className="hover:text-primary">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-primary">
+                <Link href="/terms" className="hover:text-primary">
                   Terms of Service
                 </Link>
               </li>

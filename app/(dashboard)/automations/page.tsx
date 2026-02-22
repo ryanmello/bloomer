@@ -1,17 +1,17 @@
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
-import {Card, CardTitle, CardHeader, CardDescription, CardContent} from '@/components/ui/card';
+import { Card, CardTitle, CardHeader, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CreateAutomationModal } from '@/components/automations/CreateAutomationsModal';
-import { 
+import {
   Plus,
   ScrollText,
   X,
   BadgeCheck,
   Eye,
   Inbox,
-  FileText, 
+  FileText,
   Pencil,
   Share2,
   Trash2,
@@ -38,80 +38,71 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import clsx from 'clsx';
 import { toast } from "sonner"
 
-type AutomationStatus = "active" | "template" | "custom"
+type AutomationStatus = "active" | "paused" | "template" | "custom"
 type AutomationCategory = "lifecycle" | "marketing" | "transactional" | "other"
+
+// Database model type
+type AutomationDB = {
+  id: string;
+  name: string;
+  description?: string | null;
+  status: string;
+  category: string;
+  triggerType: string;
+  timing: number;
+  actionType: string;
+  createdAt: string;
+  updatedAt: string;
+  shopId: string;
+  audienceId?: string | null;
+  audience?: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+// UI display type (extends DB with computed/placeholder fields)
 type AutomationRow = {
   id: string;
   title: string;
   description?: string;
   status: AutomationStatus;
   category: AutomationCategory;
+  triggerType: string;
+  timing: number;
+  actionType: string;
+  audienceId?: string | null;
+  audienceName?: string | null;
+  // Placeholder metrics
   triggers: number;
   submissions: number;
   opened: number;
   conversions: number;
   conversionRate: number;
-  timingDays: number;
-  timingDescription: string;
-  actionCount: number;
   updatedAt: string;
-  changePercent?: number;
-  paused?: boolean;
 }
 
-const MOCK_AUTOMATIONS: AutomationRow[] = [
-  { 
-    id: '1', 
-    title: 'Birthday Flower Reminder', 
-    description: 'Send birthday flower suggestions 7 days before customer birthdays', 
-    status: 'template', 
-    category: 'lifecycle',
-    triggers: 45, 
-    submissions: 45, 
-    opened: 38,
-    conversions: 12,
-    conversionRate: 20, 
-    timingDays: 7,
-    timingDescription: '7 days before birthday',
-    actionCount: 1,
-    updatedAt: '2024-06-01', 
-    changePercent: 5 
-  },
-  { 
-    id: '2', 
-    title: 'Anniversary Reminder', 
-    description: 'Send romantic flower arrangements for customer anniversaries', 
-    status: 'template', 
-    category: 'lifecycle',
-    triggers: 28, 
-    submissions: 56, 
-    opened: 42,
-    conversions: 9,
-    conversionRate: 15, 
-    timingDays: 3,
-    timingDescription: '3 days before anniversary',
-    actionCount: 2,
-    updatedAt: '2024-05-28', 
-    changePercent: -3 
-  },
-  { 
-    id: '3', 
-    title: 'Abandoned Quote Follow-up', 
-    description: 'Remind customers about items left in their cart', 
-    status: 'template', 
-    category: 'marketing',
-    triggers: 60, 
-    submissions: 400, 
-    opened: 320,
-    conversions: 100,
-    conversionRate: 25, 
-    timingDays: 1,
-    timingDescription: '1 day after abandonment',
-    actionCount: 1,
-    updatedAt: '2024-05-20', 
-    changePercent: 8 
-  },
-]
+// Convert DB model to UI row
+function toAutomationRow(db: AutomationDB): AutomationRow {
+  return {
+    id: db.id,
+    title: db.name,
+    description: db.description || undefined,
+    status: db.status as AutomationStatus,
+    category: db.category as AutomationCategory,
+    triggerType: db.triggerType,
+    timing: db.timing,
+    actionType: db.actionType,
+    audienceId: db.audienceId,
+    audienceName: db.audience?.name || null,
+    triggers: 0,
+    submissions: 0,
+    opened: 0,
+    conversions: 0,
+    conversionRate: 0,
+    updatedAt: db.updatedAt,
+  };
+}
 
 // -- small utilities -- 
 function useDebounced<T>(value: T, delay: number): T {
@@ -143,12 +134,31 @@ export default function AutomationsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingAutomation, setEditingAutomation] = useState<AutomationRow | null>(null)
-  const [automations, setAutomations] = useState(MOCK_AUTOMATIONS)
-  const [newAutomationTitle, setNewAutomationTitle] = useState("")
-  const [newAutomationDescription, setNewAutomationDescription] = useState("")
-  const [newAutomationStatus, setNewAutomationStatus] = useState<AutomationStatus>("active")
+  const [automations, setAutomations] = useState<AutomationRow[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  // Fetch automations from API
+  const fetchAutomations = async () => {
+    try {
+      const response = await fetch('/api/automation');
+      if (response.ok) {
+        const data: AutomationDB[] = await response.json();
+        setAutomations(data.map(toAutomationRow));
+      }
+    } catch (error) {
+      console.error('Error fetching automations:', error);
+      toast.error('Failed to load automations');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchAutomations();
+  }, []);
 
   // ----- filters + search -----
   const TABS: { key: "active" | "template" | "custom" | "all"; label: string }[] = [
@@ -175,40 +185,84 @@ export default function AutomationsPage() {
   const [page, setPage] = useState(1)
 
   // Delete
-  const handleDeleteAutomation = (id: string) => {
+  const handleDeleteAutomation = async (id: string) => {
     if (confirm("Are you sure you want to delete this automation?")) {
-      setAutomations(prevAutomations => prevAutomations.filter(a => a.id !== id))
-      toast.success("Automation deleted successfully")
+      try {
+        const response = await fetch(`/api/automation/${id}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          setAutomations(prevAutomations => prevAutomations.filter(a => a.id !== id));
+          toast.success("Automation deleted successfully");
+        } else {
+          toast.error("Failed to delete automation");
+        }
+      } catch (error) {
+        console.error('Error deleting automation:', error);
+        toast.error("Failed to delete automation");
+      }
     }
   }
 
   // Pause/Resume
-  const handleTogglePause = (id: string) => {
-    setAutomations(prevAutomations => 
-      prevAutomations.map(a => 
-        a.id === id ? { ...a, paused: !a.paused } : a
-      )
-    )
-    const automation = automations.find(a => a.id === id)
-    if (automation) {
-      toast.success(automation.paused ? "Automation resumed" : "Automation paused")
+  const handleTogglePause = async (id: string) => {
+    const automation = automations.find(a => a.id === id);
+    if (!automation) return;
+
+    const newStatus = automation.status === 'paused' ? 'active' : 'paused';
+
+    try {
+      const response = await fetch(`/api/automation/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        setAutomations(prevAutomations =>
+          prevAutomations.map(a =>
+            a.id === id ? { ...a, status: newStatus as AutomationStatus } : a
+          )
+        );
+        toast.success(newStatus === 'paused' ? "Automation paused" : "Automation resumed");
+      } else {
+        toast.error("Failed to update automation");
+      }
+    } catch (error) {
+      console.error('Error toggling pause:', error);
+      toast.error("Failed to update automation");
     }
   }
 
   // Duplicate
-  const handleDuplicateAutomation = (automation: AutomationRow) => {
-    const duplicated: AutomationRow = {
-      ...automation,
-      id: `automation-${Date.now()}`,
-      title: `${automation.title} (Copy)`,
-      triggers: 0,
-      submissions: 0,
-      opened: 0,
-      conversions: 0,
-      updatedAt: new Date().toISOString().split("T")[0],
+  const handleDuplicateAutomation = async (automation: AutomationRow) => {
+    try {
+      const response = await fetch('/api/automation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${automation.title} (Copy)`,
+          description: automation.description,
+          category: automation.category,
+          triggerType: automation.triggerType,
+          timing: automation.timing,
+          actionType: automation.actionType,
+          audienceId: automation.audienceId,
+          status: 'active',
+        }),
+      });
+
+      if (response.ok) {
+        const newAutomation: AutomationDB = await response.json();
+        setAutomations(prevAutomations => [toAutomationRow(newAutomation), ...prevAutomations]);
+        toast.success("Automation duplicated successfully");
+      } else {
+        toast.error("Failed to duplicate automation");
+      }
+    } catch (error) {
+      console.error('Error duplicating automation:', error);
+      toast.error("Failed to duplicate automation");
     }
-    setAutomations(prevAutomations => [duplicated, ...prevAutomations])
-    toast.success("Automation duplicated successfully")
   }
 
   // Copy link
@@ -236,24 +290,48 @@ export default function AutomationsPage() {
   }
 
   // Update
-  const handleUpdateAutomation = (e: React.FormEvent) => {
+  const handleUpdateAutomation = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingAutomation) return
 
-    const updatedAutomation: AutomationRow = {
-      ...editingAutomation,
-      updatedAt: new Date().toISOString().split("T")[0],
-    }
+    try {
+      const response = await fetch(`/api/automation/${editingAutomation.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingAutomation.title,
+          description: editingAutomation.description,
+          category: editingAutomation.category,
+          status: editingAutomation.status,
+          timing: editingAutomation.timing,
+          triggerType: editingAutomation.triggerType,
+          actionType: editingAutomation.actionType,
+        }),
+      });
 
-    setAutomations(prevAutomations => prevAutomations.map(a => (a.id === editingAutomation.id ? updatedAutomation : a)))
-    setEditModalOpen(false)
-    setEditingAutomation(null)
+      if (response.ok) {
+        const updated: AutomationDB = await response.json();
+        setAutomations(prevAutomations =>
+          prevAutomations.map(a => (a.id === editingAutomation.id ? toAutomationRow(updated) : a))
+        );
+        setEditModalOpen(false);
+        setEditingAutomation(null);
+        toast.success("Automation updated successfully");
+      } else {
+        toast.error("Failed to update automation");
+      }
+    } catch (error) {
+      console.error('Error updating automation:', error);
+      toast.error("Failed to update automation");
+    }
   }
 
   // counts for tabs
   const counts = useMemo(() => {
-    const c = { active: 0, template: 0, custom: 0, all: automations.length }
-    for (const a of automations) c[a.status]++
+    const c: Record<string, number> = { active: 0, template: 0, custom: 0, paused: 0, all: automations.length }
+    for (const a of automations) {
+      if (c[a.status] !== undefined) c[a.status]++
+    }
     return c
   }, [automations])
 
@@ -511,7 +589,14 @@ export default function AutomationsPage() {
           </div>
 
           {/* Main content */}
-          {view === "grid" ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                <p className="text-sm text-muted-foreground">Loading automations...</p>
+              </div>
+            </div>
+          ) : view === "grid" ? (
             // GRID VIEW, grouped
             <section className="space-y-6">
               {Object.entries(paged.map).map(([group, items]) => (
@@ -552,8 +637,8 @@ export default function AutomationsPage() {
                                         a.status === "active"
                                           ? "bg-emerald-100 text-emerald-700"
                                           : a.status === "template"
-                                          ? "bg-blue-100 text-blue-700"
-                                          : "bg-amber-100 text-amber-700"
+                                            ? "bg-blue-100 text-blue-700"
+                                            : "bg-amber-100 text-amber-700"
                                       )}>
                                         {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
                                       </span>
@@ -562,20 +647,24 @@ export default function AutomationsPage() {
                                   {a.description && (
                                     <p className="text-sm text-gray-600 mb-4">{a.description}</p>
                                   )}
-                                  
+
                                   {/* Timing and Action info */}
-                                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                                  <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
                                     <div className="flex items-center gap-1">
                                       <Clock className="w-4 h-4" />
-                                      <span>{a.timingDays} days before</span>
+                                      <span>{a.timing} days</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <Calendar className="w-4 h-4" />
-                                      <span>{a.timingDescription}</span>
+                                      <span>{a.triggerType.replace('_', ' ')}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <Send className="w-4 h-4" />
-                                      <span>{a.actionCount} action{a.actionCount !== 1 ? 's' : ''}</span>
+                                      <span>{a.actionType.replace('_', ' ')}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <User className="w-4 h-4" />
+                                      <span>{a.audienceName || 'All Customers'}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -606,32 +695,32 @@ export default function AutomationsPage() {
 
                               {/* Action Buttons */}
                               <div className="flex items-center gap-2">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0" 
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
                                   onClick={() => handleTogglePause(a.id)}
-                                  title={a.paused ? "Resume" : "Pause"}
+                                  title={a.status === 'paused' ? "Resume" : "Pause"}
                                 >
-                                  {a.paused ? (
+                                  {a.status === 'paused' ? (
                                     <Play className="h-4 w-4" />
                                   ) : (
                                     <Pause className="h-4 w-4" />
                                   )}
                                 </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0" 
-                                  onClick={() => handleOpenEdit(a)} 
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => handleOpenEdit(a)}
                                   title="Edit"
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0" 
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
                                   onClick={() => handleCopy(a)}
                                   title="Copy link"
                                 >
@@ -641,20 +730,20 @@ export default function AutomationsPage() {
                                     <CopyIcon className="h-4 w-4" />
                                   )}
                                 </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0" 
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
                                   onClick={() => handleDuplicateAutomation(a)}
                                   title="Duplicate"
                                 >
                                   <Files className="h-4 w-4" />
                                 </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700" 
-                                  onClick={() => handleDeleteAutomation(a.id)} 
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                  onClick={() => handleDeleteAutomation(a.id)}
                                   title="Delete"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -715,8 +804,8 @@ export default function AutomationsPage() {
                                     a.status === "active"
                                       ? "bg-emerald-50/60 dark:bg-emerald-500/10 border-emerald-300 text-emerald-700 dark:text-emerald-300"
                                       : a.status === "template"
-                                      ? "bg-blue-50/60 dark:bg-blue-500/10 border-blue-300 text-blue-700 dark:text-blue-300"
-                                      : "bg-amber-50/60 dark:bg-amber-500/10 border-amber-300 text-amber-700 dark:text-amber-300"
+                                        ? "bg-blue-50/60 dark:bg-blue-500/10 border-blue-300 text-blue-700 dark:text-blue-300"
+                                        : "bg-amber-50/60 dark:bg-amber-500/10 border-amber-300 text-amber-700 dark:text-amber-300"
                                   )}
                                 >
                                   {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
@@ -728,13 +817,13 @@ export default function AutomationsPage() {
                               <td className="py-3 px-4">{new Date(a.updatedAt).toLocaleDateString()}</td>
                               <td className="py-3 px-4">
                                 <div className="flex justify-end gap-2">
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost" 
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
                                     onClick={() => handleTogglePause(a.id)}
-                                    title={a.paused ? "Resume" : "Pause"}
+                                    title={a.status === 'paused' ? "Resume" : "Pause"}
                                   >
-                                    {a.paused ? (
+                                    {a.status === 'paused' ? (
                                       <Play className="h-4 w-4" />
                                     ) : (
                                       <Pause className="h-4 w-4" />
@@ -866,39 +955,34 @@ export default function AutomationsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Timing (Days Before)</label>
+                  <label className="text-sm font-medium mb-2 block">Timing (Days)</label>
                   <input
                     type="number"
                     placeholder="e.g., 7"
-                    value={editingAutomation.timingDays}
-                    onChange={(e) => setEditingAutomation({ ...editingAutomation, timingDays: parseInt(e.target.value) || 0 })}
+                    value={editingAutomation.timing}
+                    onChange={(e) => setEditingAutomation({ ...editingAutomation, timing: parseInt(e.target.value) || 0 })}
                     className="border rounded-md p-2 w-full bg-background"
                     min="0"
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Action Count</label>
-                  <input
-                    type="number"
-                    placeholder="e.g., 1"
-                    value={editingAutomation.actionCount}
-                    onChange={(e) => setEditingAutomation({ ...editingAutomation, actionCount: parseInt(e.target.value) || 0 })}
-                    className="border rounded-md p-2 w-full bg-background"
-                    min="0"
-                  />
+                  <label className="text-sm font-medium mb-2 block">Trigger Type</label>
+                  <Select
+                    value={editingAutomation.triggerType}
+                    onValueChange={(value) => setEditingAutomation({ ...editingAutomation, triggerType: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="birthday">Birthday</SelectItem>
+                      <SelectItem value="inactive">Inactive Customer</SelectItem>
+                      <SelectItem value="new_customer">New Customer</SelectItem>
+                      <SelectItem value="anniversary">Anniversary</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Timing Description</label>
-                <input
-                  type="text"
-                  placeholder="e.g., 7 days before birthday"
-                  value={editingAutomation.timingDescription}
-                  onChange={(e) => setEditingAutomation({ ...editingAutomation, timingDescription: e.target.value })}
-                  className="border rounded-md p-2 w-full bg-background"
-                />
               </div>
 
               <div className="flex gap-2 mt-2">
@@ -924,6 +1008,7 @@ export default function AutomationsPage() {
       <CreateAutomationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onSuccess={fetchAutomations}
       />
     </div>
   );
