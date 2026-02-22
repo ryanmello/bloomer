@@ -6,7 +6,6 @@ import {cookies} from "next/headers";
 // fetch audiences card
 export async function GET() {
   try {
-    
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({message: "Not authenticated"}, {status: 401});
@@ -76,24 +75,22 @@ export async function GET() {
                 },
               },
             },
-          }
-         }, 
-        })
-      : [];
+          })
+        : [];
 
-        const customerMap = new Map(customers.map(c => [c.id, c]));
-        const audiencesWithCustomers = audiences.map(aud => {
-        const customersInAud = (aud.customerIds || [])
-          .map(id => customerMap.get(id))
-          .filter(Boolean);
+    const customerMap = new Map(customers.map((c) => [c.id, c]));
+    const audiencesWithCustomers = audiences.map((aud) => {
+      const customersInAud = (aud.customerIds || [])
+        .map((id) => customerMap.get(id))
+        .filter(Boolean);
 
-        return {
-          ...aud,
-          customers: customersInAud,
-          customerCount: customersInAud.length, 
-        };
-      });
-    
+      return {
+        ...aud,
+        customers: customersInAud,
+        customerCount: customersInAud.length,
+      };
+    });
+
     return NextResponse.json(audiencesWithCustomers);
   } catch (err) {
     console.error("Error fetching audience:", err);
