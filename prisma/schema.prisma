@@ -150,7 +150,6 @@ model Campaign {
   status String @default("Draft")
 
   // Target audience type: All, VIP, New, Potential, Newsletter, Custom
-  audienceType String
   audienceId String? @db.ObjectId
   audience   Audience? @relation(fields: [audienceId], references: [id], onDelete: SetNull)
 
