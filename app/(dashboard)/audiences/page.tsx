@@ -213,9 +213,22 @@ export default function Audiences() {
             else if (selectedOperator === "greaterThan") matchesField = Number(fieldVal) > Number(filterValue);
             else if (selectedOperator === "lessThan") matchesField = Number(fieldVal) < Number(filterValue);
             else if (selectedOperator === "between") {
-              const min = Number(filterValue);
-              const max = Number(filterValueMax);
-              matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
+              // Block filtering if inputs are missing or errors exist
+              if (!filterValue || !filterValueMax || minError || maxError) {
+                matchesField = false;
+              } else {
+                const min = Number(filterValue);
+                const max = Number(filterValueMax);
+
+                // Prevent range min > max
+                if (min > max) {
+                  matchesField = false;
+                } else {
+                  matchesField =
+                    Number(fieldVal) >= min &&
+                    Number(fieldVal) <= max;
+                }
+              }
             }
           } else if (percentFields.includes(selectedField)) {
             const cleanVal = filterValue.replace("%", "");
@@ -225,9 +238,22 @@ export default function Audiences() {
             else if (selectedOperator === "greaterThan") matchesField = Number(fieldVal) > Number(cleanVal);
             else if (selectedOperator === "lessThan") matchesField = Number(fieldVal) < Number(cleanVal);
             else if (selectedOperator === "between") {
-              const min = Number(cleanVal);
-              const max = Number(cleanValMax);
-              matchesField = Number(fieldVal) >= min && Number(fieldVal) <= max;
+              // Block filtering if inputs are missing or errors exist
+              if (!filterValue || !filterValueMax || minError || maxError) {
+                matchesField = false;
+              } else {
+                const min = Number(cleanVal);
+                const max = Number(cleanValMax);
+
+                // Prevent range min > max
+                if (min > max) {
+                  matchesField = false;
+                } else {
+                  matchesField =
+                    Number(fieldVal) >= min &&
+                    Number(fieldVal) <= max;
+                }
+              }
             }
           } else {
             // Text fields
@@ -749,6 +775,15 @@ export default function Audiences() {
                       }
 
                       setFilterValue(val);
+
+                      const min = Number(val);
+                      const max = Number(filterValueMax);
+
+                      if (val && filterValueMax && !isNaN(min) && !isNaN(max) && min > max) {
+                        setMaxError("Max must be greater than Min");
+                      } else {
+                        setMaxError("");
+                      }
                     }}
                     className={`h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${minError ? "border-red-500 text-red-500" : ""
                       }`}
@@ -784,6 +819,15 @@ export default function Audiences() {
                       }
 
                       setFilterValueMax(val);
+
+                      const min = Number(filterValue);
+                      const max = Number(val);
+
+                      if (filterValue && val && !isNaN(min) && !isNaN(max) && min > max) {
+                        setMaxError("Max must be greater than Min");
+                      } else {
+                        setMaxError("");
+                      }
                     }}
                     className={`h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${maxError ? "border-red-500 text-red-500" : ""
                       }`}
