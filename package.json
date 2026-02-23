@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
+    "build:ci": "next build",
     "start": "next start",
     "postinstall": "prisma generate"
   },

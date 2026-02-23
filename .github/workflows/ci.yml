@@ -32,10 +32,10 @@ jobs:
           DATABASE_URL: "mongodb://localhost:27017/ci"
 
       - name: Run lint
-        run: npm run lint
+        run: npx next lint
 
       - name: Run typecheck
-        run: npm run typecheck
+        run: npx tsc --noEmit
 
       - name: Run build
         run: npm run build:ci
