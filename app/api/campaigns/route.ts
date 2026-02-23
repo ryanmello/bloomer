@@ -125,10 +125,18 @@ export async function POST(req: NextRequest) {
           lastName: true
         }
       })
-      : [];
+      : await db.customer.findMany({
+        where: { shopId: shopId },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true
+        }
+      });
 
     // If no customers found, return error
-    if (targetAudience && targetCustomers.length === 0) {
+    if (targetCustomers.length === 0) {
       return NextResponse.json(
         {
           message: "No customers found for selected audience",
