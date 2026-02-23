@@ -1,3 +1,4 @@
+// @ts-nocheck - vitest/config types may not resolve during Next.js build
 import { defineConfig } from 'vitest/config';
 import path from 'path';
 
