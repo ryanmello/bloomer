@@ -15,11 +15,13 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const shops = await db.shop.findMany({
-      where: { userId: user.id }
+    // Use same shop resolution as broadcasts page (most recent shop)
+    const shop = await db.shop.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' }
     });
 
-    if (!shops || shops.length === 0) {
+    if (!shop) {
       return NextResponse.json(
         { message: "No shop found" },
         { status: 404 }
@@ -28,7 +30,7 @@ export async function GET(req: NextRequest) {
 
     const campaigns = await db.campaign.findMany({
       where: {
-        shopId: shops[0].id
+        shopId: shop.id
       },
       include: {
         recipients: {
@@ -83,9 +85,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get the user's shop
+    // Get the user's shop (same resolution as GET and broadcasts page)
     const shop = await db.shop.findFirst({
-      where: { userId: user.id }
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' }
     });
 
     if (!shop) {

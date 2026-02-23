@@ -72,9 +72,10 @@ export default function BroadcastsClient({ campaigns: initialCampaigns, audience
 
   const handleCampaignCreated = useCallback(async () => {
     setIsModalOpen(false);
+    // Small delay so DB write is committed before we fetch
+    await new Promise(resolve => setTimeout(resolve, 300));
     await refreshCampaigns();
-    router.refresh();
-  }, [refreshCampaigns, router]);
+  }, [refreshCampaigns]);
 
   // Set up polling for scheduled campaigns and in-flight sends
   useEffect(() => {

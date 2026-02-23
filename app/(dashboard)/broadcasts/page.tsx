@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 import db from '@/lib/prisma';
+
+export const dynamic = 'force-dynamic';
 import { getCurrentUser } from '@/actions/getCurrentUser';
 import BroadcastsClient from '@/components/broadcasts/BroadcastsClient';
 
