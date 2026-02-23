@@ -9,8 +9,10 @@ export async function GET() {
       return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
+    // Use same shop resolution as campaigns/broadcasts (most recent shop)
     const shop = await db.shop.findFirst({
       where: {userId: user.id},
+      orderBy: {createdAt: 'desc'},
     });
 
     if (!shop) {
@@ -117,6 +119,7 @@ export async function POST(req: Request) {
 
     const shop = await db.shop.findFirst({
       where: {userId: user.id},
+      orderBy: {createdAt: 'desc'},
     });
 
     if (!shop) {

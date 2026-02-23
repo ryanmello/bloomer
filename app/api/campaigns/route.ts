@@ -71,6 +71,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { campaignName, subject, emailBody, audienceType, status, scheduledFor, sentAt, customerId } = body;
 
+    console.log('[campaigns] POST body:', { campaignName, audienceType, customerId: customerId ?? '(none)' });
+
     if (!campaignName || !subject || !emailBody || !audienceType) {
       return NextResponse.json(
         { message: "Missing required fields" },
@@ -109,6 +111,7 @@ export async function POST(req: NextRequest) {
         select: { id: true, email: true, firstName: true, lastName: true }
       });
       if (!customer) {
+        console.log('[campaigns] Customer not found:', { customerId, shopId });
         return NextResponse.json(
           { message: "Customer not found or does not belong to your shop" },
           { status: 400 }
@@ -148,6 +151,7 @@ export async function POST(req: NextRequest) {
     
     // If no customers found, return error
     if (targetCustomers.length === 0) {
+      console.log('[campaigns] No customers for audience:', audienceType);
       return NextResponse.json(
         { 
           message: `No customers found for audience type: ${audienceType}`,
