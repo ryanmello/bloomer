@@ -1,4 +1,4 @@
-import { NextResponse, NextRequest } from "next/server";
+import {NextResponse, NextRequest} from "next/server";
 import db from "@/lib/prisma";
 import {getCurrentUser} from "@/actions/getCurrentUser";
 import {cookies} from "next/headers";
@@ -18,14 +18,14 @@ export async function GET(
   // route [audienceId]
   // Next.js, audienceId = "abc123" as params
   // params = { audienceId: "abc123" }
-  { params }: { params: Promise<{ audienceId: string }> },
+  {params}: {params: Promise<{audienceId: string}>},
 ) {
-  const { audienceId } = await params;
+  const {audienceId} = await params;
 
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+      return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
     // Get the active shop ID from cookie
@@ -67,7 +67,7 @@ export async function GET(
     // }
 
     const audience = await db.audience.findFirst({
-      where: { id: audienceId, userId: user.id, shopId: shop.id },
+      where: {id: audienceId, userId: user.id, shopId: shop.id},
     });
 
     if (!audience) {
@@ -123,11 +123,11 @@ export async function GET(
     }
 
     const campaignsSent = await db.campaign.count({
-      where: {shopId: shop.id, audienceType: audience.type},
+      where: {shopId: shop.id, audience: {type: audience.type}},
     });
 
     const lastCampaignObj = await db.campaign.findFirst({
-      where: {shopId: shop.id, audienceType: audience.type},
+      where: {shopId: shop.id, audience: {type: audience.type}},
       orderBy: {createdAt: "desc"},
     });
 
@@ -149,8 +149,8 @@ export async function GET(
   } catch (err) {
     console.error("Error fetching audience:", err);
     return NextResponse.json(
-      { message: "Failed to fetch audience" },
-      { status: 500 }
+      {message: "Failed to fetch audience"},
+      {status: 500},
     );
   }
 }
@@ -158,14 +158,14 @@ export async function GET(
 // update audience data
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ audienceId: string }> },
+  {params}: {params: Promise<{audienceId: string}>},
 ) {
-  const { audienceId } = await params;
+  const {audienceId} = await params;
 
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
+      return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
     // Get the active shop ID from cookie
@@ -199,17 +199,17 @@ export async function PUT(
     }
 
     const existing = await db.audience.findFirst({
-      where: { id: audienceId, userId: user.id, shopId: shop.id },
+      where: {id: audienceId, userId: user.id, shopId: shop.id},
     });
 
     if (!existing) {
-      return NextResponse.json({ message: "Audience not found" }, { status: 404 });
+      return NextResponse.json({message: "Audience not found"}, {status: 404});
     }
 
     const body = await req.json();
 
     const updateAudience = await db.audience.update({
-      where: { id: audienceId },
+      where: {id: audienceId},
       data: {
         name: body.name,
         description: body.description,
@@ -225,7 +225,7 @@ export async function PUT(
         message: "Audience updated successfully!",
       });
 
-    return NextResponse.json(updateAudience, { status: 201 });
+    return NextResponse.json(updateAudience, {status: 201});
   } catch (err) {
     console.error("Error update audience:", err);
     return NextResponse.json([]);
