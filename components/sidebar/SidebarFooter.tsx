@@ -1,6 +1,8 @@
+"use client";
+
 import { User } from "@prisma/client";
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface UserFooterProps {
@@ -12,6 +14,8 @@ export default function UserFooter({
   isLoading,
   currentUser,
 }: UserFooterProps) {
+  const router = useRouter();
+
   const getInitials = (name: string | null, email: string | null) => {
     if (name) {
       return name
@@ -88,9 +92,10 @@ export default function UserFooter({
           </div>
         </div>
       ) : (
-        <Link
-          href="/sign-in"
-          className="block border p-2 rounded-lg bg-card/50 hover:bg-card/80 transition-colors cursor-pointer"
+        <button
+          type="button"
+          onClick={() => router.push("/sign-in")}
+          className="w-full text-left border p-2 rounded-lg bg-card/50 hover:bg-card/80 transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-3">
             {/* Default Avatar */}
@@ -108,7 +113,7 @@ export default function UserFooter({
               </p>
             </div>
           </div>
-        </Link>
+        </button>
       )}
     </div>
   );
