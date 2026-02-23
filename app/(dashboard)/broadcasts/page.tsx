@@ -15,7 +15,8 @@ async function getCampaigns(shopId: string) {
             status: true,
             customerId: true
           }
-        }
+        },
+        audience: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -25,54 +26,6 @@ async function getCampaigns(shopId: string) {
     return campaigns;
   } catch (error) {
     console.error('Error fetching campaigns:', error);
-    return [];
-  }
-}
-
-// Get audience segments with counts
-async function getAudiences(shopId: string) {
-  try {
-    const [
-      allCustomers,
-      vipCustomers,
-      newCustomers,
-      potentialCustomers,
-      newsletterSubscribers
-    ] = await Promise.all([
-      db.customer.count({ 
-        where: { shopId } 
-      }),
-      db.customer.count({ 
-        where: { 
-          shopId, 
-          group: 'VIP' 
-        } 
-      }),
-      db.customer.count({ 
-        where: { 
-          shopId, 
-          group: 'New' 
-        } 
-      }),
-      db.customer.count({ 
-        where: { 
-          shopId, 
-          group: 'Potential' 
-        } 
-      }),
-      // Newsletter subscribers count - feature not yet implemented
-      Promise.resolve(0)
-    ]);
-
-    return [
-      { id: 'all', name: 'All Customers', count: allCustomers },
-      { id: 'vip', name: 'VIP Customers', count: vipCustomers },
-      { id: 'new', name: 'New Customers', count: newCustomers },
-      { id: 'potential', name: 'Potential Customers', count: potentialCustomers },
-      { id: 'newsletter', name: 'Newsletter Subscribers', count: newsletterSubscribers }
-    ];
-  } catch (error) {
-    console.error('Error fetching audiences:', error);
     return [];
   }
 }
@@ -90,6 +43,8 @@ export default async function BroadcastsPage() {
     orderBy: { createdAt: 'desc' }
   });
 
+  console.log("SHOP OBJECT:", shop);
+
   if (!shop) {
     return (
       <div className="min-h-screen bg-background p-6">
@@ -99,8 +54,8 @@ export default async function BroadcastsPage() {
             <p className="text-muted-foreground mb-4">
               Please create a shop first to manage email campaigns.
             </p>
-            <a 
-              href="/settings" 
+            <a
+              href="/settings"
               className="inline-flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all"
             >
               Create Shop
@@ -112,19 +67,37 @@ export default async function BroadcastsPage() {
   }
 
   // Fetch campaigns and audiences in parallel
-  const [rawCampaigns, audiences] = await Promise.all([
+  const [rawCampaigns, rawAudiences] = await Promise.all([
     getCampaigns(shop.id),
-    getAudiences(shop.id)
+    db.audience.findMany({
+      where: { shopId: shop.id }
+    })
   ]);
+
+  console.log("SHOP ID:", shop.id);
+  console.log("AUDIENCES FROM DB:", rawAudiences);
+
+  const audiences = rawAudiences.map(a => ({
+    id: a.id,
+    name: a.name,
+    count: a.customerIds?.length ?? 0,
+  }));
 
   // Transform campaigns to match the component interface
   const campaigns = rawCampaigns.map(campaign => ({
     id: campaign.id,
     campaignName: campaign.campaignName,
-    audienceType: campaign.audienceType,
     status: campaign.status as "Draft" | "Scheduled" | "Sent" | "Failed",
     sentAt: campaign.sentAt ? new Date(campaign.sentAt).toISOString() : null,
     createdAt: new Date(campaign.createdAt).toISOString(),
+
+    audience: campaign.audience
+      ? {
+        id: campaign.audience.id,
+        name: campaign.audience.name
+      }
+      : null,
+
     recipients: campaign.recipients.map(r => ({
       id: r.id,
       status: r.status,
@@ -133,8 +106,8 @@ export default async function BroadcastsPage() {
   }));
 
   return (
-    <BroadcastsClient 
-      campaigns={campaigns} 
+    <BroadcastsClient
+      campaigns={campaigns}
       audiences={audiences}
     />
   );

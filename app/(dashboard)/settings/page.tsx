@@ -8,10 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import axios from "axios";
-import { useState, useEffect } from "react";
-import { Trash2, LogOut, User, Building2, Shield, Users, Settings as SettingsIcon, Palette } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Trash2, LogOut, User, Building2, Shield, Users, Settings as SettingsIcon, Palette, Store } from "lucide-react";
 import SecurityTile from "@/components/settings/SecurityTile";
 import PreferencesTile from "@/components/settings/PreferencesTile";
+import ShopList from "@/components/settings/ShopList";
 import { signOut } from "next-auth/react";
 import AccountDetails from "@/components/settings/AccountDetails";
 import { useUser } from "@/context/AuthContext";
@@ -32,9 +33,23 @@ export default function Settings() {
   const { user, isLoading: userLoading } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [staffUsers, setStaffUsers] = useState<
     { name?: string; email: string; role?: string }[]
   >([]);
+
+  const fetchTwoFactorStatus = useCallback(async () => {
+    try {
+      const response = await axios.get("/api/user/2fa/status");
+      setTwoFactorEnabled(response.data.enabled);
+    } catch {
+      // silently fail
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTwoFactorStatus();
+  }, [fetchTwoFactorStatus]);
 
   const {
     register,
@@ -335,13 +350,35 @@ export default function Settings() {
         </CardContent>
       </Card>
 
+      {/* Your Shops Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Store className="h-5 w-5" />
+            <CardTitle>Your Shops</CardTitle>
+          </div>
+          <CardDescription>
+            Manage your shops
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ShopList />
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         {/* Preferences Tile */}
-        <PreferencesTile />
+        <PreferencesTile
+          twoFactorEnabled={twoFactorEnabled}
+          onTwoFactorChange={fetchTwoFactorStatus}
+        />
         
         {/* Security Section */}
-        <SecurityTile />
+        <SecurityTile
+          twoFactorEnabled={twoFactorEnabled}
+          onTwoFactorChange={fetchTwoFactorStatus}
+        />
 
         {/* Team Management Section */}
         <Card>

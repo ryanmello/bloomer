@@ -1,5 +1,6 @@
 import { User } from "@prisma/client";
 import Image from "next/image";
+import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface UserFooterProps {
@@ -87,7 +88,10 @@ export default function UserFooter({
           </div>
         </div>
       ) : (
-        <div className="border p-2 rounded-lg bg-card/50">
+        <Link
+          href="/sign-in"
+          className="block border p-2 rounded-lg bg-card/50 hover:bg-card/80 transition-colors cursor-pointer"
+        >
           <div className="flex items-center gap-3">
             {/* Default Avatar */}
             <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
@@ -104,7 +108,7 @@ export default function UserFooter({
               </p>
             </div>
           </div>
-        </div>
+        </Link>
       )}
     </div>
   );
