@@ -110,7 +110,6 @@ export async function GET(
             where: {shopId: shop.id, createdAt: {not: undefined}},
             select: {id: true},
           });
-          customerCount = customers.length;
         }
       } else {
         return NextResponse.json(
@@ -124,11 +123,11 @@ export async function GET(
     }
 
     const campaignsSent = await db.campaign.count({
-      where: {shopId: shop.id, audienceType: audience.type},
+      where: {shopId: shop.id, audience: {type: audience.type}},
     });
 
     const lastCampaignObj = await db.campaign.findFirst({
-      where: {shopId: shop.id, audienceType: audience.type},
+      where: {shopId: shop.id, audience: {type: audience.type}},
       orderBy: {createdAt: "desc"},
     });
 
@@ -149,7 +148,10 @@ export async function GET(
     });
   } catch (err) {
     console.error("Error fetching audience:", err);
-    return NextResponse.json([]);
+    return NextResponse.json(
+      {message: "Failed to fetch audience"},
+      {status: 500},
+    );
   }
 }
 
