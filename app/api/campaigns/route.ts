@@ -7,7 +7,7 @@ import { sendCampaignEmails } from "@/lib/resend-email";
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return NextResponse.json(
         { message: "Not authenticated" },
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return NextResponse.json(
         { message: "Not authenticated" },
@@ -69,20 +69,11 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { campaignName, subject, emailBody, audienceType, status, scheduledFor, sentAt, customerId } = body;
+    const { campaignName, subject, emailBody, audienceId, status, scheduledFor, sentAt } = body;
 
-    console.log('[campaigns] POST body:', { campaignName, audienceType, customerId: customerId ?? '(none)' });
-
-    if (!campaignName || !subject || !emailBody || !audienceType) {
+    if (!campaignName || !subject || !emailBody) {
       return NextResponse.json(
         { message: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    if (audienceType === 'single' && !customerId) {
-      return NextResponse.json(
-        { message: "Please select a customer for the test email" },
         { status: 400 }
       );
     }
@@ -102,59 +93,45 @@ export async function POST(req: NextRequest) {
 
     const shopId = shop.id;
 
-    let targetCustomers: { id: string; email: string; firstName: string; lastName: string }[];
+    // Validate audience
+    let targetAudience = null;
 
-    // Single customer mode - for testing before scaling up
-    if (audienceType === 'single' && customerId) {
-      const customer = await db.customer.findFirst({
-        where: { id: customerId, shopId },
-        select: { id: true, email: true, firstName: true, lastName: true }
+    if (audienceId) {
+      targetAudience = await db.audience.findFirst({
+        where: {
+          id: audienceId,
+          shopId: shopId
+        }
       });
-      if (!customer) {
-        console.log('[campaigns] Customer not found:', { customerId, shopId });
+
+      if (!targetAudience) {
         return NextResponse.json(
-          { message: "Customer not found or does not belong to your shop" },
+          { message: "Audience not found" },
           { status: 400 }
         );
       }
-      targetCustomers = [customer];
-    } else {
-      // Get target customers based on audience type
-      const whereClause: any = {
-        shopId: shopId
-      };
+    }
 
-      // Handle audience type filtering (case-insensitive matching)
-      if (audienceType === 'vip') {
-        whereClause.group = { in: ['VIP', 'vip', 'Vip'] };
-      } else if (audienceType === 'new') {
-        whereClause.group = { in: ['New', 'new', 'NEW'] };
-      } else if (audienceType === 'potential') {
-        whereClause.group = { in: ['Potential', 'potential', 'POTENTIAL'] };
-      }
-      // If audienceType is 'all' or anything else, don't filter by group
-
-      console.log(`Querying customers with whereClause:`, JSON.stringify(whereClause, null, 2));
-      
-      targetCustomers = await db.customer.findMany({
-        where: whereClause,
-        select: { 
+    const targetCustomers = targetAudience
+      ? await db.customer.findMany({
+        where: {
+          shopId: shopId,
+          id: { in: targetAudience.customerIds }
+        },
+        select: {
           id: true,
           email: true,
           firstName: true,
           lastName: true
         }
-      });
-    }
+      })
+      : [];
 
-    console.log(`Found ${targetCustomers.length} customers for audience type: ${audienceType}`);
-    
     // If no customers found, return error
-    if (targetCustomers.length === 0) {
-      console.log('[campaigns] No customers for audience:', audienceType);
+    if (targetAudience && targetCustomers.length === 0) {
       return NextResponse.json(
-        { 
-          message: `No customers found for audience type: ${audienceType}`,
+        {
+          message: "No customers found for selected audience",
           error: "Cannot create campaign with no target customers"
         },
         { status: 400 }
@@ -164,7 +141,7 @@ export async function POST(req: NextRequest) {
     // Determine campaign status
     let campaignStatus = status || 'Draft';
     let scheduledDate: Date | null = null;
-    
+
     if (scheduledFor) {
       campaignStatus = 'Scheduled';
       scheduledDate = new Date(scheduledFor);
@@ -180,7 +157,7 @@ export async function POST(req: NextRequest) {
         campaignName,
         subject,
         emailBody,
-        audienceType,
+        audienceId: audienceId ?? null,
         status: campaignStatus,
         scheduledFor: scheduledDate,
         sentAt: sentAt ? new Date(sentAt) : null,
@@ -217,10 +194,10 @@ export async function POST(req: NextRequest) {
       } else {
         // Send emails in the background (don't await to return response quickly)
         sendCampaignEmails(
-          campaign.id, 
-          targetCustomers, 
-          subject, 
-          emailBody, 
+          campaign.id,
+          targetCustomers,
+          subject,
+          emailBody,
           shop.name || 'Your Store',
           shop.email
         ).catch(error => {

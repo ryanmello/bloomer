@@ -59,7 +59,7 @@ export default function CreateCampaignModal({
   }, [isOpen, selectedAudience]);
 
   const createCampaign = async (actionType: 'draft' | 'send' | 'schedule') => {
-    if (!campaignName || !selectedAudience || !subject || !emailBody) {
+    if (!campaignName || !subject || !emailBody) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -82,7 +82,7 @@ export default function CreateCampaignModal({
         campaignName,
         subject,
         emailBody,
-        audienceType: selectedAudience,
+        audienceId: selectedAudience || undefined,
       };
       if (selectedAudience === 'single' && selectedCustomerId) {
         payload.customerId = selectedCustomerId;
@@ -95,14 +95,14 @@ export default function CreateCampaignModal({
         payload.status = 'Scheduled';
         // Combine date and time, handling timezone properly
         const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
-        
+
         // Validate that the scheduled time is in the future
         if (scheduledDateTime <= new Date()) {
           toast.error('Scheduled time must be in the future');
           setLoading(false);
           return;
         }
-        
+
         payload.scheduledFor = scheduledDateTime.toISOString();
       } else {
         payload.status = 'Draft';
@@ -121,13 +121,13 @@ export default function CreateCampaignModal({
         throw new Error(errorData.message || `Failed to ${actionType} campaign`);
       }
 
-      const successMessage = 
+      const successMessage =
         actionType === 'draft' ? 'Draft saved successfully!' :
-        actionType === 'schedule' ? 'Campaign scheduled successfully!' :
-        'Campaign is being sent! This may take a few minutes.';
-      
+          actionType === 'schedule' ? 'Campaign scheduled successfully!' :
+            'Campaign is being sent! This may take a few minutes.';
+
       toast.success(successMessage);
-      
+
       // Reset form
       setCampaignName('');
       setSelectedAudience('');
@@ -213,7 +213,7 @@ export default function CreateCampaignModal({
               disabled={isSending || isSaving}
               className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition appearance-none cursor-pointer disabled:opacity-50"
             >
-              <option value="">Select an audience</option>
+              <option value="">All Customers</option>
               {audiences.map((audience) => (
                 <option key={audience.id} value={audience.id}>
                   {audience.name} ({audience.count.toLocaleString()} {audience.id === 'single' ? 'recipient' : 'customers'})
@@ -317,7 +317,7 @@ export default function CreateCampaignModal({
                   const isToday = scheduledDate === now.toISOString().split('T')[0];
                   const isPast = scheduledDateTime <= now;
                   const minutesUntil = Math.round((scheduledDateTime.getTime() - now.getTime()) / 1000 / 60);
-                  
+
                   if (isPast) {
                     return (
                       <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2 flex items-center gap-1">
@@ -372,7 +372,7 @@ export default function CreateCampaignModal({
                 {isSending ? 'Sending...' : 'Send Now'}
               </button>
             )}
-            <button 
+            <button
               onClick={handleSchedule}
               disabled={isSending || isSaving}
               className="flex items-center gap-2 px-6 py-2.5 border border-border rounded-lg font-semibold hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

@@ -2,22 +2,20 @@
 import { Mail, Search, MoreVertical } from 'lucide-react';
 import { useState } from 'react';
 
-interface Campaign {
+interface CampaignRow {
   id: string;
   campaignName: string;
-  audienceType: string;
-  status: "Draft" | "Scheduled" | "Sent" | "Failed";
+  status: "Failed" | "Draft" | "Scheduled" | "Sent";
   sentAt: string | null;
   createdAt: string;
-  recipients: Array<{
+  audience: {
     id: string;
-    status: string;
-    customerId: string;
-  }>;
+    name: string;
+  } | null;
 }
 
 interface CampaignsTableProps {
-  campaigns: Campaign[];
+  campaigns: CampaignRow[];
 }
 
 export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
@@ -36,23 +34,11 @@ export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
     }
   };
 
-  const getAudienceName = (audienceType: string) => {
-    const audienceMap: { [key: string]: string } = {
-      single: 'Single customer (test)',
-      all: 'All Customers',
-      vip: 'VIP Customers',
-      new: 'New Customers',
-      potential: 'Potential Customers',
-      newsletter: 'Newsletter Subscribers',
-    };
-    return audienceMap[audienceType] || audienceType;
-  };
-
   const formatDate = (date: string | null) => {
     if (!date) return '...';
     const dateObj = new Date(date);
-    return dateObj.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return dateObj.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       year: '2-digit'
     });
@@ -60,7 +46,7 @@ export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
 
   const filteredCampaigns = campaigns.filter(campaign =>
     campaign.campaignName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    getAudienceName(campaign.audienceType).toLowerCase().includes(searchTerm.toLowerCase())
+    (campaign.audience?.name.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
   );
 
   return (
@@ -116,7 +102,7 @@ export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
                 </td>
                 <td className="py-4 px-6">
                   <span className="text-sm text-muted-foreground">
-                    {getAudienceName(campaign.audienceType)}
+                    {campaign.audience?.name ?? "No Audience"}
                   </span>
                 </td>
                 <td className="py-4 px-6">

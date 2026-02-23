@@ -18,6 +18,8 @@ model Coupon {
 
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  automations Automation[]
 }
 
 model User {
@@ -71,7 +73,9 @@ model Shop {
   customers Customer[]
   campaigns Campaign[]
   products  Product[]
-  audiences  Audience[]
+  inventoryMovements InventoryMovement[]
+  audiences          Audience[]
+  automations        Automation[]
 }
 
 model Customer {
@@ -95,13 +99,12 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shopId String? @db.ObjectId
-  shop   Shop?   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId String @db.ObjectId
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   campaignRecipients CampaignRecipient[]
 
   orders Order[]
-  
 }
 
 model Order {
@@ -147,7 +150,8 @@ model Campaign {
   status String @default("Draft")
 
   // Target audience type: All, VIP, New, Potential, Newsletter, Custom
-  audienceType String
+  audienceId String? @db.ObjectId
+  audience   Audience? @relation(fields: [audienceId], references: [id], onDelete: SetNull)
 
   // For scheduled campaigns
   scheduledFor DateTime?
@@ -225,6 +229,7 @@ model InventoryMovement {
   productId         String   @db.ObjectId
   product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   shopId            String   @db.ObjectId
+  shop              Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
 }
 
 enum AudienceStatus {
@@ -250,11 +255,14 @@ model Audience {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shopId String? @db.ObjectId
-  shop   Shop?   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId String @db.ObjectId
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  campaigns Campaign[]
+  automations Automation[]
 }
 
 model EmailIntegration {
@@ -271,4 +279,50 @@ model EmailIntegration {
   updatedAt     DateTime @updatedAt
 
   @@unique([userId, platform])
+}
+
+model Automation {
+  id              String  @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  description     String?
+  category        String  // "lifecycle", "marketing", "transactional"
+  triggerType     String  // "birthday", "inactive", "new_customer"
+  timing          Int     // Days before/after trigger
+  actionType      String  // "send_email"
+  messageTemplate String? // Template key for predefined templates (e.g., "birthday_v1")
+  status          String  @default("active") // "active" or "paused"
+
+  // Email content
+  emailSubject String? // Email subject line with merge tags (e.g., "Happy Birthday {{firstName}}!")
+  emailBody    String? // HTML email body with merge tags
+
+  // Coupon link
+  couponId String? @db.ObjectId
+  coupon   Coupon? @relation(fields: [couponId], references: [id])
+
+  // Audience link (optional - filters which customers receive the automation)
+  audienceId String?   @db.ObjectId
+  audience   Audience? @relation(fields: [audienceId], references: [id])
+
+  // Tracking
+  sentCount Int @default(0) // Number of emails sent by this automation
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shopId String @db.ObjectId
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+}
+
+model Form {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?  
+  status      String    // "active" | "template" | "custom"
+  access      String    // "public" | "verified"
+  questions   Json      
+  views       Int       @default(0)
+  submissions Int       @default(0)
+  conversions Int       @default(0)
+  updatedAt   DateTime  @updatedAt
 }
