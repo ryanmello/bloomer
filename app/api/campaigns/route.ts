@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
         shopId: shop.id
       },
       include: {
+        audience: true,
         recipients: {
           select: {
             id: true,

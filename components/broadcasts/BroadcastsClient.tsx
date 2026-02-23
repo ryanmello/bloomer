@@ -6,7 +6,7 @@ import CampaignsTable from './CampaignsTable';
 import CreateCampaignModal from './CreateCampaignModal';
 import { useRouter } from 'next/navigation';
 
-interface CampaignRow {
+interface Campaign {
   id: string;
   campaignName: string;
   status: "Failed" | "Draft" | "Scheduled" | "Sent";
@@ -16,6 +16,7 @@ interface CampaignRow {
     id: string;
     name: string;
   } | null;
+  recipients: { id: string; status: string; customerId: string }[];
 }
 
 interface Audience {
@@ -25,7 +26,7 @@ interface Audience {
 }
 
 interface BroadcastsClientProps {
-  campaigns: CampaignRow[];
+  campaigns: Campaign[];
   audiences: Audience[];
 }
 
@@ -33,11 +34,11 @@ function transformCampaign(campaign: any): Campaign {
   return {
     id: campaign.id,
     campaignName: campaign.campaignName,
-    audienceType: campaign.audienceType,
     status: campaign.status,
     sentAt: campaign.sentAt ? new Date(campaign.sentAt).toISOString() : null,
     createdAt: new Date(campaign.createdAt).toISOString(),
-    recipients: (campaign.recipients || []).map((r: any) => ({
+    audience: campaign.audience ? { id: campaign.audience.id, name: campaign.audience.name } : null,
+    recipients: (campaign.recipients || []).map((r: { id: string; status: string; customerId: string }) => ({
       id: r.id,
       status: r.status,
       customerId: r.customerId
@@ -120,7 +121,7 @@ export default function BroadcastsClient({ campaigns: initialCampaigns, audience
   // Poll for campaign status updates when emails are being sent (Pending recipients)
   useEffect(() => {
     const hasSendingCampaigns = campaigns.some(
-      c => c.status === 'Sent' && c.recipients.some(r => r.status === 'Pending')
+      c => c.status === 'Sent' && c.recipients.some((r: { status: string }) => r.status === 'Pending')
     );
     if (!hasSendingCampaigns) return;
 
