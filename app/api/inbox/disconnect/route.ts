@@ -15,22 +15,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid platform" }, { status: 400 });
     }
 
-    await (db as any).emailIntegration.updateMany({
-      where: {
-        userId: user.id,
-        platform,
-      },
+    const result = await (db as any).emailIntegration.updateMany({
+      where: { userId: user.id, platform },
       data: {
         connected: false,
-        accessToken: '',
+        accessToken: "[revoked]",
         refreshToken: null,
       },
     });
 
+    if (result.count === 0) {
+      console.warn("[Inbox Disconnect] No integration found for user/platform", user.id, platform);
+    }
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('Disconnect error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("[Inbox Disconnect] Error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to disconnect" },
+      { status: 500 }
+    );
   }
 }
 

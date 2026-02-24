@@ -120,10 +120,27 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000  # or your production URL
 4. You'll be redirected to the provider's login page
 5. After authorizing, you'll be redirected back and your emails will load
 
+## Vercel Deployment
+
+1. Add environment variables in Vercel Project Settings → Environment Variables:
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
+   - `NEXTAUTH_URL` = `https://your-project.vercel.app` (optional; app detects from request if not set)
+
+2. In Google Cloud Console → Credentials → your OAuth client, add this exact redirect URI:
+   - `https://your-project.vercel.app/api/inbox/oauth/gmail/callback`
+   - Replace `your-project` with your Vercel project URL (e.g. `bloomer-mgyr.vercel.app`)
+
+3. If using a custom domain, add that callback URL too:
+   - `https://gobloomer.com/api/inbox/oauth/gmail/callback`
+
+4. Disable "Require verified commits" in Vercel Git settings if deployments are being canceled.
+
 ## Troubleshooting
 
-- **"OAuth not configured"**: Make sure environment variables are set correctly
-- **"Token exchange failed"**: Check that redirect URIs match exactly in OAuth provider settings
-- **"Failed to fetch emails"**: Verify API permissions are granted in OAuth provider
-- **Database errors**: Make sure Prisma schema is synced with your database
+- **"OAuth not configured"**: Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in env
+- **"Token exchange failed"**: Redirect URI in Google Console must match exactly (no trailing slash). Add both `http://localhost:3000/api/inbox/oauth/gmail/callback` and your Vercel URL.
+- **"access_denied"**: User declined, or app not verified. For testing, add Test Users in OAuth consent screen.
+- **"Failed to fetch emails"**: Verify Gmail API is enabled; check token refresh logic
+- **Works locally but not on Vercel**: Verify env vars are set for Production; check Vercel function logs
 
