@@ -70,11 +70,9 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-3 justify-end">
             {!user && (
-              <Link href="/sign-in">
-                <Button variant="ghost" className="cursor-pointer">
-                  Sign In
-                </Button>
-              </Link>
+              <Button asChild variant="ghost" className="cursor-pointer">
+                <Link href="/sign-in">Sign In</Link>
+              </Button>
             )}
             <Button className="cursor-pointer">Book a demo</Button>
           </div>

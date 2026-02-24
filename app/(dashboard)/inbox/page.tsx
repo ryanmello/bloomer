@@ -77,13 +77,19 @@ function InboxContent() {
       const response = await axios.get('/api/inbox/status');
       const status = response.data;
       setIntegrationStatus(status);
-      
+
       // Auto-select connected platform
       if (status.gmail?.connected) {
         setPlatform('gmail');
       }
-    } catch (error) {
-      console.error('Failed to check connection status:', error);
+    } catch (error: unknown) {
+      const err = axios.isAxiosError(error) ? error : null;
+      const msg = err?.response?.data?.error || err?.message;
+      if (err?.response?.status === 503 && typeof msg === 'string' && msg.includes('prisma generate')) {
+        toast.error('Database setup needed: stop the dev server, run "npx prisma generate", then restart.');
+      } else {
+        console.error('Failed to check connection status:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -92,13 +98,21 @@ function InboxContent() {
   const handlePlatformSelect = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/inbox/oauth/gmail`);
+      const response = await axios.get("/api/inbox/oauth/gmail");
       const { authUrl } = response.data;
-      
-      // Redirect to OAuth provider
+      if (!authUrl) {
+        toast.error("No redirect URL received. Check Gmail OAuth configuration.");
+        return;
+      }
       window.location.href = authUrl;
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to initiate OAuth');
+    } catch (error: unknown) {
+      const msg =
+        axios.isAxiosError(error) && error.response?.data?.error
+          ? error.response.data.error
+          : "Failed to start Gmail connection. Check that GOOGLE_CLIENT_ID is set.";
+      toast.error(msg);
+      console.error("[Inbox] Gmail OAuth start error:", error);
+    } finally {
       setLoading(false);
     }
   };
