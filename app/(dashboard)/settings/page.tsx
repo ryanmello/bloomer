@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import axios from "axios";
 import { useState, useEffect } from "react";
-import { Trash2, LogOut, User, Building2, Shield, Users, Settings as SettingsIcon, Palette } from "lucide-react";
+import { Trash2, LogOut, User, Building2, Shield, Users, Settings as SettingsIcon, Palette, Link2, Unlink, CheckCircle2, Loader2 } from "lucide-react";
 import SecurityTile from "@/components/settings/SecurityTile";
 import { signOut } from "next-auth/react";
 import AccountDetails from "@/components/settings/AccountDetails";
@@ -35,6 +35,11 @@ export default function Settings() {
     { name?: string; email: string; role?: string }[]
   >([]);
 
+  const [squareConnected, setSquareConnected] = useState(false);
+  const [squareMerchantId, setSquareMerchantId] = useState<string | null>(null);
+  const [squareLoading, setSquareLoading] = useState(true);
+  const [squareActionLoading, setSquareActionLoading] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -54,6 +59,59 @@ export default function Settings() {
       ...u,
       name: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || null,
     }));
+
+  useEffect(() => {
+    const fetchSquareStatus = async () => {
+      try {
+        const res = await axios.get("/api/integrations/square/status");
+        setSquareConnected(res.data.connected);
+        setSquareMerchantId(res.data.merchantId || null);
+      } catch {
+        setSquareConnected(false);
+      } finally {
+        setSquareLoading(false);
+      }
+    };
+    fetchSquareStatus();
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("connected") === "square") {
+      toast.success("Square account connected successfully!");
+      setSquareConnected(true);
+      window.history.replaceState({}, "", "/settings");
+    }
+
+    const errorParam = params.get("error");
+    if (errorParam) {
+      toast.error(`Square connection failed: ${errorParam}`);
+      window.history.replaceState({}, "", "/settings");
+    }
+  }, []);
+
+  const handleConnectSquare = async () => {
+    setSquareActionLoading(true);
+    try {
+      const res = await axios.get("/api/integrations/square/oauth");
+      window.location.href = res.data.authUrl;
+    } catch {
+      toast.error("Failed to start Square connection");
+      setSquareActionLoading(false);
+    }
+  };
+
+  const handleDisconnectSquare = async () => {
+    setSquareActionLoading(true);
+    try {
+      await axios.post("/api/integrations/square/disconnect");
+      setSquareConnected(false);
+      setSquareMerchantId(null);
+      toast.success("Square account disconnected");
+    } catch {
+      toast.error("Failed to disconnect Square");
+    } finally {
+      setSquareActionLoading(false);
+    }
+  };
 
   // Prefill the form when page loads
   useEffect(() => {
@@ -421,6 +479,81 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Integrations Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Link2 className="h-5 w-5" />
+            <CardTitle>Integrations</CardTitle>
+          </div>
+          <CardDescription>
+            Connect third-party services to your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+            <div className="flex items-center gap-4">
+              <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
+                  <path d="M4.01 0C1.8 0 0 1.8 0 4.01v15.98C0 22.2 1.8 24 4.01 24h15.98C22.2 24 24 22.2 24 19.99V4.01C24 1.8 22.2 0 19.99 0H4.01zm8.34 4.8h3.3c.66 0 1.26.27 1.7.7.43.44.7 1.04.7 1.7v3.3c0 .66-.27 1.26-.7 1.7l-3.3 3.3c-.44.43-1.04.7-1.7.7h-3.3c-.66 0-1.26-.27-1.7-.7l-3.3-3.3c-.43-.44-.7-1.04-.7-1.7V7.2c0-.66.27-1.26.7-1.7.44-.43 1.04-.7 1.7-.7h3.3z" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Square</p>
+                {squareLoading ? (
+                  <Skeleton className="h-4 w-32 mt-1" />
+                ) : squareConnected ? (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className="text-sm text-muted-foreground">
+                      Connected{squareMerchantId ? ` (${squareMerchantId})` : ""}
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Connect your Square account to sync orders and customers
+                  </p>
+                )}
+              </div>
+            </div>
+            <div>
+              {squareLoading ? (
+                <Skeleton className="h-9 w-24" />
+              ) : squareConnected ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDisconnectSquare}
+                  disabled={squareActionLoading}
+                  className="flex items-center gap-2"
+                >
+                  {squareActionLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Unlink className="h-4 w-4" />
+                  )}
+                  Disconnect
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={handleConnectSquare}
+                  disabled={squareActionLoading}
+                  className="flex items-center gap-2"
+                >
+                  {squareActionLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Link2 className="h-4 w-4" />
+                  )}
+                  Connect
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Account Actions Section */}
       <Card>
