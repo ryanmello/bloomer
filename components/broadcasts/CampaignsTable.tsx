@@ -1,6 +1,8 @@
 'use client';
 import { Mail, Search, MoreVertical } from 'lucide-react';
 import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 interface CampaignRow {
   id: string;
@@ -29,18 +31,19 @@ export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
         return 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:ring-blue-700';
       case 'Draft':
         return 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:ring-amber-700';
+      case 'Failed':
+        return 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:ring-rose-700';
       default:
         return 'bg-gray-50 text-gray-700 ring-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:ring-gray-700';
     }
   };
 
   const formatDate = (date: string | null) => {
-    if (!date) return '...';
-    const dateObj = new Date(date);
-    return dateObj.toLocaleDateString('en-US', {
+    if (!date) return '\u2014';
+    return new Date(date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: '2-digit'
+      year: 'numeric',
     });
   };
 
@@ -50,91 +53,107 @@ export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
   );
 
   return (
-    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center justify-between">
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
-            <Mail className="w-5 h-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold text-foreground">Campaigns</h2>
+            <div className="rounded-xl p-2 bg-muted">
+              <Mail className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <CardTitle>Campaigns</CardTitle>
+                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset bg-muted text-muted-foreground ring-border">
+                  {campaigns.length}
+                </span>
+              </div>
+              <CardDescription>
+                All your email campaigns in one place
+              </CardDescription>
+            </div>
           </div>
           <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input
               type="text"
               placeholder="Search campaigns..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+              className="pl-10"
             />
           </div>
         </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-muted/30">
-            <tr className="border-b border-border">
-              <th className="text-left py-4 px-6 text-sm font-semibold text-foreground">
-                Campaign name
-              </th>
-              <th className="text-left py-4 px-6 text-sm font-semibold text-foreground">
-                Audience
-              </th>
-              <th className="text-left py-4 px-6 text-sm font-semibold text-foreground">
-                Status
-              </th>
-              <th className="text-left py-4 px-6 text-sm font-semibold text-foreground">
-                Sent
-              </th>
-              <th className="w-16"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCampaigns.map((campaign) => (
-              <tr
-                key={campaign.id}
-                className="border-b border-border hover:bg-muted/30 transition-colors"
-              >
-                <td className="py-4 px-6">
-                  <span className="text-sm font-medium text-foreground">
-                    {campaign.campaignName}
-                  </span>
-                </td>
-                <td className="py-4 px-6">
-                  <span className="text-sm text-muted-foreground">
-                    {campaign.audience?.name ?? "No Audience"}
-                  </span>
-                </td>
-                <td className="py-4 px-6">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${getStatusColor(
-                      campaign.status
-                    )}`}
-                  >
-                    {campaign.status}
-                  </span>
-                </td>
-                <td className="py-4 px-6">
-                  <span className="text-sm text-muted-foreground">
-                    {formatDate(campaign.sentAt || campaign.createdAt)}
-                  </span>
-                </td>
-                <td className="py-4 px-6">
-                  <button className="p-2 hover:bg-muted rounded-lg transition-colors">
-                    <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                </td>
+      </CardHeader>
+      <CardContent className="px-0">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border bg-muted/50">
+                <th className="text-left py-2.5 px-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Campaign
+                </th>
+                <th className="text-left py-2.5 px-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Audience
+                </th>
+                <th className="text-left py-2.5 px-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Status
+                </th>
+                <th className="text-left py-2.5 px-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Date
+                </th>
+                <th className="w-12"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {filteredCampaigns.length === 0 && (
-        <div className="py-12 text-center text-muted-foreground">
-          {campaigns.length === 0 ? 'No campaigns yet. Create your first one!' : 'No campaigns found'}
+            </thead>
+            <tbody className="divide-y divide-border">
+              {filteredCampaigns.map((campaign) => (
+                <tr
+                  key={campaign.id}
+                  className="hover:bg-muted/30 transition-colors"
+                >
+                  <td className="py-3 px-6">
+                    <span className="text-sm font-medium">
+                      {campaign.campaignName}
+                    </span>
+                  </td>
+                  <td className="py-3 px-6">
+                    <span className="text-sm text-muted-foreground">
+                      {campaign.audience?.name ?? "All Customers"}
+                    </span>
+                  </td>
+                  <td className="py-3 px-6">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${getStatusColor(campaign.status)}`}
+                    >
+                      {campaign.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-6">
+                    <span className="text-sm text-muted-foreground">
+                      {formatDate(campaign.sentAt || campaign.createdAt)}
+                    </span>
+                  </td>
+                  <td className="py-3 px-6">
+                    <button className="p-2 hover:bg-muted rounded-lg transition-colors">
+                      <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
-    </div>
+
+        {filteredCampaigns.length === 0 && (
+          <div className="py-12 text-center">
+            <Mail className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-muted-foreground">
+              {campaigns.length === 0
+                ? 'No campaigns yet. Create your first one!'
+                : 'No campaigns match your search.'}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

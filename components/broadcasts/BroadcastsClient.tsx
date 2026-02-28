@@ -90,18 +90,16 @@ export default function BroadcastsClient({ campaigns, audiences }: BroadcastsCli
   }, [campaigns, router]);
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <HeaderSection onNewCampaign={() => setIsModalOpen(true)} />
-        <CampaignsTable campaigns={campaigns} />
+    <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
+      <HeaderSection onNewCampaign={() => setIsModalOpen(true)} />
+      <CampaignsTable campaigns={campaigns} />
 
-        <CreateCampaignModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          audiences={audiences}
-          onCampaignCreated={handleCampaignCreated}
-        />
-      </div>
-    </div>
+      <CreateCampaignModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        audiences={audiences}
+        onCampaignCreated={handleCampaignCreated}
+      />
+    </main>
   );
 }

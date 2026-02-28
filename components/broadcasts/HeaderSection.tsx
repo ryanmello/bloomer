@@ -1,5 +1,6 @@
 'use client';
 import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface HeaderSectionProps {
   onNewCampaign: () => void;
@@ -7,18 +8,17 @@ interface HeaderSectionProps {
 
 export default function HeaderSection({ onNewCampaign }: HeaderSectionProps) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Email Broadcasts</h1>
-        <p className="text-muted-foreground mt-1">Create and manage email campaigns</p>
+        <h1 className="text-2xl font-bold tracking-tight">Broadcasts</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Create and manage email campaigns
+        </p>
       </div>
-      <button
-        onClick={onNewCampaign}
-        className="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all"
-      >
-        <Plus className="w-5 h-5" />
-        New Email Campaign
-      </button>
+      <Button onClick={onNewCampaign} className="gap-2">
+        <Plus className="h-4 w-4" />
+        New Campaign
+      </Button>
     </div>
   );
 }
