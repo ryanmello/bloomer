@@ -2,11 +2,12 @@
 
 import { useState, useRef } from "react";
 import { createCoupon } from "@/actions/getCoupons";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export default function CreateCouponForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -34,7 +35,15 @@ export default function CreateCouponForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create New Coupon</CardTitle>
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl p-2 bg-muted">
+            <Plus className="h-5 w-5" />
+          </div>
+          <div>
+            <CardTitle>Create New Coupon</CardTitle>
+            <CardDescription>Fill in the details below</CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
