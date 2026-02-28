@@ -1,23 +1,30 @@
-// lib/square.ts
 import axios from "axios";
+import db from "@/lib/prisma";
 
 const SQUARE_BASE_URL = "https://connect.squareup.com/v2";
+const SQUARE_SANDBOX_BASE_URL = "https://connect.squareupsandbox.com/v2";
+
+function getBaseUrl(): string {
+  return process.env.NODE_ENV === "production"
+    ? SQUARE_BASE_URL
+    : SQUARE_SANDBOX_BASE_URL;
+}
 
 export type SquareOrder = {
   id: string;
   created_at: string;
   total_money?: {
-    amount: number; // in cents
+    amount: number;
     currency: string;
   };
   state: string;
 };
 
 export type MonthlyRevenue = {
-  month: string; // e.g., "Jan"
+  month: string;
   year: number;
-  revenue: number; // in dollars
-  orders: number; // order count
+  revenue: number;
+  orders: number;
 };
 
 export type SquareOrdersResponse = {
@@ -49,7 +56,6 @@ function aggregateOrdersByMonth(orders: SquareOrder[]): {
   const skippedOrders: { order: SquareOrder; reason: string }[] = [];
 
   for (const order of orders) {
-    // Only count completed and open orders
     if (order.state !== "COMPLETED" && order.state !== "OPEN") {
       skippedOrders.push({ order, reason: `state is "${order.state}" (not COMPLETED or OPEN)` });
       continue;
@@ -70,13 +76,11 @@ function aggregateOrdersByMonth(orders: SquareOrder[]): {
       };
     }
 
-    // Square returns amounts in cents, convert to dollars
     const revenueInDollars = (order.total_money?.amount || 0) / 100;
     monthlyData[monthKey].revenue += revenueInDollars;
     monthlyData[monthKey].orders += 1;
   }
 
-  // Sort by year and month, oldest first
   const monthlyRevenue = Object.entries(monthlyData)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([, data]) => data);
@@ -84,13 +88,81 @@ function aggregateOrdersByMonth(orders: SquareOrder[]): {
   return { monthlyRevenue, completedOrders, skippedOrders };
 }
 
-export async function fetchSquareOrders(): Promise<SquareOrdersResponse | null> {
-  const accessToken = process.env.SQUARE_ACCESS_TOKEN_PROD;
+/**
+ * Retrieves a valid access token for the given user.
+ * Refreshes the token automatically if it's expired or about to expire.
+ */
+export async function getSquareAccessToken(userId: string): Promise<string | null> {
+  const integration = await db.squareIntegration.findUnique({
+    where: { userId },
+  });
 
-  if (!accessToken) {
-    console.error("Square access token not configured");
+  if (!integration || !integration.connected) {
     return null;
   }
+
+  const bufferMs = 5 * 60 * 1000;
+  if (integration.expiresAt.getTime() - Date.now() > bufferMs) {
+    return integration.accessToken;
+  }
+
+  const isSandbox = process.env.NODE_ENV !== "production";
+  const tokenUrl = isSandbox
+    ? "https://connect.squareupsandbox.com/oauth2/token"
+    : "https://connect.squareup.com/oauth2/token";
+
+  const clientId = process.env.SQUARE_CLIENT_ID;
+  const clientSecret = process.env.SQUARE_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    console.error("Square OAuth credentials not configured");
+    return null;
+  }
+
+  try {
+    const response = await fetch(tokenUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: integration.refreshToken,
+        grant_type: "refresh_token",
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to refresh Square token:", await response.text());
+      return null;
+    }
+
+    const tokens = await response.json();
+
+    await db.squareIntegration.update({
+      where: { userId },
+      data: {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        expiresAt: new Date(tokens.expires_at),
+      },
+    });
+
+    return tokens.access_token;
+  } catch (error) {
+    console.error("Square token refresh error:", error);
+    return null;
+  }
+}
+
+export async function fetchSquareOrders(userId: string): Promise<SquareOrdersResponse | null> {
+  const accessToken = await getSquareAccessToken(userId);
+
+  if (!accessToken) {
+    console.error("No Square access token available for user:", userId);
+    return null;
+  }
+
+  const baseUrl = getBaseUrl();
 
   const headers = {
     "Square-Version": "2024-01-18",
@@ -99,10 +171,7 @@ export async function fetchSquareOrders(): Promise<SquareOrdersResponse | null> 
   };
 
   try {
-    // First, fetch locations to get location IDs (required for orders search)
-    const locationsRes = await axios.get(`${SQUARE_BASE_URL}/locations`, {
-      headers,
-    });
+    const locationsRes = await axios.get(`${baseUrl}/locations`, { headers });
 
     const locationsData = locationsRes.data;
     const locationIds =
@@ -113,18 +182,16 @@ export async function fetchSquareOrders(): Promise<SquareOrdersResponse | null> 
       return null;
     }
 
-    // Calculate date range for past year
     const now = new Date();
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(now.getFullYear() - 1);
 
-    // Fetch all orders from the past year (with pagination)
     let allOrders: SquareOrder[] = [];
     let cursor: string | undefined;
 
     do {
       const ordersRes = await axios.post(
-        `${SQUARE_BASE_URL}/orders/search`,
+        `${baseUrl}/orders/search`,
         {
           location_ids: locationIds,
           limit: 500,
@@ -153,7 +220,6 @@ export async function fetchSquareOrders(): Promise<SquareOrdersResponse | null> 
       cursor = ordersData.cursor;
     } while (cursor);
 
-    // Aggregate orders by month
     const { monthlyRevenue, completedOrders, skippedOrders } = aggregateOrdersByMonth(allOrders);
 
     return {
@@ -170,4 +236,3 @@ export async function fetchSquareOrders(): Promise<SquareOrdersResponse | null> 
     return null;
   }
 }
-

@@ -51,12 +51,13 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shops             Shop[]
-  coupons           Coupon[]
-  campaigns         Campaign[]
-  emailIntegrations EmailIntegration[]
-  audiences         Audience[]
-  event             Event[]
+  shops              Shop[]
+  coupons            Coupon[]
+  campaigns          Campaign[]
+  emailIntegrations  EmailIntegration[]
+  audiences          Audience[]
+  event              Event[]
+  squareIntegration  SquareIntegration?
 }
 
 model Shop {
@@ -266,6 +267,19 @@ model Audience {
 
   campaigns Campaign[]
   automations Automation[]
+}
+
+model SquareIntegration {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @unique @db.ObjectId
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchantId   String
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  connected    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model EmailIntegration {
