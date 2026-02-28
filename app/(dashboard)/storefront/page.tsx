@@ -1,5 +1,5 @@
-import StorefrontTable from '@/components/storefront/Storefront';
-import AddProduct from '@/components/storefront/AddProduct';
+import StorefrontTable from '@/components/storefront-temp/Storefront';
+import AddProduct from '@/components/storefront-temp/AddProduct';
 import ShopSelector from '@/components/shop/ShopSelector';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
