@@ -1,7 +1,12 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { Send, Users, Calendar, User } from 'lucide-react';
+import { useState } from 'react';
+import { Send, Users, Calendar, X, Mail } from 'lucide-react';
 import { toast } from 'sonner';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Audience {
   id: string;
@@ -93,10 +98,8 @@ export default function CreateCampaignModal({
         payload.sentAt = new Date().toISOString();
       } else if (actionType === 'schedule') {
         payload.status = 'Scheduled';
-        // Combine date and time, handling timezone properly
         const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
 
-        // Validate that the scheduled time is in the future
         if (scheduledDateTime <= new Date()) {
           toast.error('Scheduled time must be in the future');
           setLoading(false);
@@ -128,7 +131,6 @@ export default function CreateCampaignModal({
 
       toast.success(successMessage);
 
-      // Reset form
       setCampaignName('');
       setSelectedAudience('');
       setSelectedCustomerId('');
@@ -164,54 +166,63 @@ export default function CreateCampaignModal({
 
   if (!isOpen) return null;
 
+  const isDisabled = isSending || isSaving;
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-border">
-        <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">New Email Campaign</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Create and send an email to your customers
-              </p>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+        {/* Header */}
+        <div className="sticky top-0 bg-card z-10 border-b border-border rounded-t-xl">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl p-2 bg-muted">
+                  <Mail className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle>New Email Campaign</CardTitle>
+                  <CardDescription>
+                    Create and send an email to your customers
+                  </CardDescription>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                disabled={isDisabled}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-            <button
-              onClick={onClose}
-              disabled={isSending || isSaving}
-              className="p-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+          </CardHeader>
         </div>
 
-        <div className="p-6 space-y-6">
-          <div>
-            <label className="block text-sm font-semibold text-foreground mb-2">
-              Campaign name
-            </label>
-            <input
-              type="text"
+        {/* Form Body */}
+        <CardContent className="space-y-5 pt-6">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="campaign-name">Campaign Name</Label>
+            <Input
+              id="campaign-name"
               value={campaignName}
               onChange={(e) => setCampaignName(e.target.value)}
               placeholder="e.g., Spring Sale 2025"
-              disabled={isSending || isSaving}
-              className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition disabled:opacity-50"
+              disabled={isDisabled}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-foreground mb-2">
-              <Users className="w-4 h-4 inline mr-1" />
-              Select audience
-            </label>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="audience" className="flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5 text-muted-foreground" />
+              Audience
+            </Label>
             <select
+              id="audience"
               value={selectedAudience}
               onChange={(e) => setSelectedAudience(e.target.value)}
-              disabled={isSending || isSaving}
-              className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition appearance-none cursor-pointer disabled:opacity-50"
+              disabled={isDisabled}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="">All Customers</option>
               {audiences.map((audience) => (
@@ -222,91 +233,68 @@ export default function CreateCampaignModal({
             </select>
           </div>
 
-          {selectedAudience === 'single' && (
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">
-                <User className="w-4 h-4 inline mr-1" />
-                Select customer
-              </label>
-              <select
-                value={selectedCustomerId}
-                onChange={(e) => setSelectedCustomerId(e.target.value)}
-                disabled={isSending || isSaving || customersLoading}
-                className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition appearance-none cursor-pointer disabled:opacity-50"
-              >
-                <option value="">{customersLoading ? 'Loading customers...' : 'Select a customer'}</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.firstName} {customer.lastName} ({customer.email})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-semibold text-foreground mb-2">
-              Subject line
-            </label>
-            <input
-              type="text"
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="subject">Subject Line</Label>
+            <Input
+              id="subject"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Enter email subject"
-              disabled={isSending || isSaving}
-              className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition disabled:opacity-50"
+              disabled={isDisabled}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-foreground mb-2">
-              Email body
-            </label>
-            <div className="mb-2 text-xs text-muted-foreground">
-              Use <code className="bg-muted px-1 py-0.5 rounded">{'{{firstName}}'}</code>, <code className="bg-muted px-1 py-0.5 rounded">{'{{lastName}}'}</code>, <code className="bg-muted px-1 py-0.5 rounded">{'{{email}}'}</code> for personalization
-            </div>
-            <textarea
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="email-body">Email Body</Label>
+            <p className="text-xs text-muted-foreground">
+              Use <code className="bg-muted px-1 py-0.5 rounded text-xs">{'{{firstName}}'}</code>,{' '}
+              <code className="bg-muted px-1 py-0.5 rounded text-xs">{'{{lastName}}'}</code>,{' '}
+              <code className="bg-muted px-1 py-0.5 rounded text-xs">{'{{email}}'}</code> for personalization
+            </p>
+            <Textarea
+              id="email-body"
               value={emailBody}
               onChange={(e) => setEmailBody(e.target.value)}
               placeholder="Write your email message here..."
-              rows={12}
-              disabled={isSending || isSaving}
-              className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition resize-none disabled:opacity-50"
+              rows={10}
+              disabled={isDisabled}
+              className="resize-none"
             />
           </div>
 
+          {/* Schedule Section */}
           {showSchedule && (
-            <div className="p-4 bg-muted/30 rounded-lg border border-border">
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-semibold text-foreground">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  Schedule for later
-                </label>
-                <button
+            <div className="p-4 bg-muted/30 rounded-lg border border-border space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                  Schedule for Later
+                </Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={handleCancelSchedule}
-                  className="text-xs text-muted-foreground hover:text-foreground"
+                  className="h-7 text-xs text-muted-foreground"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Date</label>
-                  <input
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs text-muted-foreground">Date</Label>
+                  <Input
                     type="date"
                     value={scheduledDate}
                     onChange={(e) => setScheduledDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-2.5 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Time</label>
-                  <input
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs text-muted-foreground">Time</Label>
+                  <Input
                     type="time"
                     value={scheduledTime}
                     onChange={(e) => setScheduledTime(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-border rounded-lg bg-background focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition"
                   />
                 </div>
               </div>
@@ -320,69 +308,69 @@ export default function CreateCampaignModal({
 
                   if (isPast) {
                     return (
-                      <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2 flex items-center gap-1">
-                        <span>⚠️</span>
-                        <span>Selected time is in the past. Please choose a future time.</span>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1.5">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+                        Selected time is in the past. Please choose a future time.
                       </p>
                     );
                   }
                   if (isToday) {
                     return (
-                      <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
-                        <span>✓</span>
-                        <span>Scheduled for today in {minutesUntil} minute(s) ({scheduledTime})</span>
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        Scheduled for today in {minutesUntil} minute(s) ({scheduledTime})
                       </p>
                     );
                   }
                   const daysUntil = Math.floor(minutesUntil / 1440);
                   const hoursUntil = Math.floor((minutesUntil % 1440) / 60);
                   return (
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
-                      <span>📅</span>
-                      <span>
-                        Scheduled for {daysUntil > 0 ? `${daysUntil} day(s) and ` : ''}{hoursUntil} hour(s) from now
-                        {' '}({scheduledDateTime.toLocaleDateString()} at {scheduledTime})
-                      </span>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1.5">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500" />
+                      Scheduled for {daysUntil > 0 ? `${daysUntil} day(s) and ` : ''}{hoursUntil} hour(s) from now
+                      {' '}({scheduledDateTime.toLocaleDateString()} at {scheduledTime})
                     </p>
                   );
-                } catch (error) {
+                } catch {
                   return null;
                 }
               })()}
             </div>
           )}
-        </div>
+        </CardContent>
 
-        <div className="sticky bottom-0 bg-card border-t border-border p-6 flex items-center justify-between">
-          <button
+        {/* Footer Actions */}
+        <div className="sticky bottom-0 bg-card border-t border-border p-6 rounded-b-xl flex items-center justify-between">
+          <Button
+            variant="outline"
             onClick={handleSaveDraft}
-            disabled={isSending || isSaving}
-            className="px-6 py-2.5 border border-border rounded-lg font-semibold hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isDisabled}
           >
             {isSaving ? 'Saving...' : 'Save Draft'}
-          </button>
-          <div className="flex items-center gap-3">
+          </Button>
+          <div className="flex items-center gap-2">
             {!showSchedule && (
-              <button
+              <Button
                 onClick={handleSend}
-                disabled={isSending || isSaving}
-                className="flex items-center gap-2 px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isDisabled}
+                className="gap-2"
               >
-                <Send className="w-4 h-4" />
+                <Send className="h-4 w-4" />
                 {isSending ? 'Sending...' : 'Send Now'}
-              </button>
+              </Button>
             )}
-            <button
+            <Button
+              variant="outline"
               onClick={handleSchedule}
-              disabled={isSending || isSaving}
-              className="flex items-center gap-2 px-6 py-2.5 border border-border rounded-lg font-semibold hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isDisabled}
+              className="gap-2"
             >
-              <Calendar className="w-4 h-4" />
+              <Calendar className="h-4 w-4" />
               {showSchedule ? (isSending ? 'Scheduling...' : 'Confirm Schedule') : 'Schedule'}
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

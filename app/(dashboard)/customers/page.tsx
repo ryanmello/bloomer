@@ -38,7 +38,7 @@ export interface Customer {
   lastName: string;
   email: string;
   phoneNumber: string;
-  address: Address[];
+  addresses: Address[];
   orders?: Order[];
   orderCount?: number;
   occasionsCount?: number;
@@ -86,6 +86,13 @@ export default function CustomersPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/customer");
+      if (!res.ok) {
+        const err = await res.json();
+        console.error("Failed to fetch customers:", err);
+        setCustomers([]);
+        setFilteredCustomers([]);
+        return;
+      }
       const data: Customer[] = await res.json();
 
       const withStats = data.map((customer) => {
@@ -283,8 +290,8 @@ export default function CustomersPage() {
                       </div>
                       <div className="min-w-[150px]">
                         <strong>Addresses:</strong>{" "}
-                        {customer.address && customer.address.length > 0
-                          ? customer.address
+                        {customer.addresses && customer.addresses.length > 0
+                          ? customer.addresses
                               .map((addr) =>
                                 [
                                   addr.line1,

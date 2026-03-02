@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import TwoFactorAuthModal from "./TwoFactorAuthModal";
@@ -35,9 +37,7 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
     fetchPreferences();
   }, [fetchPreferences]);
 
-  // Handle email notifications toggle change
   const handleToggleChange = async (checked: boolean) => {
-    // Optimistic update
     const previousValue = emailNotificationsEnabled;
     setEmailNotificationsEnabled(checked);
     setIsUpdating(true);
@@ -53,7 +53,6 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
           : "Email notifications disabled"
       );
     } catch (error: any) {
-      // Rollback on error
       setEmailNotificationsEnabled(previousValue);
       toast.error(
         error.response?.data?.message || "Failed to update preferences"
@@ -74,17 +73,22 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
 
   return (
     <>
-      <div className="border rounded-lg p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-xl font-bold">Preferences</h2>
-        </div>
-        <p className="text-muted-foreground mb-6">
-          Manage your notification and security preferences
-        </p>
-
-        <div className="space-y-4">
-          {/* Email Notifications Toggle */}
-          <div className="flex items-center justify-between p-4 border rounded-lg">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl p-2 bg-muted">
+              <Bell className="h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle>Preferences</CardTitle>
+              <CardDescription>
+                Manage your notification and security preferences
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors">
             <div className="flex-1">
               <Label
                 htmlFor="email-notifications"
@@ -105,8 +109,7 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
             />
           </div>
 
-          {/* Two-Factor Authentication Toggle */}
-          <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors">
             <div className="flex-1">
               <Label
                 htmlFor="two-factor-auth"
@@ -126,8 +129,8 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
               className="ml-4"
             />
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <TwoFactorAuthModal
         isOpen={showTwoFactorModal}

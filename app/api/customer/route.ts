@@ -1,6 +1,8 @@
 import {NextResponse} from "next/server";
 import db from "../../../lib/prisma";
 import {getCurrentUser} from "@/actions/getCurrentUser";
+import {cookies} from "next/headers";
+import {parseISO} from "date-fns";
 
 export async function GET() {
   try {
@@ -9,14 +11,34 @@ export async function GET() {
       return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
-    // Use same shop resolution as campaigns/broadcasts (most recent shop)
-    const shop = await db.shop.findFirst({
-      where: {userId: user.id},
-      orderBy: {createdAt: 'desc'},
-    });
+    // Get the active shop ID from cookie
+    const cookieStore = await cookies();
+    const activeShopId = cookieStore.get("activeShopId")?.value;
 
+    let shop;
+
+    // Try to get the active shop if one is set
+    if (activeShopId) {
+      shop = await db.shop.findFirst({
+        where: {
+          id: activeShopId,
+          userId: user.id, // Security: ensure shop belongs to authenticated user
+        },
+      });
+    }
+
+    // Fallback: if no active shop or it doesn't exist, get user's first shop
     if (!shop) {
-      return NextResponse.json([]);
+      shop = await db.shop.findFirst({
+        where: {
+          userId: user.id,
+        },
+      });
+    }
+
+    // Return empty array if user has no shops
+    if (!shop) {
+      return NextResponse.json({error: "No shop found"}, {status: 404});
     }
 
     const customers = await db.customer.findMany({
@@ -33,6 +55,41 @@ export async function GET() {
 
 export async function DELETE(req: Request) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({message: "Not authenticated"}, {status: 401});
+    }
+
+    // Get the active shop ID from cookie
+    const cookieStore = await cookies();
+    const activeShopId = cookieStore.get("activeShopId")?.value;
+
+    let shop;
+
+    // Try to get the active shop if one is set
+    if (activeShopId) {
+      shop = await db.shop.findFirst({
+        where: {
+          id: activeShopId,
+          userId: user.id, // Security: ensure shop belongs to authenticated user
+        },
+      });
+    }
+
+    // Fallback: if no active shop or it doesn't exist, get user's first shop
+    if (!shop) {
+      shop = await db.shop.findFirst({
+        where: {
+          userId: user.id,
+        },
+      });
+    }
+
+    // Return empty array if user has no shops
+    if (!shop) {
+      return NextResponse.json({error: "No shop found"}, {status: 404});
+    }
+
     const body = await req.json();
     const {id} = body;
 
@@ -59,6 +116,40 @@ export async function DELETE(req: Request) {
 
 export async function PUT(req: Request) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({message: "Not authenticated"}, {status: 401});
+    }
+    // Get the active shop ID from cookie
+    const cookieStore = await cookies();
+    const activeShopId = cookieStore.get("activeShopId")?.value;
+
+    let shop;
+
+    // Try to get the active shop if one is set
+    if (activeShopId) {
+      shop = await db.shop.findFirst({
+        where: {
+          id: activeShopId,
+          userId: user.id, // Security: ensure shop belongs to authenticated user
+        },
+      });
+    }
+
+    // Fallback: if no active shop or it doesn't exist, get user's first shop
+    if (!shop) {
+      shop = await db.shop.findFirst({
+        where: {
+          userId: user.id,
+        },
+      });
+    }
+
+    // Return empty array if user has no shops
+    if (!shop) {
+      return NextResponse.json({error: "No shop found"}, {status: 404});
+    }
+
     const body = await req.json();
     const {
       id,
@@ -78,6 +169,10 @@ export async function PUT(req: Request) {
       );
     }
 
+    // If dateOfBirth exists AND is not an empty string, convert it to a Date Otherwise set it to null
+    const dob =
+      dateOfBirth && dateOfBirth.trim() !== "" ? parseISO(dateOfBirth) : null;
+
     const updatedCustomer = await db.customer.update({
       where: {id},
       data: {
@@ -86,7 +181,9 @@ export async function PUT(req: Request) {
         email,
         phoneNumber,
         additionalNote,
-        dateOfBirth,
+        dateOfBirth: dob,
+        birthMonth: dob ? dob.getMonth() + 1 : null,
+        birthDay: dob ? dob.getDate() : null,
         addresses: addresses
           ? {
               deleteMany: {},
@@ -117,16 +214,34 @@ export async function POST(req: Request) {
       return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
-    const shop = await db.shop.findFirst({
-      where: {userId: user.id},
-      orderBy: {createdAt: 'desc'},
-    });
+    // Get the active shop ID from cookie
+    const cookieStore = await cookies();
+    const activeShopId = cookieStore.get("activeShopId")?.value;
 
+    let shop;
+
+    // Try to get the active shop if one is set
+    if (activeShopId) {
+      shop = await db.shop.findFirst({
+        where: {
+          id: activeShopId,
+          userId: user.id, // Security: ensure shop belongs to authenticated user
+        },
+      });
+    }
+
+    // Fallback: if no active shop or it doesn't exist, get user's first shop
     if (!shop) {
-      return NextResponse.json(
-        {message: "No shop found for user"},
-        {status: 404},
-      );
+      shop = await db.shop.findFirst({
+        where: {
+          userId: user.id,
+        },
+      });
+    }
+
+    // Return empty array if user has no shops
+    if (!shop) {
+      return NextResponse.json({error: "No shop found"}, {status: 404});
     }
 
     const body = await req.json();
@@ -143,7 +258,7 @@ export async function POST(req: Request) {
     }
 
     // If dateOfBirth exists -> do something Otherwise -> use null”
-    // new Date(dateOfBirth): new Date("1998-03-21") -convert to prisma in db-> Date(1998-03-21T00:00:00.000Z)
+    // new Date(dateOfBirth): new Date("1998-03-21") -convert to prisma in db-> Date(1998-03-21T00:00:00.000)
     const dob = body.dateOfBirth ? new Date(body.dateOfBirth) : null;
 
     // create customer

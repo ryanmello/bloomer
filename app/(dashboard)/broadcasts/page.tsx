@@ -4,6 +4,10 @@ import db from '@/lib/prisma';
 export const dynamic = 'force-dynamic';
 import { getCurrentUser } from '@/actions/getCurrentUser';
 import BroadcastsClient from '@/components/broadcasts/BroadcastsClient';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Mail } from 'lucide-react';
+import Link from 'next/link';
 
 // Fetch campaigns for a shop
 async function getCampaigns(shopId: string) {
@@ -47,22 +51,26 @@ export default async function BroadcastsPage() {
 
   if (!shop) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-card rounded-2xl border border-border shadow-sm p-8 text-center">
-            <h2 className="text-2xl font-bold text-foreground mb-2">No Shop Found</h2>
-            <p className="text-muted-foreground mb-4">
-              Please create a shop first to manage email campaigns.
-            </p>
-            <a
-              href="/settings"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all"
-            >
-              Create Shop
-            </a>
-          </div>
+      <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Card className="max-w-md w-full">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-2 rounded-xl p-3 bg-muted w-fit">
+                <Mail className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <CardTitle className="text-xl">No Shop Found</CardTitle>
+              <CardDescription>
+                Please create a shop first to manage email campaigns.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <Button asChild>
+                <Link href="/settings">Create Shop</Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </main>
     );
   }
 

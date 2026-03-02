@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Product } from '@/lib/types';
-import EditProductModal from './EditProductModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -26,6 +25,7 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Package, AlertTriangle } from 'lucide-react';
+import EditProductModal from './EditProductModal';
 
 interface StorefrontTableProps {
     products: Product[];

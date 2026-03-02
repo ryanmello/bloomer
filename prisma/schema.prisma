@@ -51,11 +51,13 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shops            Shop[]
-  coupons          Coupon[]
-  campaigns        Campaign[]
-  emailIntegrations EmailIntegration[]
+  shops              Shop[]
+  coupons            Coupon[]
+  campaigns          Campaign[]
+  emailIntegrations  EmailIntegration[]
   audiences          Audience[]
+  event              Event[]
+  squareIntegration  SquareIntegration?
 }
 
 model Shop {
@@ -73,8 +75,10 @@ model Shop {
   customers Customer[]
   campaigns Campaign[]
   products  Product[]
+  audiences Audience[]
+  event     Event[]
+
   inventoryMovements InventoryMovement[]
-  audiences          Audience[]
   automations        Automation[]
 }
 
@@ -265,6 +269,19 @@ model Audience {
   automations Automation[]
 }
 
+model SquareIntegration {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @unique @db.ObjectId
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchantId   String
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  connected    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model EmailIntegration {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   userId        String   @db.ObjectId
@@ -279,6 +296,22 @@ model EmailIntegration {
   updatedAt     DateTime @updatedAt
 
   @@unique([userId, platform])
+}
+
+model Event {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  title         String?
+  notes         String?
+  start         DateTime
+  end           DateTime
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userId        String @db.ObjectId
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopId        String? @db.ObjectId
+  shop          Shop?   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 }
 
 model Automation {

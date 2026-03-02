@@ -1,17 +1,16 @@
-import StorefrontTable from '@/components/StoreFront/Storefront';
-import AddProduct from '@/components/StoreFront/AddProduct';
+import StorefrontTable from '@/components/storefront/Storefront';
+import AddProduct from '@/components/storefront/AddProduct';
 import ShopSelector from '@/components/shop/ShopSelector';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, TrendingUp, AlertCircle, DollarSign } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Package, TrendingUp, AlertCircle, DollarSign, ShoppingBag } from 'lucide-react';
 import db from '@/lib/prisma';
 import { getCurrentUser } from '@/actions/getCurrentUser';
 import { cookies } from 'next/headers';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
-
-// Define the Product type based on your schema
 export interface Product {
   id: string;
   name: string;
@@ -24,7 +23,6 @@ export interface Product {
   createdAt: string;
 }
 
-// Fetch products from our API route
 async function getProducts() {
   try {
     const user = await getCurrentUser();
@@ -33,22 +31,19 @@ async function getProducts() {
       throw new Error('Unauthorized');
     }
 
-    // Get active shop from cookie
     const cookieStore = await cookies();
     const activeShopId = cookieStore.get('activeShopId')?.value;
 
     let shop;
     if (activeShopId) {
-      // Try to get the active shop
       shop = await db.shop.findFirst({
         where: {
           id: activeShopId,
-          userId: user.id  // Security: ensure shop belongs to user
+          userId: user.id
         }
       });
     }
 
-    // Fallback to first shop if no active shop or shop not found
     if (!shop) {
       shop = await db.shop.findFirst({
         where: {
@@ -61,7 +56,6 @@ async function getProducts() {
       return { products: [], noShop: true };
     }
 
-    // Get products for this specific shop only
     const products = await db.product.findMany({
       where: {
         shopId: shop.id
@@ -69,7 +63,6 @@ async function getProducts() {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Format products to match the expected interface
     const formattedProducts = products.map(p => ({
       ...p,
       updatedAt: p.updatedAt.toISOString(),
@@ -86,7 +79,6 @@ async function getProducts() {
   }
 }
 
-// Update calculateStats function
 function calculateStats(products: Product[]) {
   const totalProducts = products.length;
   const totalInventory = products.reduce((sum, p) => sum + p.quantity, 0);
@@ -100,133 +92,150 @@ export default async function StorefrontPage() {
   const { products, noShop } = await getProducts();
   const stats = calculateStats(products);
 
-  // If user has no shop yet
   if (noShop) {
     return (
-      <div className="flex min-h-screen">
-        <main className="flex-1 p-6">
-          <Card className="max-w-2xl mx-auto mt-12">
+      <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Card className="max-w-md w-full">
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+              <div className="mx-auto mb-2 rounded-xl p-3 bg-muted w-fit">
                 <Package className="h-6 w-6 text-muted-foreground" />
               </div>
-              <CardTitle className="text-2xl">No Shop Found</CardTitle>
+              <CardTitle className="text-xl">No Shop Found</CardTitle>
               <CardDescription>
                 You need to create a shop before you can add products to your inventory.
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <a
-                href="/shop/create"
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-              >
-                Create Your Shop
-              </a>
+              <Button asChild>
+                <Link href="/shop/create">Create Your Shop</Link>
+              </Button>
             </CardContent>
           </Card>
-        </main>
-      </div >
+        </div>
+      </main>
     );
   }
 
+  const statCards = [
+    {
+      title: "Total Products",
+      value: stats.totalProducts,
+      subtitle: "Active products",
+      icon: Package,
+    },
+    {
+      title: "Total Inventory",
+      value: stats.totalInventory.toLocaleString(),
+      subtitle: "Items in stock",
+      icon: TrendingUp,
+    },
+    {
+      title: "Inventory Value",
+      value: `$${stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      subtitle: "Total retail value",
+      icon: DollarSign,
+    },
+    {
+      title: "Stock Alerts",
+      value: stats.lowStock + stats.outOfStock,
+      subtitle:
+        stats.lowStock === 0 && stats.outOfStock === 0
+          ? "All stocked"
+          : [
+              stats.lowStock > 0 ? `${stats.lowStock} low` : "",
+              stats.outOfStock > 0 ? `${stats.outOfStock} out` : "",
+            ]
+              .filter(Boolean)
+              .join(", "),
+      icon: AlertCircle,
+    },
+  ];
+
   return (
-    <div className="flex min-h-screen">
-      <main className="flex-1 p-6 space-y-6">
-        {/* Header Section */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Storefront</h1>
-            <p className="text-muted-foreground">
-              Manage your shop&apos;s products and inventory
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <ShopSelector />
-            <AddProduct />
-          </div>
+    <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Storefront</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage your shop&apos;s products and inventory
+          </p>
         </div>
+        <div className="flex items-center gap-3">
+          <ShopSelector />
+          <AddProduct />
+        </div>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalProducts}</div>
-              <p className="text-xs text-muted-foreground">Active products</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Inventory</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalInventory}</div>
-              <p className="text-xs text-muted-foreground">Items in stock</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Inventory Value</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${stats.totalValue.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">Total value</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Stock Alerts</CardTitle>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.lowStock + stats.outOfStock}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.lowStock > 0 && `${stats.lowStock} low`}
-                {stats.lowStock > 0 && stats.outOfStock > 0 && ', '}
-                {stats.outOfStock > 0 && `${stats.outOfStock} out`}
-                {stats.lowStock === 0 && stats.outOfStock === 0 && 'All stocked'}
+      {/* Metric Cards */}
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 w-full">
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <div
+              key={stat.title}
+              className="rounded-2xl border shadow-sm h-44 p-4 bg-card border-border min-w-0 w-full"
+            >
+              <div className="flex items-start justify-between">
+                <div className="text-sm font-medium text-muted-foreground">
+                  {stat.title}
+                </div>
+                <div className="rounded-xl p-2 bg-muted">
+                  <Icon className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </div>
+              <div className="mt-3 text-2xl font-semibold tabular-nums tracking-tight text-foreground">
+                {stat.value}
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {stat.subtitle}
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          );
+        })}
+      </section>
+
+      {/* Low Stock Alert */}
+      {(stats.lowStock > 0 || stats.outOfStock > 0) && (
+        <div className="rounded-xl border border-amber-200 dark:border-amber-800/30 bg-amber-50/50 dark:bg-amber-950/20 px-4 py-3 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+          <p className="text-sm text-amber-800 dark:text-amber-300">
+            {stats.outOfStock > 0 && (
+              <>You have <span className="font-semibold">{stats.outOfStock}</span> product{stats.outOfStock > 1 ? 's' : ''} out of stock. </>
+            )}
+            {stats.lowStock > 0 && (
+              <>You have <span className="font-semibold">{stats.lowStock}</span> product{stats.lowStock > 1 ? 's' : ''} with low inventory. </>
+            )}
+            Consider restocking soon.
+          </p>
         </div>
+      )}
 
-        {/* Low Stock Alert */}
-        {(stats.lowStock > 0 || stats.outOfStock > 0) && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {stats.outOfStock > 0 && (
-                <>You have {stats.outOfStock} product{stats.outOfStock > 1 ? 's' : ''} out of stock. </>
-              )}
-              {stats.lowStock > 0 && (
-                <>You have {stats.lowStock} product{stats.lowStock > 1 ? 's' : ''} with low inventory. </>
-              )}
-              Consider restocking soon.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Products Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Products</CardTitle>
-            <CardDescription>
-              Manage your inventory and track stock levels
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-2 sm:px-6">
-            <StorefrontTable products={products} />
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+      {/* Products Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl p-2 bg-muted">
+              <ShoppingBag className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <CardTitle>Products</CardTitle>
+                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset bg-muted text-muted-foreground ring-border">
+                  {products.length}
+                </span>
+              </div>
+              <CardDescription>
+                Manage your inventory and track stock levels
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="px-2 sm:px-6">
+          <StorefrontTable products={products} />
+        </CardContent>
+      </Card>
+    </main>
   );
 }

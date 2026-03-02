@@ -1,74 +1,120 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
 import db from "@/lib/prisma";
 
+function getBaseUrl(request: NextRequest): string {
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  if (forwardedProto && forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+  const host = request.headers.get("host") || "";
+  const isLocalhost = host.includes("localhost") || host.startsWith("127.0.0.1");
+  if (isLocalhost) {
+    return `http://${host}`;
+  }
+  const url = new URL(request.url);
+  return url.origin;
+}
+
+function getUserFriendlyError(code: string): string {
+  const map: Record<string, string> = {
+    access_denied: "You declined access. You can connect again when ready.",
+    missing_params: "Invalid response from Google. Please try again.",
+    token_exchange_failed: "We couldn't complete the connection. Please try again.",
+  };
+  return map[code] || code;
+}
+
 export async function GET(request: NextRequest) {
+  const baseUrl = getBaseUrl(request);
+  const inboxUrl = `${baseUrl.replace(/\/$/, "")}/inbox`;
+
   try {
     const { searchParams } = new URL(request.url);
-    const code = searchParams.get('code');
-    const state = searchParams.get('state');
-    const error = searchParams.get('error');
+    const code = searchParams.get("code");
+    const state = searchParams.get("state");
+    const error = searchParams.get("error");
 
     if (error) {
-      return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/inbox?error=${encodeURIComponent(error)}`);
+      console.error("[Gmail Callback] OAuth error from Google:", error);
+      return NextResponse.redirect(
+        `${inboxUrl}?error=${encodeURIComponent(getUserFriendlyError(error))}`
+      );
     }
 
     if (!code || !state) {
-      return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/inbox?error=missing_params`);
+      console.error("[Gmail Callback] Missing code or state");
+      return NextResponse.redirect(
+        `${inboxUrl}?error=${encodeURIComponent(getUserFriendlyError("missing_params"))}`
+      );
     }
 
-    // Decode state to get userId
-    const { userId } = JSON.parse(Buffer.from(state, 'base64').toString());
+    let userId: string;
+    try {
+      ({ userId } = JSON.parse(Buffer.from(state, "base64").toString()));
+    } catch {
+      console.error("[Gmail Callback] Invalid state");
+      return NextResponse.redirect(
+        `${inboxUrl}?error=${encodeURIComponent(getUserFriendlyError("missing_params"))}`
+      );
+    }
 
-    // Exchange code for tokens
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = `${process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/inbox/oauth/gmail/callback`;
+    if (!clientId || !clientSecret) {
+      console.error("[Gmail Callback] Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET");
+      return NextResponse.redirect(
+        `${inboxUrl}?error=${encodeURIComponent("Gmail integration is not configured.")}`
+      );
+    }
 
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+    const redirectUri = `${baseUrl.replace(/\/$/, "")}/api/inbox/oauth/gmail/callback`;
+
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         code,
-        client_id: clientId!,
-        client_secret: clientSecret!,
+        client_id: clientId,
+        client_secret: clientSecret,
         redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
+        grant_type: "authorization_code",
       }),
     });
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
-      console.error('Token exchange error:', errorData);
-      return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/inbox?error=token_exchange_failed`);
+      let parsed: { error?: string } = {};
+      try {
+        parsed = JSON.parse(errorData);
+      } catch {}
+      console.error(
+        "[Gmail Callback] Token exchange failed:",
+        tokenResponse.status,
+        errorData,
+        "redirect_uri used:",
+        redirectUri
+      );
+      const isRedirectMismatch = parsed?.error === "redirect_uri_mismatch";
+      const userMessage = isRedirectMismatch
+        ? `Redirect URI mismatch. Add this exact URL to Google Console: ${redirectUri}`
+        : getUserFriendlyError("token_exchange_failed");
+      return NextResponse.redirect(`${inboxUrl}?error=${encodeURIComponent(userMessage)}`);
     }
 
     const tokens = await tokenResponse.json();
     const { access_token, refresh_token, expires_in } = tokens;
 
-    // Get user email from Google
-    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
+    const userInfoResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+      headers: { Authorization: `Bearer ${access_token}` },
     });
-
     const userInfo = await userInfoResponse.json();
-    const email = userInfo.email;
+    const email = userInfo.email || "unknown";
 
-    // Calculate expiration
     const expiresAt = expires_in ? new Date(Date.now() + expires_in * 1000) : null;
 
-    // Store tokens in database
     const existing = await (db as any).emailIntegration.findUnique({
-      where: {
-        userId_platform: {
-          userId,
-          platform: 'gmail',
-        },
-      },
+      where: { userId_platform: { userId, platform: "gmail" } },
     });
 
     if (existing) {
@@ -77,7 +123,7 @@ export async function GET(request: NextRequest) {
         data: {
           email,
           accessToken: access_token,
-          refreshToken: refresh_token,
+          refreshToken: refresh_token ?? existing.refreshToken,
           expiresAt,
           connected: true,
         },
@@ -86,7 +132,7 @@ export async function GET(request: NextRequest) {
       await (db as any).emailIntegration.create({
         data: {
           userId,
-          platform: 'gmail',
+          platform: "gmail",
           email,
           accessToken: access_token,
           refreshToken: refresh_token,
@@ -96,10 +142,11 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/inbox?connected=gmail`);
-  } catch (error: any) {
-    console.error('Gmail callback error:', error);
-    return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/inbox?error=${encodeURIComponent(error.message)}`);
+    return NextResponse.redirect(`${inboxUrl}?connected=gmail`);
+  } catch (err) {
+    console.error("[Gmail Callback] Error:", err);
+    const message = err instanceof Error ? err.message : "Connection failed";
+    return NextResponse.redirect(`${inboxUrl}?error=${encodeURIComponent(message)}`);
   }
 }
 
