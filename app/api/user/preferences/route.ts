@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             emailNotificationsEnabled: user.emailNotificationsEnabled,
-            twoFactorEnabled: user.twoFactorEnabled
+            twoFactorEnabled: user.twoFactorEnabled,
+            timezone: user.timezone,
         });
     } catch (error) {
         console.error("Error fetching user preferences:", error);
@@ -40,20 +41,52 @@ export async function PATCH(req: NextRequest) {
             );
         }
 
-        const { emailNotificationsEnabled } = await req.json();
+        const body = await req.json();
+        const { emailNotificationsEnabled, timezone } = body;
 
-        if (typeof emailNotificationsEnabled !== "boolean") {
+        // Build update data from provided fields
+        const data: Record<string, unknown> = {};
+
+        if (typeof emailNotificationsEnabled === "boolean") {
+            data.emailNotificationsEnabled = emailNotificationsEnabled;
+        } else if (emailNotificationsEnabled !== undefined) {
             return NextResponse.json(
                 { message: "emailNotificationsEnabled must be a boolean" },
                 { status: 400 }
             );
         }
 
+        if (typeof timezone === "string") {
+            const validTimezones = Intl.supportedValuesOf("timeZone");
+            if (!validTimezones.includes(timezone)) {
+                return NextResponse.json(
+                    { message: "Invalid IANA timezone" },
+                    { status: 400 }
+                );
+            }
+            data.timezone = timezone;
+        } else if (timezone === null) {
+            data.timezone = null;
+        } else if (timezone !== undefined) {
+            return NextResponse.json(
+                { message: "timezone must be a string or null" },
+                { status: 400 }
+            );
+        }
+
+        if (Object.keys(data).length === 0) {
+            return NextResponse.json(
+                { message: "No valid fields to update" },
+                { status: 400 }
+            );
+        }
+
         const updatedUser = await db.user.update({
             where: { id: user.id },
-            data: { emailNotificationsEnabled },
+            data,
             select: {
                 emailNotificationsEnabled: true,
+                timezone: true,
             }
         });
 
@@ -61,6 +94,7 @@ export async function PATCH(req: NextRequest) {
             success: true,
             message: "Preferences updated successfully",
             emailNotificationsEnabled: updatedUser.emailNotificationsEnabled,
+            timezone: updatedUser.timezone,
         });
     } catch (error) {
         console.error("Error updating user preferences:", error);
