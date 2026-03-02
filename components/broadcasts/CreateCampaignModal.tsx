@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import {useEffect } from 'react';
 import { Send, Users, Calendar, X, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Audience {
   id: string;
@@ -35,7 +43,7 @@ export default function CreateCampaignModal({
   onCampaignCreated,
 }: CreateCampaignModalProps) {
   const [campaignName, setCampaignName] = useState('');
-  const [selectedAudience, setSelectedAudience] = useState('');
+  const [selectedAudience, setSelectedAudience] = useState<string>('all');
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customersLoading, setCustomersLoading] = useState(false);
@@ -87,7 +95,7 @@ export default function CreateCampaignModal({
         campaignName,
         subject,
         emailBody,
-        audienceId: selectedAudience || undefined,
+        audienceId: selectedAudience === 'all' ? undefined : selectedAudience,
       };
       if (selectedAudience === 'single' && selectedCustomerId) {
         payload.customerId = selectedCustomerId;
@@ -132,7 +140,7 @@ export default function CreateCampaignModal({
       toast.success(successMessage);
 
       setCampaignName('');
-      setSelectedAudience('');
+      setSelectedAudience('all');
       setSelectedCustomerId('');
       setSubject('');
       setEmailBody('');
@@ -217,20 +225,23 @@ export default function CreateCampaignModal({
               <Users className="h-3.5 w-3.5 text-muted-foreground" />
               Audience
             </Label>
-            <select
-              id="audience"
+            <Select
               value={selectedAudience}
-              onChange={(e) => setSelectedAudience(e.target.value)}
+              onValueChange={setSelectedAudience}
               disabled={isDisabled}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <option value="">All Customers</option>
-              {audiences.map((audience) => (
-                <option key={audience.id} value={audience.id}>
-                  {audience.name} ({audience.count.toLocaleString()} {audience.id === 'single' ? 'recipient' : 'customers'})
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="audience" className="w-full">
+                <SelectValue placeholder="All Customers" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Customers</SelectItem>
+                {audiences.map((audience) => (
+                  <SelectItem key={audience.id} value={audience.id}>
+                    {audience.name} ({audience.count.toLocaleString()} {audience.id === 'single' ? 'recipient' : 'customers'})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex flex-col gap-2">
