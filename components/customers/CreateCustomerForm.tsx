@@ -149,15 +149,16 @@ export default function CreateCustomerForm() {
     <DialogPortal>
       <DialogOverlay />
 
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-h-[90vh] max-w-lg flex flex-col p-6">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Add New Customer</DialogTitle>
           <DialogDescription>
             Fill in the customer details below.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto space-y-4 py-2 -mx-1 px-1">
           <Input
             name="firstName"
             placeholder="First Name"
@@ -243,7 +244,8 @@ export default function CreateCustomerForm() {
             onChange={handleAddressChange}
             required
           />
-          <DialogFooter>
+          </div>
+          <DialogFooter className="flex-shrink-0 pt-4 border-t mt-4">
             <DialogClose asChild>
               <Button variant="destructive" onClick={handleResetForm}>
                 Cancel
