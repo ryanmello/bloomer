@@ -8,6 +8,7 @@ import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import TwoFactorAuthModal from "./TwoFactorAuthModal";
+import TimezoneSelector from "./TimezoneSelector";
 
 interface PreferencesTileProps {
   twoFactorEnabled: boolean;
@@ -16,14 +17,21 @@ interface PreferencesTileProps {
 
 export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }: PreferencesTileProps) {
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
+  const [timezone, setTimezone] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isUpdatingTimezone, setIsUpdatingTimezone] = useState(false);
   const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
 
   const fetchPreferences = useCallback(async () => {
     try {
       const response = await axios.get("/api/user/preferences");
       setEmailNotificationsEnabled(response.data.emailNotificationsEnabled);
+      setTimezone(
+        response.data.timezone ??
+        Intl.DateTimeFormat().resolvedOptions().timeZone ??
+        null
+      );
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Failed to fetch preferences"
@@ -59,6 +67,24 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
       );
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleTimezoneChange = async (newTimezone: string) => {
+    const previousValue = timezone;
+    setTimezone(newTimezone);
+    setIsUpdatingTimezone(true);
+
+    try {
+      await axios.patch("/api/user/preferences", { timezone: newTimezone });
+      toast.success("Timezone updated");
+    } catch (error: any) {
+      setTimezone(previousValue);
+      toast.error(
+        error.response?.data?.message || "Failed to update timezone"
+      );
+    } finally {
+      setIsUpdatingTimezone(false);
     }
   };
 
@@ -127,6 +153,23 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
               onCheckedChange={handleTwoFactorToggle}
               disabled={isLoading}
               className="ml-4"
+            />
+          </div>
+
+          {/* Timezone Selector */}
+          <div className="p-4 border rounded-lg space-y-3">
+            <div>
+              <Label htmlFor="timezone-selector" className="font-semibold">
+                Default Timezone
+              </Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                Set your preferred timezone for scheduling and display
+              </p>
+            </div>
+            <TimezoneSelector
+              value={timezone}
+              onChange={handleTimezoneChange}
+              disabled={isLoading || isUpdatingTimezone}
             />
           </div>
         </CardContent>
