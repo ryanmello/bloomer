@@ -15,11 +15,13 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const shops = await db.shop.findMany({
-      where: { userId: user.id }
+    // Use same shop resolution as broadcasts page (most recent shop)
+    const shop = await db.shop.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' }
     });
 
-    if (!shops || shops.length === 0) {
+    if (!shop) {
       return NextResponse.json(
         { message: "No shop found" },
         { status: 404 }
@@ -28,12 +30,15 @@ export async function GET(req: NextRequest) {
 
     const campaigns = await db.campaign.findMany({
       where: {
-        shopId: shops[0].id
+        shopId: shop.id
       },
       include: {
+        audience: true,
         recipients: {
           select: {
-            status: true
+            id: true,
+            status: true,
+            customerId: true
           }
         }
       },
@@ -74,9 +79,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get the user's shop
+    // Get the user's shop (same resolution as GET and broadcasts page)
     const shop = await db.shop.findFirst({
-      where: { userId: user.id }
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' }
     });
 
     if (!shop) {
@@ -120,12 +126,18 @@ export async function POST(req: NextRequest) {
           lastName: true
         }
       })
-      : [];
-
-    console.log(`Found ${targetCustomers.length} customers for audience`);
+      : await db.customer.findMany({
+        where: { shopId: shopId },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true
+        }
+      });
 
     // If no customers found, return error
-    if (targetAudience && targetCustomers.length === 0) {
+    if (targetCustomers.length === 0) {
       return NextResponse.json(
         {
           message: "No customers found for selected audience",
