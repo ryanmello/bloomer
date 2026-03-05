@@ -29,6 +29,7 @@ import MetricCard from "@/components/dashboard/MetricCard"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import clsx from "clsx"
+import { useRouter } from 'next/navigation';
 
 type Question = {
   id: string
@@ -127,6 +128,8 @@ export default function Forms() {
 
   const [pageSize, setPageSize] = useState(12)
   const [page, setPage] = useState(1)
+
+  const router = useRouter();
 
    useEffect(() => {
       if (editingForm) {
@@ -932,11 +935,19 @@ export default function Forms() {
                 </div>
               </div>
 
-              <Button onClick={() => {
-                toast.success(`Form shared with ${selectedAudiences.length} audience(s)!`);
-                setShareModalOpen(false);
-                setSelectedAudiences([]);
-              }}>
+              <Button
+                onClick={() => {
+                
+                  const prefillName = encodeURIComponent(shareForm.title);
+                  const prefillBody = encodeURIComponent(formUrl(shareForm.id));;
+                  const prefillAudience = encodeURIComponent(selectedAudiences.join(','));
+
+                  setShareModalOpen(false);
+                  setSelectedAudiences([]);
+
+                  router.push(`/broadcasts?prefillName=${prefillName}&prefillBody=${prefillBody}&prefillAudience=${prefillAudience}`);
+                }}
+              >
                 Share with Audiences
               </Button>
             </div>
