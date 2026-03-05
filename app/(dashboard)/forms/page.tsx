@@ -102,6 +102,8 @@ export default function Forms() {
   const [audiences, setAudiences] = useState<{ id: string; name: string }[]>([])
   const [selectedAudiences, setSelectedAudiences] = useState<string[]>([]) 
 
+  const [previewForm, setPreviewForm] = useState<FormRow | null>(null)
+
   // ----- filters + search -----
   const TABS: { key: "active" | "template" | "custom" | "all"; label: string }[] = [
     { key: "active", label: "Active" },
@@ -461,21 +463,18 @@ export default function Forms() {
                 </Select>
               </div>
 
-              <div>
+               <div>
                 <label className="text-sm font-medium mb-2 block">Questions</label>
-                <div className="max-h-60 overflow-y-auto space-y-2">
-               
-
-                </div>
+            
                 <Button 
                   type="button"
                   onClick={() => setNewFormQuestions([...newFormQuestions, { id: crypto.randomUUID(), type: "short", text: "" }])}>
                   Add Question
                 </Button>
-              </div>
+               </div>
 
-
-              <div className="flex flex-col gap-2 max-h-30 overflow-y-auto border p-2 rounded-md">
+              {newFormQuestions.length > 0 && (
+              <div className="flex flex-col gap-2 max-h-60 overflow-y-auto border p-2 rounded-md">
               {newFormQuestions.map((q, i) => (
                 <div key={q.id} className="flex flex-col gap-2 mb-2 border p-2 rounded-md">
                   <div className="flex gap-2">
@@ -589,7 +588,32 @@ export default function Forms() {
                 </div>
               ))}
               </div>
+              )}
               <div className="flex gap-2 mt-2">
+
+               <Button
+                  type="button"
+                  variant="outline"
+                  aria-label="Preview form"
+                  className="flex items-center gap-2"
+                  onClick={() => {
+                    const formData = {
+                      title: newFormTitle,
+                      description: newFormDescription,
+                      questions: newFormQuestions,
+                    } as any;
+
+                    if (formData.title?.trim() || formData.description?.trim() || formData.questions.length > 0) {
+                      setPreviewForm(formData);
+                    } else {
+                      toast("Nothing to preview");
+                    }
+                  }}
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>Preview</span>
+                </Button>
+
                 <Button type="submit" className="flex-1" disabled={!newFormTitle.trim()}>
                   Save Form
                 </Button>
@@ -635,7 +659,7 @@ export default function Forms() {
                   type="text"
                   placeholder="Enter form title"
                   value={editingForm.title}
-                  onChange={(e) => setEditingForm({ ...editingForm, title: e.target.value })}
+                  onChange={(e) => setEditingForm({ ...editingForm, title: e.target.value, questions: editQuestions })}
                   className="border rounded-md p-2 w-full bg-background"
                   required
                 />
@@ -646,7 +670,7 @@ export default function Forms() {
                 <textarea
                   placeholder="Enter form description (optional)"
                   value={editingForm.description || ""}
-                  onChange={(e) => setEditingForm({ ...editingForm, description: e.target.value })}
+                  onChange={(e) => setEditingForm({ ...editingForm, description: e.target.value, questions: editQuestions})}
                   className="border rounded-md p-2 w-full bg-background"
                   rows={3}
                 />
@@ -670,7 +694,29 @@ export default function Forms() {
               </div>
 
               <div>
+                <label className="text-sm font-medium mb-2 block">Access</label>
+                <Select value={newFormAccess} onValueChange={(v) => setNewFormAccess(v as FormAccess)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Public</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
+                  </SelectContent>
+                </Select>
+                </div>
+   
+                <div>
                 <label className="text-sm font-medium mb-2 block">Questions</label>
+                <Button
+                  type="button"
+                  
+                  onClick={() =>
+                    setEditQuestions([...editQuestions, { id: crypto.randomUUID(), type: "short", text: "" }])
+                  }
+                >
+                  Add Question
+                </Button>
+                </div>
+                {editQuestions.length > 0 && (
                 <div className="flex flex-col gap-2 max-h-60 overflow-y-auto border p-2 rounded-md">
                   {editQuestions.map((q, i) => (
                     <div key={q.id} className="flex flex-col gap-2 mb-2 border p-2 rounded-md">
@@ -713,9 +759,9 @@ export default function Forms() {
 
                       {/* MCQ Options + Multi-select */}
                       {q.type === "mcq" && (
-                        <div className="flex flex-col gap-2 ml-4">
+                        <div className="flex flex-col gap-2">
                           {/* Multi-select toggle */}
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2">
                             <input
                               type="checkbox"
                               id={`multi-${q.id}`}
@@ -784,19 +830,31 @@ export default function Forms() {
                     </div>
                   ))}
                 </div>
-
-                <Button
-                  type="button"
-                  onClick={() =>
-                    setEditQuestions([...editQuestions, { id: crypto.randomUUID(), type: "short", text: "" }])
-                  }
-                  className="mt-2"
-                >
-                  Add Question
-                </Button>
-              </div>
+                )}
 
               <div className="flex gap-2 mt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  title="Preview form"
+                  aria-label="Preview form"
+                  className="flex items-center gap-2"
+                  onClick={() => {
+                    if (
+                      editingForm && (editingForm.title?.trim() ||  editingForm.description?.trim() || (editQuestions && editQuestions.length > 0))
+                    ) {
+                      setPreviewForm({
+                        ...editingForm,
+                        questions: editQuestions,
+                      });
+                    } else {
+                      toast("Nothing to preview");
+                    }
+                  }}
+                >
+                  <Eye className="w-4 h-4" />
+                </Button>
+
                 <Button type="submit" className="flex-1">
                   Update Form
                 </Button>
@@ -886,7 +944,82 @@ export default function Forms() {
         </div>
       )}
       
+      {/* Preview Modal */}
+      {previewForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-2xl max-h-[90vh] p-6 relative overflow-auto">
+            <Button
+              size="sm"
+              className="absolute top-4 right-4"
+              onClick={() => setPreviewForm(null)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
 
+            <CardTitle className="text-3xl font-bold mb-2">{previewForm.title}</CardTitle>
+            {previewForm.description && (
+              <CardDescription className="text-lg mb-4">
+                {previewForm.description}
+              </CardDescription>
+            )}
+
+            <div className="flex flex-col space-y-6 mt-4">
+              {previewForm.questions.map((q, index) => (
+                <div key={q.id}>
+                  <label className="block font-medium mb-2">
+                    {index + 1}. {q.text}
+                  </label>
+
+                  {/* Short answer */}
+                  {q.type === "short" && (
+                    <input
+                      type="text"
+                      placeholder="Your answer..."
+                      className="border rounded-md p-2 w-full bg-background text-foreground"
+                    />
+                  )}
+
+                  {/* True/False */}
+                  {q.type === "truefalse" && (
+                    <div className="flex flex-col gap-2 ml-2">
+                      {["True", "False"].map((val) => (
+                        <label key={val} className="flex items-center gap-2">
+                          <input type="radio" name={q.id} />
+                          <span className="text-foreground">{val}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* MCQ */}
+                  {q.type === "mcq" && q.options && (
+                    <div className="flex flex-col gap-2 ml-2">
+                      {q.multiSelect
+                        ? q.options.map((opt, i) => (
+                            <label key={i} className="flex items-center gap-2">
+                              <input type="checkbox" />
+                              <span className="text-foreground">{opt}</span>
+                            </label>
+                          ))
+                        : q.options.map((opt, i) => (
+                            <label key={i} className="flex items-center gap-2">
+                              <input type="radio" name={q.id} />
+                              <span className="text-foreground">{opt}</span>
+                            </label>
+                          ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {/* Submit Button */}
+              <Button type="submit" className="mt-4 self-end">
+                Submit
+              </Button>
+            </div>
+            
+          </Card>
+        </div>
+      )}
 
       <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
         {/* Metric cards */}
@@ -1107,6 +1240,27 @@ export default function Forms() {
                           <Button className="flex-1" variant="secondary" onClick={() => handleOpenEdit(f)}>
                             <Pencil className="h-4 w-4 mr-2" /> Edit
                           </Button>
+                          
+                          {/*Preview*/}
+
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              if (
+                                f.title?.trim() ||
+                                f.description?.trim() ||
+                                (f.questions && f.questions.length > 0)
+                              ) {
+                                setPreviewForm(f);
+                              } else {
+                                toast("Nothing to preview");
+                              }
+                            }}
+                            aria-label="Preview form"
+                            title="Preview form"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
 
                           {/* Copy */}
                           <Button
@@ -1224,6 +1378,10 @@ export default function Forms() {
                                   <Button size="sm" variant="secondary" onClick={() => handleOpenEdit(f)}>
                                     <Pencil className="h-4 w-4 mr-2" /> Edit
                                   </Button>
+                                  <Button size="sm" variant="outline" onClick={() => setPreviewForm(f)} title="Preview">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+
                                   <Button size="sm" variant="outline" onClick={() => handleCopy(f)} title="Copy link">
                                     {copiedId === f.id ? (
                                       <span className="text-xs font-medium">Copied</span>
@@ -1257,8 +1415,8 @@ export default function Forms() {
               </div>
             </div>
           )}
-        </section>
+        </section>       
       </main>
-    </div>
+    </div> 
   )
 }

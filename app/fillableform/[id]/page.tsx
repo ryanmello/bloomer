@@ -97,9 +97,10 @@ export default function PublicFormPage() {
             {q.type === "short" && (
               <input
                 type="text"
+                placeholder="Your answer..."
                 value={answers[q.id] || ""}
                 onChange={(e) => handleChange(q.id, e.target.value)}
-                className="border rounded-md p-2 w-full"
+                className="border rounded-md p-2 w-full bg-background"
                 required
               />
             )}
@@ -171,7 +172,9 @@ export default function PublicFormPage() {
           </div>
         ))}
 
-        <Button type="submit">Submit</Button>
+        <div className="flex justify-end mt-4">
+          <Button type="submit">Submit</Button>
+        </div>
       </form>
     </Card>
   )
