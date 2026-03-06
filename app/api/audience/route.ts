@@ -53,45 +53,82 @@ export async function GET() {
     const customers =
       allCustomerIds.length > 0
         ? await db.customer.findMany({
-            where: {id: {in: allCustomerIds}},
+            where: { id: { in: allCustomerIds } },
             select: {
               id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phoneNumber: true,
-              additionalNote: true,
+              createdAt: true,
               orderCount: true,
               spendAmount: true,
-              occasionsCount: true,
-              addresses: {
-                select: {
-                  line1: true,
-                  line2: true,
-                  city: true,
-                  state: true,
-                  zip: true,
-                  country: true,
-                },
-              },
             },
           })
         : [];
 
     const customerMap = new Map(customers.map((c) => [c.id, c]));
-    const audiencesWithCustomers = audiences.map((aud) => {
-      const customersInAud = (aud.customerIds || [])
-        .map((id) => customerMap.get(id))
-        .filter(Boolean);
 
-      return {
-        ...aud,
-        customers: customersInAud,
-        customerCount: customersInAud.length,
-      };
-    });
+    const now = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(now.getDate() - 30);
 
-    return NextResponse.json(audiencesWithCustomers);
+    const audiencesWithMetrics = await Promise.all(
+      audiences.map(async (aud) => {
+        // remove undefined safely
+        const definedCustomers = (aud.customerIds || [])
+          .map((id) => customerMap.get(id))
+          .filter((c): c is NonNullable<typeof c> => Boolean(c));
+
+        const customerCount = definedCustomers.length;
+
+        // campaigns sent
+        const campaignsSent = await db.campaign.count({
+          where: { shopId: shop.id, audienceId: aud.id },
+        });
+
+        const lastCampaignObj = await db.campaign.findFirst({
+          where: { shopId: shop.id, audienceId: aud.id },
+          orderBy: { createdAt: "desc" },
+        });
+
+        // growth Rate
+        const customersBefore = definedCustomers.filter(
+          (c) => c.createdAt < thirtyDaysAgo
+        ).length;
+
+        const growthRate =
+          customersBefore === 0
+            ? 100
+            : ((customerCount - customersBefore) / customersBefore) * 100;
+
+        // engagement Rate
+        const totalRecipients = await db.campaignRecipient.count({
+          where: { campaign: { audienceId: aud.id } },
+        });
+
+        const engagedRecipients = await db.campaignRecipient.count({
+          where: {
+            campaign: { audienceId: aud.id },
+            status: { in: ["Opened", "Clicked"] },
+          },
+        });
+
+        const engagementRate =
+          totalRecipients === 0
+            ? 0
+            : (engagedRecipients / totalRecipients) * 100;
+
+        return {
+          ...aud,
+          customers: definedCustomers,
+          customerCount,
+          campaignsSent,
+          lastCampaignName: lastCampaignObj?.campaignName ?? "",
+          lastCampaignAt: lastCampaignObj?.createdAt?.toISOString() ?? "",
+          growthRate,
+          engagementRate,
+        };
+      })
+    );
+
+    return NextResponse.json(audiencesWithMetrics);
   } catch (err) {
     console.error("Error fetching audience:", err);
     return NextResponse.json([], {status: 500});

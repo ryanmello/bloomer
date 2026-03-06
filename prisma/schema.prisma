@@ -256,6 +256,11 @@ model Audience {
   customerIds String[]       @default([])
   field       String?
 
+  // Metrics for audience analytics
+  campaignsSent Int @default(0)
+  lastCampaignName String?
+  lastCampaignAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
