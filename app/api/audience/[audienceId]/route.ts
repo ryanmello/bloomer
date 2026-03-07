@@ -1,7 +1,7 @@
-import {NextResponse, NextRequest} from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import db from "@/lib/prisma";
-import {getCurrentUser} from "@/actions/getCurrentUser";
-import {cookies} from "next/headers";
+import { getCurrentUser } from "@/actions/getCurrentUser";
+import { cookies } from "next/headers";
 
 const scalarFields = ["group", "email", "phoneNumber"];
 const relationFields = ["location"]; // addresses
@@ -18,14 +18,14 @@ export async function GET(
   // route [audienceId]
   // Next.js, audienceId = "abc123" as params
   // params = { audienceId: "abc123" }
-  {params}: {params: Promise<{audienceId: string}>},
+  { params }: { params: Promise<{ audienceId: string }> },
 ) {
-  const {audienceId} = await params;
+  const { audienceId } = await params;
 
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({message: "Not authenticated"}, {status: 401});
+      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
     }
 
     // Get the active shop ID from cookie
@@ -55,7 +55,7 @@ export async function GET(
 
     // Return empty array if user has no shops
     if (!shop) {
-      return NextResponse.json({error: "No shop found"}, {status: 404});
+      return NextResponse.json({ error: "No shop found" }, { status: 404 });
     }
 
     // const shop = await db.shop.findFirst({
@@ -67,11 +67,11 @@ export async function GET(
     // }
 
     const audience = await db.audience.findFirst({
-      where: {id: audienceId, userId: user.id, shopId: shop.id},
+      where: { id: audienceId, userId: user.id, shopId: shop.id },
     });
 
     if (!audience) {
-      return NextResponse.json({message: "Audience not found"}, {status: 404});
+      return NextResponse.json({ message: "Audience not found" }, { status: 404 });
     }
 
     let customerCount = 0;
@@ -80,56 +80,88 @@ export async function GET(
     if (audience.type === "custom" && audience.field) {
       if (scalarFields.includes(audience.field)) {
         customerCount = await db.customer.count({
-          where: {shopId: shop.id, [audience.field]: {not: undefined}},
+          where: { shopId: shop.id, [audience.field]: { not: undefined } },
         });
       } else if (audience.field === "location") {
         customerCount = await db.customer.count({
-          where: {shopId: shop.id, addresses: {some: {}}},
+          where: { shopId: shop.id, addresses: { some: {} } },
         });
       } else if (derivedFields.includes(audience.field)) {
         if (audience.field === "totalSpent") {
           const customers = await db.customer.findMany({
-            where: {shopId: shop.id},
-            select: {spendAmount: true},
+            where: { shopId: shop.id },
+            select: { spendAmount: true },
           });
           customerCount = customers.filter((c) => c.spendAmount > 0).length;
         } else if (audience.field === "totalOrders") {
           const customers = await db.customer.findMany({
-            where: {shopId: shop.id},
-            select: {orderCount: true},
+            where: { shopId: shop.id },
+            select: { orderCount: true },
           });
           customerCount = customers.filter((c) => c.orderCount > 0).length;
         } else if (audience.field === "lastOrderDate") {
           const customers = await db.customer.findMany({
-            where: {shopId: shop.id},
-            select: {orders: {select: {createdAt: true}}},
+            where: { shopId: shop.id },
+            select: { orders: { select: { createdAt: true } } },
           });
           customerCount = customers.filter((c) => c.orders.length > 0).length;
         } else if (audience.field === "joinDate") {
-          const customers = await db.customer.findMany({
-            where: {shopId: shop.id, createdAt: {not: undefined}},
-            select: {id: true},
+          customerCount = await db.customer.count({
+            where: { shopId: shop.id, createdAt: { not: undefined } },
           });
         }
       } else {
         return NextResponse.json(
-          {message: "Invalid audience field"},
-          {status: 400},
+          { message: "Invalid audience field" },
+          { status: 400 },
         );
       }
     } else {
       // not custom or no field => all shop customers
-      customerCount = await db.customer.count({where: {shopId: shop.id}});
+      customerCount = await db.customer.count({ where: { shopId: shop.id } });
     }
 
     const campaignsSent = await db.campaign.count({
-      where: {shopId: shop.id, audience: {type: audience.type}},
+      where: { shopId: shop.id, audienceId: audience.id },
     });
 
     const lastCampaignObj = await db.campaign.findFirst({
-      where: {shopId: shop.id, audience: {type: audience.type}},
-      orderBy: {createdAt: "desc"},
+      where: { shopId: shop.id, audienceId: audience.id },
+      orderBy: { createdAt: "desc" },
     });
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const customersBefore = await db.customer.count({
+      where: {
+        shopId: shop.id,
+        createdAt: { lt: thirtyDaysAgo },
+      },
+    });
+
+    const growthRate =
+      customersBefore === 0
+        ? 100
+        : ((customerCount - customersBefore) / customersBefore) * 100;
+
+    const totalRecipients = await db.campaignRecipient.count({
+      where: {
+        campaign: { audienceId: audience.id },
+      },
+    });
+
+    const engagedRecipients = await db.campaignRecipient.count({
+      where: {
+        campaign: { audienceId: audience.id },
+        status: { in: ["Opened", "Clicked"] },
+      },
+    });
+
+    const engagementRate =
+      totalRecipients === 0
+        ? 0
+        : (engagedRecipients / totalRecipients) * 100;
 
     return NextResponse.json({
       id: audience.id,
@@ -140,17 +172,16 @@ export async function GET(
       field: audience.field,
       customerCount,
       campaignsSent,
-      lastCampaign: lastCampaignObj
-        ? lastCampaignObj.createdAt.toISOString()
-        : "",
-      growthRate: 0, // placeholder
-      engagementRate: 0, // placeholder
+      lastCampaignName: lastCampaignObj?.campaignName ?? "",
+      lastCampaignAt: lastCampaignObj?.createdAt?.toISOString() ?? "",
+      growthRate,
+      engagementRate,
     });
   } catch (err) {
     console.error("Error fetching audience:", err);
     return NextResponse.json(
-      {message: "Failed to fetch audience"},
-      {status: 500},
+      { message: "Failed to fetch audience" },
+      { status: 500 },
     );
   }
 }
@@ -158,14 +189,14 @@ export async function GET(
 // update audience data
 export async function PUT(
   req: NextRequest,
-  {params}: {params: Promise<{audienceId: string}>},
+  { params }: { params: Promise<{ audienceId: string }> },
 ) {
-  const {audienceId} = await params;
+  const { audienceId } = await params;
 
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({message: "Not authenticated"}, {status: 401});
+      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
     }
 
     // Get the active shop ID from cookie
@@ -195,21 +226,21 @@ export async function PUT(
 
     // Return empty array if user has no shops
     if (!shop) {
-      return NextResponse.json({error: "No shop found"}, {status: 404});
+      return NextResponse.json({ error: "No shop found" }, { status: 404 });
     }
 
     const existing = await db.audience.findFirst({
-      where: {id: audienceId, userId: user.id, shopId: shop.id},
+      where: { id: audienceId, userId: user.id, shopId: shop.id },
     });
 
     if (!existing) {
-      return NextResponse.json({message: "Audience not found"}, {status: 404});
+      return NextResponse.json({ message: "Audience not found" }, { status: 404 });
     }
 
     const body = await req.json();
 
     const updateAudience = await db.audience.update({
-      where: {id: audienceId},
+      where: { id: audienceId },
       data: {
         name: body.name,
         description: body.description,
@@ -225,7 +256,7 @@ export async function PUT(
         message: "Audience updated successfully!",
       });
 
-    return NextResponse.json(updateAudience, {status: 201});
+    return NextResponse.json(updateAudience, { status: 201 });
   } catch (err) {
     console.error("Error update audience:", err);
     return NextResponse.json([]);

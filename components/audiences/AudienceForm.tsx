@@ -54,7 +54,6 @@ export default function AudienceForm({mode, initialData}: Props) {
 
   // Supported customer fields for the dropdown
   const supportedFields = [
-    {value: "customerGroup", label: "Customer Group"},
     {value: "totalSpent", label: "Total Spent"},
     {value: "totalOrders", label: "Total Orders"},
     {value: "lastOrderDate", label: "Last Order Date"},
