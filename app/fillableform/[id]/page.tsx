@@ -5,7 +5,7 @@ import { useParams } from "next/navigation"
 import { Card, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-
+import { useSession, signIn } from "next-auth/react"
 
 type Question = {
   id: string
@@ -26,15 +26,20 @@ type FormRow = {
   updatedAt: string
   questions?: Question[]
   access?: "public" | "verified"
+  audiences?: { id: string; customerEmails: string[] }[]
 }
+
 
 export default function PublicFormPage() {
   const params = useParams()
   const formId = params.id as string
 
+  const { data: session, status } = useSession()
+
   const [form, setForm] = useState<FormRow | null>(null)
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
   const [submitted, setSubmitted] = useState(false)
+
 
   useEffect(() => {
     if (!formId) return
@@ -43,7 +48,7 @@ export default function PublicFormPage() {
       try {
         const res = await fetch(`/api/forms/${formId}`)
         if (!res.ok) throw new Error("Failed to fetch form")
-        const data: FormRow = await res.json()
+        const data: FormRow = await res.json() 
         setForm(data)
       } catch (err) {
         console.error(err)
@@ -53,6 +58,45 @@ export default function PublicFormPage() {
 
     fetchForm()
   }, [formId])
+
+  if (!form) return <p className="p-6">Loading form...</p>
+
+  // Wait for session to load
+  if (status === "loading") return <p className="p-6">Checking authentication...</p>
+
+  // Prompt login if form is set to verified and user not signed in
+  if (form.access === "verified" && status === "unauthenticated") {
+    return (
+      <Card className="p-8 mx-auto my-12 w-full max-w-3xl">
+        <CardTitle>Sign in required</CardTitle>
+        <CardDescription>
+          You need to sign in with Google to access this form.
+        </CardDescription>
+        <Button onClick={() => signIn("google")}>Sign in with Google</Button>
+      </Card>
+    )
+  }
+
+  // Audience check after user is authenticated
+  if (form.access === "verified" && status === "authenticated") {
+    const currentUserEmail = session.user?.email || ""
+
+    const allowed = (form.audiences || []).some(a =>
+      (a.customerEmails || []).includes(currentUserEmail)
+    )
+
+    if (!allowed) {
+      return (
+        <Card className="p-8 mx-auto my-12 w-full max-w-3xl">
+          <CardTitle>Access Denied</CardTitle>
+          <CardDescription>
+            Your email ({currentUserEmail}) is not allowed to access this form.
+          </CardDescription>
+        </Card>
+      )
+    }
+  }
+
 
   if (!form) return <p className="p-6">Form not found</p>
 
@@ -189,3 +233,4 @@ export default function PublicFormPage() {
     </Card>
   )
 }
+

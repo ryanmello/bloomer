@@ -109,6 +109,8 @@ model Customer {
   campaignRecipients CampaignRecipient[]
 
   orders Order[]
+
+  audiences String[] @default([])
 }
 
 model Order {
@@ -272,6 +274,9 @@ model Audience {
 
   campaigns Campaign[]
   automations Automation[]
+
+  formId      String? @db.ObjectId
+  form        Form?   @relation(fields: [formId], references: [id], onDelete: Cascade, name: "FormAudiences")
 }
 
 model SquareIntegration {
@@ -365,7 +370,7 @@ model Form {
   updatedAt   DateTime  @updatedAt
 
   submissionsList Submission[] @relation("FormSubmissions")
- 
+  audiences   Audience[] @relation("FormAudiences") 
 }
 
 
