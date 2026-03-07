@@ -1,14 +1,14 @@
-import {NextResponse} from "next/server";
+import { NextResponse } from "next/server";
 import db from "../../../lib/prisma";
-import {getCurrentUser} from "@/actions/getCurrentUser";
-import {cookies} from "next/headers";
+import { getCurrentUser } from "@/actions/getCurrentUser";
+import { cookies } from "next/headers";
 
 // fetch audiences card
 export async function GET() {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({message: "Not authenticated"}, {status: 401});
+      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
     }
 
     // Get the active shop ID from cookie
@@ -38,12 +38,12 @@ export async function GET() {
 
     // Return empty array if user has no shops
     if (!shop) {
-      return NextResponse.json({error: "No shop found"}, {status: 404});
+      return NextResponse.json({ error: "No shop found" }, { status: 404 });
     }
 
     // fetch all audiences including their customerIds array
     const audiences = await db.audience.findMany({
-      where: {shopId: shop.id},
+      where: { shopId: shop.id },
     });
 
     const allCustomerIds = Array.from(
@@ -53,14 +53,14 @@ export async function GET() {
     const customers =
       allCustomerIds.length > 0
         ? await db.customer.findMany({
-            where: { id: { in: allCustomerIds } },
-            select: {
-              id: true,
-              createdAt: true,
-              orderCount: true,
-              spendAmount: true,
-            },
-          })
+          where: { id: { in: allCustomerIds } },
+          select: {
+            id: true,
+            createdAt: true,
+            orderCount: true,
+            spendAmount: true,
+          },
+        })
         : [];
 
     const customerMap = new Map(customers.map((c) => [c.id, c]));
@@ -95,7 +95,7 @@ export async function GET() {
 
         const growthRate =
           customersBefore === 0
-            ? 100
+            ? 0
             : ((customerCount - customersBefore) / customersBefore) * 100;
 
         // engagement Rate
@@ -131,7 +131,7 @@ export async function GET() {
     return NextResponse.json(audiencesWithMetrics);
   } catch (err) {
     console.error("Error fetching audience:", err);
-    return NextResponse.json([], {status: 500});
+    return NextResponse.json([], { status: 500 });
   }
 }
 
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({message: "Not authenticated"}, {status: 401});
+      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
     }
 
     // Get the active shop ID from cookie
@@ -170,7 +170,7 @@ export async function POST(req: Request) {
 
     // Return empty array if user has no shops
     if (!shop) {
-      return NextResponse.json({error: "No shop found"}, {status: 404});
+      return NextResponse.json({ error: "No shop found" }, { status: 404 });
     }
 
     const body = await req.json();
@@ -190,14 +190,14 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(
-      {message: "Audience created successfully!", audience: newAudience},
-      {status: 201},
+      { message: "Audience created successfully!", audience: newAudience },
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error creating audience:", error);
     return NextResponse.json(
-      {error: "Failed to create audience"},
-      {status: 500},
+      { error: "Failed to create audience" },
+      { status: 500 },
     );
   }
 }
@@ -205,18 +205,18 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const body = await req.json();
-    const {ids, id} = body;
+    const { ids, id } = body;
 
     if (!id && (!ids || ids.length === 0)) {
       return NextResponse.json(
-        {error: "Audience ID(s) are required"},
-        {status: 400},
+        { error: "Audience ID(s) are required" },
+        { status: 400 },
       );
     }
 
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({message: "Not authenticated"}, {status: 401});
+      return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
     }
 
     // Get the active shop ID from cookie
@@ -246,38 +246,38 @@ export async function DELETE(req: Request) {
 
     // Return empty array if user has no shops
     if (!shop) {
-      return NextResponse.json({error: "No shop found"}, {status: 404});
+      return NextResponse.json({ error: "No shop found" }, { status: 404 });
     }
 
     if (ids && ids.length > 0) {
       await db.audience.deleteMany({
-        where: {id: {in: ids}, shopId: shop.id},
+        where: { id: { in: ids }, shopId: shop.id },
       });
       return NextResponse.json(
-        {message: "Audiences deleted successfully!"},
-        {status: 200},
+        { message: "Audiences deleted successfully!" },
+        { status: 200 },
       );
     } else if (id) {
       const audience = await db.audience.findFirst({
-        where: {id, shopId: shop.id},
+        where: { id, shopId: shop.id },
       });
       if (!audience) {
         return NextResponse.json(
-          {message: "Audience not found"},
-          {status: 404},
+          { message: "Audience not found" },
+          { status: 404 },
         );
       }
-      await db.audience.delete({where: {id}});
+      await db.audience.delete({ where: { id } });
       return NextResponse.json(
-        {message: "Audience deleted successfully!"},
-        {status: 200},
+        { message: "Audience deleted successfully!" },
+        { status: 200 },
       );
     }
   } catch (err) {
     console.error("Error deleting audience:", err);
     return NextResponse.json(
-      {message: "Failed to delete audience"},
-      {status: 500},
+      { message: "Failed to delete audience" },
+      { status: 500 },
     );
   }
 }
