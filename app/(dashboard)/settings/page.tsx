@@ -32,6 +32,7 @@ type RoleFormData = {
 export default function Settings() {
   const { user, isLoading: userLoading } = useUser();
   const { setTheme, theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -52,6 +53,8 @@ export default function Settings() {
       // silently fail
     }
   }, []);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     fetchTwoFactorStatus();
@@ -285,7 +288,7 @@ export default function Settings() {
               { value: "system", label: "System", desc: "Match your device", icon: Monitor },
             ] as const).map((option) => {
               const Icon = option.icon;
-              const isActive = theme === option.value;
+              const isActive = mounted && theme === option.value;
               return (
                 <button
                   key={option.value}

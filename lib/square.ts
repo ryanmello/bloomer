@@ -154,6 +154,63 @@ export async function getSquareAccessToken(userId: string): Promise<string | nul
   }
 }
 
+export type SquareCustomersResponse = {
+  totalCustomers: number;
+  newThisMonth: number;
+  newLastMonth: number;
+};
+
+export async function fetchSquareCustomerCount(
+  userId: string
+): Promise<SquareCustomersResponse | null> {
+  const accessToken = await getSquareAccessToken(userId);
+  if (!accessToken) return null;
+
+  const baseUrl = getBaseUrl();
+  const headers = {
+    "Square-Version": "2024-01-18",
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+  };
+
+  try {
+    let totalCustomers = 0;
+    let newThisMonth = 0;
+    let newLastMonth = 0;
+    let cursor: string | undefined;
+
+    const now = new Date();
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    do {
+      const url = new URL(`${baseUrl}/customers`);
+      url.searchParams.set("limit", "100");
+      if (cursor) url.searchParams.set("cursor", cursor);
+
+      const res = await axios.get(url.toString(), { headers });
+      const customers: { created_at: string }[] = res.data.customers || [];
+      totalCustomers += customers.length;
+
+      for (const customer of customers) {
+        const createdAt = new Date(customer.created_at);
+        if (createdAt >= thisMonthStart) {
+          newThisMonth++;
+        } else if (createdAt >= lastMonthStart && createdAt < thisMonthStart) {
+          newLastMonth++;
+        }
+      }
+
+      cursor = res.data.cursor;
+    } while (cursor);
+
+    return { totalCustomers, newThisMonth, newLastMonth };
+  } catch (error) {
+    console.error("Square Customers API error:", error);
+    return null;
+  }
+}
+
 export async function fetchSquareOrders(userId: string): Promise<SquareOrdersResponse | null> {
   const accessToken = await getSquareAccessToken(userId);
 
