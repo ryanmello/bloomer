@@ -132,7 +132,10 @@ export default function BroadcastsClient({ campaigns: initialCampaigns, audience
   return (
     <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       <HeaderSection onNewCampaign={() => setIsModalOpen(true)} />
-      <CampaignsTable campaigns={campaigns} />
+      <CampaignsTable
+        campaigns={campaigns}
+        onCampaignDeleted={refreshCampaigns}
+      />
 
       <CreateCampaignModal
         isOpen={isModalOpen}
