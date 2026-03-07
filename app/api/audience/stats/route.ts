@@ -42,8 +42,8 @@ export async function GET() {
         // Average Growth Rate Per Audience
         const now = new Date();
         const startCurrentMonth = startOfMonth(now);
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(now.getDate() - 30);
+        const startLastMonth = startOfMonth(subMonths(now, 1));
+        const startTwoMonthsAgo = startOfMonth(subMonths(now, 2));
 
         // Get audiences with customerIds
         const audiences = await db.audience.findMany({
@@ -74,6 +74,7 @@ export async function GET() {
         const customerMap = new Map(customers.map((c) => [c.id, c]));
 
         let growthSum = 0;
+        let growthSumLastMonth = 0;
         let growthCount = 0;
 
         for (const aud of audiences) {
@@ -83,24 +84,59 @@ export async function GET() {
 
             const customerCount = definedCustomers.length;
 
-            const customersBefore = definedCustomers.filter(
-                (c) => c.createdAt < thirtyDaysAgo,
+            const customersBeforeCurrent = definedCustomers.filter(
+                (c) => c.createdAt < startLastMonth,
             ).length;
 
             let growthRate = 0;
 
-            if (customersBefore > 0) {
+            if (customersBeforeCurrent > 0) {
                 growthRate =
-                    ((customerCount - customersBefore) / customersBefore) * 100;
-            } else {
-                growthRate = 0;
+                    ((customerCount - customersBeforeCurrent) /
+                        customersBeforeCurrent) *
+                    100;
             }
 
             growthSum += growthRate;
+
+            // Last Month Growth
+            const customersAtStartOfLastMonth = definedCustomers.filter(
+                (c) => c.createdAt < startLastMonth,
+            ).length;
+
+            const customersBeforeLastMonth = definedCustomers.filter(
+                (c) => c.createdAt < startTwoMonthsAgo,
+            ).length;
+
+            let growthLastMonth = 0;
+
+            if (customersBeforeLastMonth > 0) {
+                growthLastMonth =
+                    ((customersAtStartOfLastMonth -
+                        customersBeforeLastMonth) /
+                        customersBeforeLastMonth) *
+                    100;
+            }
+
+            growthSumLastMonth += growthLastMonth;
+
             growthCount++;
         }
 
-        const avgGrowthRate = growthCount > 0 ? growthSum / growthCount : 0;
+        const avgGrowthRate =
+            growthCount > 0 ? growthSum / growthCount : 0;
+
+        const avgGrowthRateLastMonth =
+            growthCount > 0 ? growthSumLastMonth / growthCount : 0;
+
+        const avgGrowthRateChange =
+            avgGrowthRateLastMonth === 0
+                ? avgGrowthRate > 0
+                    ? 100
+                    : 0
+                : ((avgGrowthRate - avgGrowthRateLastMonth) /
+                    Math.abs(avgGrowthRateLastMonth)) *
+                100;
 
         // Month-over-Month Change %
         const totalCustomersLastMonth = await db.customer.count({
@@ -163,6 +199,9 @@ export async function GET() {
             totalCampaignsChange,
 
             avgGrowthRate: Number(avgGrowthRate.toFixed(2)),
+            avgGrowthRateChange: Number(
+                avgGrowthRateChange.toFixed(2),
+            ),
         });
     } catch (error) {
         console.error("Audience stats error:", error);
