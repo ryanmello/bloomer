@@ -359,3 +359,13 @@ model Form {
   conversions Int       @default(0)
   updatedAt   DateTime  @updatedAt
 }
+
+
+model Submission {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  formId    String   @db.ObjectId
+  answers   Json     
+  createdAt DateTime @default(now())
+
+  @@index([formId])
+}
