@@ -2,12 +2,25 @@ import {NextResponse} from "next/server";
 import db from "../../../lib/prisma";
 
 export async function GET() {
-  const forms = await db.form.findMany(); 
-  return NextResponse.json(forms);
+  const forms = await db.form.findMany({
+    include: {
+      _count: {
+        select: { submissionsList: true },
+      },
+    },
+  });
+
+  const mappedForms = forms.map(f => ({
+  ...f,
+  submissions: f._count.submissionsList,
+ }));
+
+  return NextResponse.json(mappedForms);
 }
 
 export async function POST(req: Request) {
   const body = await req.json();
+  
   const form = await db.form.create({
     data: {
       title: body.title,
@@ -18,6 +31,12 @@ export async function POST(req: Request) {
       views: 0,
       submissions: 0,
       conversions: 0,
+      audiences:
+        body.access === "verified" && body.audienceIds?.length
+          ? {
+              connect: body.audienceIds.map((id: string) => ({ id })),
+            }
+          : undefined,
     },
   });
   return NextResponse.json(form, { status: 201 });

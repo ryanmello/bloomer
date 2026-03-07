@@ -109,6 +109,8 @@ model Customer {
   campaignRecipients CampaignRecipient[]
 
   orders Order[]
+
+  audiences String[] @default([])
 }
 
 model Order {
@@ -272,6 +274,9 @@ model Audience {
 
   campaigns Campaign[]
   automations Automation[]
+
+  formId      String? @db.ObjectId
+  form        Form?   @relation(fields: [formId], references: [id], onDelete: Cascade, name: "FormAudiences")
 }
 
 model SquareIntegration {
@@ -384,4 +389,30 @@ model Form {
   submissions Int       @default(0)
   conversions Int       @default(0)
   updatedAt   DateTime  @updatedAt
+
+  submissionsList Submission[] @relation("FormSubmissions")
+  audiences   Audience[] @relation("FormAudiences") 
+}
+
+
+model Submission {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  formId    String   @db.ObjectId
+  createdAt DateTime @default(now())
+
+  form Form @relation(fields: [formId], references: [id], name: "FormSubmissions", onDelete: Cascade)
+  answers SubmissionAnswer[] @relation("SubmissionAnswers")
+  @@index([formId])
+}
+
+model SubmissionAnswer {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  submissionId String @db.ObjectId
+  questionId   String
+  answer       Json
+
+  submission Submission @relation(fields: [submissionId], references: [id], name: "SubmissionAnswers", onDelete: Cascade)
+
+  @@index([questionId])
+  @@index([submissionId])
 }
