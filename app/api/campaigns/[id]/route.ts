@@ -137,13 +137,16 @@ export async function PATCH(
         );
       }
 
-      // Get customers from recipients
-      const customers = campaign.recipients.map(r => ({
-        id: r.customer.id,
-        email: r.customer.email,
-        firstName: r.customer.firstName,
-        lastName: r.customer.lastName
-      }));
+      // Get customers from recipients (exclude those who unsubscribed since campaign was created)
+      const customers = campaign.recipients
+        .filter(r => !r.customer.unsubscribedAt)
+        .map(r => ({
+          id: r.customer.id,
+          email: r.customer.email,
+          firstName: r.customer.firstName,
+          lastName: r.customer.lastName,
+          unsubscribedAt: r.customer.unsubscribedAt,
+        }));
 
       // Import and call sendCampaignEmails function
       const { sendCampaignEmails } = await import('@/lib/resend-email');
@@ -155,7 +158,8 @@ export async function PATCH(
         campaign.subject,
         campaign.emailBody,
         campaign.shop.name || 'Your Store',
-        campaign.shop.email || ''
+        campaign.shop.email || '',
+        campaign.shop.address ?? ''
       ).catch(error => {
         console.error('Error sending campaign emails from PATCH:', error);
         console.error('Error stack:', error?.stack);
