@@ -9,7 +9,7 @@ export const { GET, POST } = handlers
 // Use Node.js runtime for Auth.js
 export const runtime = 'nodejs'
 
-export const auth = NextAuth({
+const auth = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({

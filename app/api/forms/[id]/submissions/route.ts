@@ -4,7 +4,7 @@ import db from "@/lib/prisma";
 
 export async function GET(
   req: Request,
-  context: { params: { id: string } } 
+  context: { params: Promise<{ id: string }> }
 ) {
   
   const { id } = await context.params;
@@ -25,7 +25,7 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const { id: formId } = await context.params; 
   const answers = await req.json();

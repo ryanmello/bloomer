@@ -33,7 +33,7 @@ export async function GET(req: Request, context: any) {
   })
 }
 
-export async function PUT(req: Request, context: any) {
+export async function PUT(req: Request, context: { params: Promise<{ id: string }> } ) {
  
   const { id } = await context.params;
 
