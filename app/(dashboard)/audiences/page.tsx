@@ -79,7 +79,7 @@ const audienceFields = [
   {value: "campaignsSent", label: "Campaigns Sent"},
   {value: "growthRate", label: "Growth Rate"},
   {value: "engagementRate", label: "Engagement Rate"},
-  {value: "lastCampaign", label: "Last Campaign"},
+  {value: "lastCampaignName", label: "Last Campaign"},
   {value: "customerField", label: "Customer Field"}, // NEW
 ];
 
@@ -100,7 +100,7 @@ const fieldOperators: Record<string, string[]> = {
   campaignsSent: ["equals", "greaterThan", "lessThan", "between"],
   growthRate: ["equals", "greaterThan", "lessThan", "between"],
   engagementRate: ["equals", "greaterThan", "lessThan", "between"],
-  lastCampaign: ["equals", "contains"],
+  lastCampaignName: ["equals", "contains"],
   customerField: ["equals", "contains"],
 };
 
