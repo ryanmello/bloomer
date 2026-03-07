@@ -3,9 +3,9 @@ import db from "../../../../lib/prisma";
 
 export async function GET(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = await context.params;
+  const { id } = params;
 
   const form = await db.form.findUnique({ where: { id } });
 
@@ -18,11 +18,9 @@ export async function GET(
 
 export async function PUT(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
-  
-  const { id } = await context.params;
-
+  const { id } = params;
   const body = await req.json();
 
   try {
@@ -43,12 +41,11 @@ export async function PUT(
   }
 }
 
-
 export async function DELETE(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = await context.params;
+  const { id } = params;
 
   try {
     await db.form.delete({ where: { id } });
@@ -61,9 +58,9 @@ export async function DELETE(
 
 export async function POST(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = await context.params;
+  const { id } = params;
 
   try {
     const original = await db.form.findUnique({ where: { id } });
@@ -77,7 +74,7 @@ export async function POST(
         description: original.description,
         status: original.status,
         access: original.access,
-        questions: JSON.parse(JSON.stringify(original.questions)), 
+        questions: JSON.parse(JSON.stringify(original.questions)),
         views: 0,
         submissions: 0,
         conversions: 0,

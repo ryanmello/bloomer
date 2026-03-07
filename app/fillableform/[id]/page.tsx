@@ -33,7 +33,7 @@ export default function PublicFormPage() {
   const formId = params.id as string
 
   const [form, setForm] = useState<FormRow | null>(null)
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
   const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
@@ -56,19 +56,32 @@ export default function PublicFormPage() {
 
   if (!form) return <p className="p-6">Form not found</p>
 
-  const handleChange = (qId: string, value: string) => {
-    setAnswers((prev) => ({ ...prev, [qId]: value }))
+  const handleChange = (qId: string, value: string | string[]) => {
+  setAnswers((prev) => ({ ...prev, [qId]: value }))
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     try {
-      console.log("Submitted answers:", answers)
+    
+      const payload = Object.entries(answers).map(([questionId, answer]) => ({
+        questionId,
+        answer,
+      }))
+
+      const res = await fetch(`/api/forms/${formId}/submissions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) throw new Error("Failed to submit form")
+
       setSubmitted(true)
       toast.success("Form submitted successfully!")
     } catch (err) {
-      toast.error("Failed to submit form")
       console.error(err)
+      toast.error("Failed to submit form")
     }
   }
 
@@ -101,7 +114,7 @@ export default function PublicFormPage() {
                 value={answers[q.id] || ""}
                 onChange={(e) => handleChange(q.id, e.target.value)}
                 className="border rounded-md p-2 w-full bg-background"
-                required
+                
               />
             )}
 
@@ -116,7 +129,7 @@ export default function PublicFormPage() {
                       value={val.toLowerCase()}
                       checked={answers[q.id] === val.toLowerCase()}
                       onChange={(e) => handleChange(q.id, e.target.value)}
-                      required
+                      
                     />
                     {val}
                   </label>
@@ -133,20 +146,17 @@ export default function PublicFormPage() {
                     <label key={`${q.id}-checkbox-${i}`} className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        value={i}
-                        checked={answers[q.id]?.split(",").includes(String(i)) || false}
+                        value={opt}
+                        checked={Array.isArray(answers[q.id]) && answers[q.id].includes(opt)}
                         onChange={(e) => {
-                          const selected = answers[q.id] ? answers[q.id].split(",") : []
+                        const selected = Array.isArray(answers[q.id]) ? (answers[q.id] as string[]) : []
 
-                          if (e.target.checked) {
-                            handleChange(q.id, [...selected, String(i)].join(","))
-                          } else {
-                            handleChange(
-                              q.id,
-                              selected.filter((o) => o !== String(i)).join(",")
-                            )
-                          }
-                        }}
+                        if (e.target.checked) {
+                          handleChange(q.id, [...selected, opt])
+                        } else {
+                          handleChange(q.id, selected.filter((o) => o !== opt))
+                        }
+                      }}
                       />
                       {opt}
                     </label>
@@ -158,10 +168,10 @@ export default function PublicFormPage() {
                       <input
                         type="radio"
                         name={q.id}
-                        value={i}
-                        checked={answers[q.id] === String(i)}
+                        value={opt}
+                        checked={answers[q.id] === opt}
                         onChange={(e) => handleChange(q.id, e.target.value)}
-                        required
+                       
                       />
                       {opt}
                     </label>

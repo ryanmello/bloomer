@@ -57,7 +57,23 @@ type FormRow = {
   changePct?: number
 }
 
+type Submission = {
+  id: string
+  formId: string
+  answers: Record<string, any> 
+  createdAt: string
+}
 
+type DisplayAnswer = {
+  questionId: string
+  questionText: string
+  type: "short" | "mcq" | "truefalse"
+  answer: string | string[] 
+}
+
+type DisplaySubmission = Submission & {
+  displayAnswers: DisplayAnswer[]
+}
 
 // ----- Small utilities -----
 function useDebounced<T>(value: T, delay = 250) {
@@ -105,6 +121,14 @@ export default function Forms() {
 
   const [previewForm, setPreviewForm] = useState<FormRow | null>(null)
 
+  const [submissionsModalOpen, setSubmissionsModalOpen] = useState(false)
+  const [currentSubmissions, setCurrentSubmissions] = useState<DisplaySubmission[]>([])
+  const [selectedForm, setSelectedForm] = useState<FormRow | null>(null)
+
+  const [viewingSubmission, setViewingSubmission] = useState<DisplaySubmission | null>(null);
+  
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
+  const [statsForm, setStatsForm] = useState<FormRow | null>(null);  
   // ----- filters + search -----
   const TABS: { key: "active" | "template" | "custom" | "all"; label: string }[] = [
     { key: "active", label: "Active" },
@@ -375,6 +399,84 @@ export default function Forms() {
     const conversionRate = totalViews > 0 ? (totalConversions / totalViews) * 100 : 0
     return { totalForms, activeForms, totalViews, totalSubmissions, totalConversions, conversionRate }
   }, [filtered])
+
+  const handleViewSubmissions = async (form: FormRow) => {
+    try {
+      const res = await fetch(`/api/forms/${form.id}/submissions`);
+      if (!res.ok) throw new Error("Failed to fetch submissions");
+
+      const data: {
+        id: string;
+        formId: string;
+        answers: { questionId: string; answer: any }[];
+        createdAt: string;
+      }[] = await res.json();
+
+      const mapped: DisplaySubmission[] = data.map((sub) => {
+        const answerMap: Record<string, any> = {};
+        sub.answers.forEach((a) => {
+          answerMap[a.questionId] = a.answer;
+        });
+
+        const displayAnswers: DisplayAnswer[] = sub.answers
+          .map((a) => {
+            const question = form.questions.find((q) => q.id === a.questionId);
+            if (!question) return null;
+
+            let answer: string | string[] = "";
+
+            switch (question.type) {
+              case "mcq": {
+                const opts = question.options ?? [];
+                if (Array.isArray(a.answer)) {
+                  answer = a.answer
+                    .map((ans) =>
+                      !isNaN(Number(ans)) ? opts[Number(ans)] : String(ans)
+                    )
+                    .filter(Boolean);
+                } else if (!isNaN(Number(a.answer))) {
+                  answer = opts[Number(a.answer)] ? [opts[Number(a.answer)]] : [];
+                } else {
+                  answer = [String(a.answer)];
+                }
+                break;
+              }
+
+              case "truefalse":
+                answer = a.answer === true || a.answer === "true" ? "true" : "false";
+                break;
+
+              case "short":
+                answer = String(a.answer ?? "");
+                break;
+            }
+
+            return {
+              questionId: a.questionId,
+              questionText: question.text,
+              type: question.type,
+              answer,
+            };
+          })
+          .filter(Boolean) as DisplayAnswer[];
+
+        return {
+          id: sub.id,
+          formId: sub.formId,
+          answers: answerMap,
+          createdAt: sub.createdAt,
+          displayAnswers,
+        };
+      });
+
+      setSelectedForm(form);
+      setCurrentSubmissions(mapped);
+      setSubmissionsModalOpen(true);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load submissions");
+    }
+  };
 
   useEffect(() => {
     if (shareModalOpen) {
@@ -1032,6 +1134,220 @@ export default function Forms() {
         </div>
       )}
 
+     
+      {/* Submissions Modal */}
+        {submissionsModalOpen && selectedForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <Card className="w-3/4 max-w-3xl p-6 relative overflow-auto">
+              <Button
+                size="sm"
+                className="absolute top-4 right-4"
+                onClick={() => setSubmissionsModalOpen(false)}
+              >
+                Close
+              </Button>
+
+              <CardTitle>Submissions for {selectedForm.title}</CardTitle>
+              {selectedForm.description && (
+                <p className="mt-2 text-sm text-muted-foreground">{selectedForm.description}</p>
+              )}
+
+              {currentSubmissions.length > 0 && (
+                <div className="mt-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setStatsForm(selectedForm);
+                      setStatsModalOpen(true);
+                    }}
+                  >
+                    View Statistics
+                  </Button>
+                </div>
+              )}
+
+              {currentSubmissions.length === 0 ? (
+                <p className="mt-4 text-sm text-muted-foreground">No submissions yet</p>
+              ) : (
+                <div className="mt-4 space-y-2">
+                  {currentSubmissions
+                    .slice() 
+                    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                    .map((sub, index) => (
+                      <div key={sub.id} className="border rounded p-2 flex justify-between items-center">
+                        <span className="font-medium">{index + 1}.</span>
+                        <Button size="sm" onClick={() => setViewingSubmission(sub)}>
+                          View
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
+
+        {/* Viewing Single Submission */}
+        {viewingSubmission && selectedForm && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
+            <Card className="w-3/4 max-w-3xl p-6 relative overflow-auto">
+              <Button
+                size="sm"
+                className="absolute top-4 right-4"
+                onClick={() => setViewingSubmission(null)}
+              >
+                Close
+              </Button>
+
+              <CardTitle>Submission Details</CardTitle>
+              <p className="text-sm text-muted-foreground mb-4">
+                Submitted at: {new Date(viewingSubmission.createdAt).toLocaleString()}
+              </p>
+
+              <div className="mt-4 space-y-6">
+                {selectedForm.questions.map((q, index) => {
+                  const ans = viewingSubmission.displayAnswers.find(a => a.questionId === q.id);
+
+                  return (
+                    <div key={q.id} className="flex flex-col gap-2">
+                      <label className="block font-medium">
+                        {index + 1}. {q.text}
+                      </label>
+
+                      {!ans ? (
+                        <p className="p-2 border rounded-md bg-background text-muted-foreground">
+                          No answer submitted
+                        </p>
+                      ) : q.type === "short" ? (
+                        <input
+                          type="text"
+                          value={ans.answer as string}
+                          disabled
+                          className="border rounded-md p-2 w-full bg-background"
+                        />
+                      ) : q.type === "truefalse" ? (
+                        <div className="flex flex-col gap-2 ml-2">
+                          {["true", "false"].map(val => (
+                            <label key={val} className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name={q.id}
+                                checked={ans.answer === val}
+                                disabled
+                              />
+                              <span>{val.charAt(0).toUpperCase() + val.slice(1)}</span>
+                            </label>
+                          ))}
+                        </div>
+                      ) : q.type === "mcq" && q.options ? (
+                        <div className="flex flex-col gap-2 ml-2">
+                          {q.options.map(opt => {
+                            const isChecked = q.multiSelect
+                              ? Array.isArray(ans.answer) && (ans.answer as string[]).includes(opt)
+                              : Array.isArray(ans.answer)
+                                ? ans.answer[0] === opt
+                                : ans.answer === opt;
+
+                            return (
+                              <label key={opt} className="flex items-center gap-2">
+                                <input
+                                  type={q.multiSelect ? "checkbox" : "radio"}
+                                  name={q.id}
+                                  checked={isChecked}
+                                  readOnly
+                                  
+                                />
+                                <span>{opt}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </div>
+        )}
+
+
+        {/* Statistics Modal */}
+        {statsModalOpen && statsForm && (
+          <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/50">
+            <Card className="w-3/4 max-w-3xl p-6 relative overflow-auto max-h-[90vh]">
+              
+              <Button
+                size="sm"
+                className="absolute top-4 right-4"
+                onClick={() => setStatsModalOpen(false)}
+              >
+                Close
+              </Button>
+
+              <CardTitle>Statistics for {statsForm.title}</CardTitle>
+              {statsForm.description && (
+                <p className="mt-2 text-sm text-muted-foreground">{statsForm.description}</p>
+              )}
+
+              {/* Questions */}
+              <div className="flex flex-col gap-6 mt-6">
+                {statsForm.questions.map((q, idx) => (
+                  <div key={q.id} className="flex flex-col gap-2">
+                    <p className="font-medium">{idx + 1}. {q.text}</p>
+
+                    {/* Multiple Choice or True/False */}
+                    {(q.type === "mcq" || q.type === "truefalse") && (
+                      <div className="flex flex-col gap-2 ml-2">
+                        {(q.options || (q.type === "truefalse" ? ["true", "false"] : [])).map(opt => {
+                          const count = currentSubmissions.filter(sub => {
+                            const ans = sub.displayAnswers.find(a => a.questionId === q.id)?.answer;
+                            if (q.multiSelect && Array.isArray(ans)) return ans.includes(opt);
+                            return ans === opt || (Array.isArray(ans) && ans[0] === opt);
+                          }).length;
+                          const total = currentSubmissions.length;
+                          const percent = total > 0 ? (count / total) * 100 : 0;
+
+                          return (
+                            <div key={opt} className="flex items-center gap-2">
+                              <span className="w-32">{opt.charAt(0).toUpperCase() + opt.slice(1)}</span>
+                              <div className="flex-1 h-5 bg-gray-200 rounded">
+                                <div
+                                  className="h-5 bg-blue-500 rounded"
+                                  style={{ width: `${percent}%` }}
+                                ></div>
+                              </div>
+                              <span className="w-16 text-sm text-right">
+                                {count} ({Math.round(percent)}%)
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Short Answer */}
+                    {q.type === "short" && (
+                      <div className="ml-2 flex flex-col gap-1 max-h-40 overflow-auto border rounded p-2 bg-background">
+                        {currentSubmissions
+                          .map(sub => sub.displayAnswers.find(a => a.questionId === q.id)?.answer as string)
+                          .filter(Boolean)
+                          .map((ans, i) => (
+                            <p key={i} className="text-sm border-b last:border-b-0 p-1">{ans}</p>
+                          ))}
+                        {currentSubmissions.every(sub => !sub.displayAnswers.find(a => a.questionId === q.id)?.answer) && (
+                          <p className="text-sm text-muted-foreground">No answers submitted yet</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        )}
+
       <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
         {/* Metric cards */}
         <section className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden mt-4">
@@ -1319,6 +1635,19 @@ export default function Forms() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
+
+                          {/* View Submissions */}
+                          <Button
+                            variant="outline"
+                            className="mt-3 w-full flex items-center justify-center gap-2"
+                            onClick={() => handleViewSubmissions(f)}
+                            aria-label="View submissions"
+                            title="Submissions"
+                          >
+                            <Inbox className="h-4 w-4" /> 
+                            View Submissions
+                          </Button>
+
                         </div>
                       </Card>
                     ))}

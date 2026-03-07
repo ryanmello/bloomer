@@ -363,14 +363,30 @@ model Form {
   submissions Int       @default(0)
   conversions Int       @default(0)
   updatedAt   DateTime  @updatedAt
+
+  submissionsList Submission[] @relation("FormSubmissions")
+ 
 }
 
 
 model Submission {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   formId    String   @db.ObjectId
-  answers   Json     
   createdAt DateTime @default(now())
 
+  form Form @relation(fields: [formId], references: [id], name: "FormSubmissions", onDelete: Cascade)
+  answers SubmissionAnswer[] @relation("SubmissionAnswers")
   @@index([formId])
+}
+
+model SubmissionAnswer {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  submissionId String @db.ObjectId
+  questionId   String
+  answer       Json
+
+  submission Submission @relation(fields: [submissionId], references: [id], name: "SubmissionAnswers", onDelete: Cascade)
+
+  @@index([questionId])
+  @@index([submissionId])
 }
