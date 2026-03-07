@@ -1,8 +1,25 @@
 'use client';
-import { Mail, Search, MoreVertical } from 'lucide-react';
+import { Mail, Search, MoreVertical, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 
 interface CampaignRow {
   id: string;
@@ -18,10 +35,13 @@ interface CampaignRow {
 
 interface CampaignsTableProps {
   campaigns: CampaignRow[];
+  onCampaignDeleted?: (campaignId: string) => void | Promise<void>;
 }
 
-export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
+export default function CampaignsTable({ campaigns, onCampaignDeleted }: CampaignsTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [campaignToDelete, setCampaignToDelete] = useState<CampaignRow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -133,9 +153,26 @@ export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
                     </span>
                   </td>
                   <td className="py-3 px-6">
-                    <button className="p-2 hover:bg-muted rounded-lg transition-colors">
-                      <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="p-2 hover:bg-muted rounded-lg transition-colors"
+                          aria-label="Campaign actions"
+                        >
+                          <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setCampaignToDelete(campaign)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))}
@@ -154,6 +191,39 @@ export default function CampaignsTable({ campaigns }: CampaignsTableProps) {
           </div>
         )}
       </CardContent>
+
+      <AlertDialog open={!!campaignToDelete} onOpenChange={(open) => !open && setCampaignToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete campaign</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you wish to delete this campaign? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>No</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={async () => {
+                if (!campaignToDelete) return;
+                setIsDeleting(true);
+                try {
+                  const res = await fetch(`/api/campaigns/${campaignToDelete.id}`, { method: 'DELETE' });
+                  if (res.ok) {
+                    setCampaignToDelete(null);
+                    await onCampaignDeleted?.(campaignToDelete.id);
+                  }
+                } finally {
+                  setIsDeleting(false);
+                }
+              }}
+            >
+              Yes
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
