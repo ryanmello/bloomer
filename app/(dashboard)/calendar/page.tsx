@@ -254,23 +254,37 @@ export default function CalendarPage() {
         </div>
       </div>
 
+      {/*https://fullcalendar.io/docs/css-customization*/}
+      {/* match dark mode */}
+      <style jsx global>{`
+        .fc .fc-col-header-cell {
+          color: #000000;
+        }
+
+        .fc .fc-col-header-cell.fc-day-sun {
+          color: #ef4444;
+        }
+      `}</style>
+
       {/* Calendar */}
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        height="auto"
-        timeZone="local"
-        dayMaxEvents={3}
-        eventMaxStack={3}
-        selectable
-        editable={false}
-        headerToolbar={false}
-        dateClick={handleDateClick}
-        eventClick={handleEventClick}
-        events={events}
-        datesSet={handleDatesSet}
-      />
+      <div className="rounded-xl border bg-card text-card-foreground p-4 shadow-sm">
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          height="auto"
+          timeZone="local"
+          dayMaxEvents={3}
+          eventMaxStack={3}
+          selectable
+          editable={false}
+          headerToolbar={false}
+          dateClick={handleDateClick}
+          eventClick={handleEventClick}
+          events={events}
+          datesSet={handleDatesSet}
+        />
+      </div>
 
       {/* Modal */}
       <Dialog open={open} onOpenChange={setOpen}>
