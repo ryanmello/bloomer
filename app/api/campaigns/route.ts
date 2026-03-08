@@ -191,6 +191,21 @@ export async function POST(req: NextRequest) {
       }
     });
 
+    if (campaignStatus === "Sent") {
+      if (audienceId) {
+        await db.audience.update({
+          where: { id: audienceId },
+          data: {
+            campaignsSent: {
+              increment: 1
+            },
+            lastCampaignName: campaignName,
+            lastCampaignAt: new Date()
+          }
+        });
+      }
+    }
+
     if (campaignStatus === 'Scheduled') {
       console.log(`✅ Campaign "${campaignName}" scheduled successfully`);
       console.log(`   It will be sent automatically when the scheduled time arrives.`);

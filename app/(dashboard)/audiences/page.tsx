@@ -2,14 +2,14 @@
 
 import MetricCard from "@/components/dashboard/MetricCard";
 import AudienceCard from "@/components/audiences/AudienceCard";
-import {Users, Target, Send, TrendingUp, Search, Plus} from "lucide-react";
-import {Tabs, TabsList, TabsTrigger} from "@/components/ui/tabs";
-import {Input} from "@/components/ui/input";
-import {useEffect, useState} from "react";
-import {Card, CardTitle, CardDescription} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {useRouter} from "next/navigation";
-import {toast} from "sonner";
+import { Users, Target, Send, TrendingUp, Search, Plus } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { useEffect, useState } from "react";
+import { Card, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Select,
   SelectTrigger,
@@ -17,7 +17,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import {Trash2} from "lucide-react";
+import { Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {Download} from "lucide-react";
+import { Download } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -73,23 +73,23 @@ type AddressData = {
 
 // Available fields for filtering
 const audienceFields = [
-  {value: "name", label: "Name"},
-  {value: "description", label: "Description"},
-  {value: "customerCount", label: "Customer Count"},
-  {value: "campaignsSent", label: "Campaigns Sent"},
-  {value: "growthRate", label: "Growth Rate"},
-  {value: "engagementRate", label: "Engagement Rate"},
-  {value: "lastCampaign", label: "Last Campaign"},
-  {value: "customerField", label: "Customer Field"}, // NEW
+  { value: "name", label: "Name" },
+  { value: "description", label: "Description" },
+  { value: "customerCount", label: "Customer Count" },
+  { value: "campaignsSent", label: "Campaigns Sent" },
+  { value: "growthRate", label: "Growth Rate" },
+  { value: "engagementRate", label: "Engagement Rate" },
+  { value: "lastCampaignName", label: "Last Campaign" },
+  { value: "customerField", label: "Customer Field" }, // NEW
 ];
 
 // Full operator set
 const operators = [
-  {value: "equals", label: "Equals"},
-  {value: "greaterThan", label: "Greater Than"},
-  {value: "lessThan", label: "Less Than"},
-  {value: "contains", label: "Contains"},
-  {value: "between", label: "Between"},
+  { value: "equals", label: "Equals" },
+  { value: "greaterThan", label: "Greater Than" },
+  { value: "lessThan", label: "Less Than" },
+  { value: "contains", label: "Contains" },
+  { value: "between", label: "Between" },
 ];
 
 // Operator mapping per field
@@ -100,7 +100,7 @@ const fieldOperators: Record<string, string[]> = {
   campaignsSent: ["equals", "greaterThan", "lessThan", "between"],
   growthRate: ["equals", "greaterThan", "lessThan", "between"],
   engagementRate: ["equals", "greaterThan", "lessThan", "between"],
-  lastCampaign: ["equals", "contains"],
+  lastCampaignName: ["equals", "contains"],
   customerField: ["equals", "contains"],
 };
 
@@ -130,13 +130,7 @@ export default function Audiences() {
 
   const [exportFormat, setExportFormat] = useState<"csv" | "pdf">("csv");
 
-  // TODO: change to real metrics
-  const metrics = {
-    totalCustomers: {value: "1,842", change: 8.3},
-    activeAudiences: {value: 12, change: 20.0},
-    totalCampaigns: {value: 47, change: 15.5},
-    avgGrowthRate: {value: "12.4%", change: 3.2},
-  };
+  const [metrics, setMetrics] = useState<any>(null);
 
   // get audiences from database
   const fetchAudiencesCard = async () => {
@@ -153,6 +147,22 @@ export default function Audiences() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const res = await fetch("/api/audience/stats");
+        if (!res.ok) return;
+
+        const data = await res.json();
+        setMetrics(data);
+      } catch (err) {
+        console.error("Failed to fetch metrics", err);
+      }
+    };
+
+    fetchMetrics();
+  }, []);
 
   useEffect(() => {
     fetchAudiencesCard();
@@ -279,8 +289,8 @@ export default function Audiences() {
     try {
       const res = await fetch("/api/audience", {
         method: "DELETE",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ids: selectedIds}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds }),
       });
 
       const data = await res.json();
@@ -324,46 +334,46 @@ export default function Audiences() {
 
     const audienceRows = exportAudiences
       ? filteredAudiences.map((aud) => ({
-          Audience: aud.name,
-          Description: aud.description ?? "-",
-          Status: aud.status ?? "-",
-          Type: aud.type ?? "-",
-          Customers: aud.customerCount ?? "-",
-          Campaigns: aud.campaignsSent ?? "-",
-          Growth: aud.growthRate ?? "-",
-        }))
+        Audience: aud.name,
+        Description: aud.description ?? "-",
+        Status: aud.status ?? "-",
+        Type: aud.type ?? "-",
+        Customers: aud.customerCount ?? "-",
+        Campaigns: aud.campaignsSent ?? "-",
+        Growth: aud.growthRate ?? "-",
+      }))
       : [];
 
     const customerRows = exportCustomers
       ? filteredAudiences.flatMap((aud) =>
-          (aud.customers || []).map((cust) => ({
-            Audience: aud.name,
-            "Customer Name": `${cust.firstName} ${cust.lastName}`,
-            Email: cust.email,
-            Phone: cust.phoneNumber ?? "-",
-            Orders: cust.orderCount ?? "-",
-            Spend: cust.spendAmount ?? "-",
-            Occasions: cust.occasionsCount ?? "-",
-            Address:
-              cust.addresses
-                ?.map(
-                  (a) =>
-                    `${a.line1}${a.line2 ? ", " + a.line2 : ""}, ${a.city}, ${a.state} ${a.zip}, ${a.country}`,
-                )
-                .join(" | ") ?? "-",
-          })),
-        )
+        (aud.customers || []).map((cust) => ({
+          Audience: aud.name,
+          "Customer Name": `${cust.firstName} ${cust.lastName}`,
+          Email: cust.email,
+          Phone: cust.phoneNumber ?? "-",
+          Orders: cust.orderCount ?? "-",
+          Spend: cust.spendAmount ?? "-",
+          Occasions: cust.occasionsCount ?? "-",
+          Address:
+            cust.addresses
+              ?.map(
+                (a) =>
+                  `${a.line1}${a.line2 ? ", " + a.line2 : ""}, ${a.city}, ${a.state} ${a.zip}, ${a.country}`,
+              )
+              .join(" | ") ?? "-",
+        })),
+      )
       : [];
 
-    const summaryRows = exportSummary
+    const summaryRows = exportSummary && metrics
       ? [
-          ["Summary Metrics"],
-          ["Total Customers", metrics.totalCustomers.value],
-          ["Active Audiences", metrics.activeAudiences.value],
-          ["Total Campaigns", metrics.totalCampaigns.value],
-          ["Average Growth Rate", metrics.avgGrowthRate.value],
-          [],
-        ]
+        ["Summary Metrics"],
+        ["Total Customers", metrics.totalCustomers],
+        ["Active Audiences", metrics.activeAudiences],
+        ["Total Campaigns", metrics.totalCampaigns],
+        ["Average Growth Rate", `${metrics.avgGrowthRate.toFixed(1)}%`],
+        [],
+      ]
       : [];
 
     // Export CSV
@@ -393,7 +403,7 @@ export default function Audiences() {
       }
 
       // Trigger download
-      const blob = new Blob([csvContent], {type: "text/csv"});
+      const blob = new Blob([csvContent], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -441,9 +451,9 @@ export default function Audiences() {
             r.Campaigns,
             r.Growth,
           ]),
-          styles: {fontSize: 10},
-          headStyles: {fillColor: [255, 0, 0]},
-          margin: {left: 14, right: 14},
+          styles: { fontSize: 10 },
+          headStyles: { fillColor: [255, 0, 0] },
+          margin: { left: 14, right: 14 },
         });
 
         startY = (doc as any).lastAutoTable?.finalY ?? startY + 10;
@@ -476,9 +486,9 @@ export default function Audiences() {
             r.Occasions,
             r.Address,
           ]),
-          styles: {fontSize: 10},
-          headStyles: {fillColor: [255, 0, 0]},
-          margin: {left: 14, right: 14},
+          styles: { fontSize: 10 },
+          headStyles: { fillColor: [255, 0, 0] },
+          margin: { left: 14, right: 14 },
         });
       }
 
@@ -685,30 +695,37 @@ export default function Audiences() {
 
       {/* Metric cards */}
       <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 w-full">
-        <MetricCard
-          title="Total Customers"
-          value={metrics.totalCustomers.value}
-          changePct={metrics.totalCustomers.change}
-          icon={Users}
-        />
-        <MetricCard
-          title="Active Audiences"
-          value={metrics.activeAudiences.value}
-          changePct={metrics.activeAudiences.change}
-          icon={Target}
-        />
-        <MetricCard
-          title="Total Campaigns"
-          value={metrics.totalCampaigns.value}
-          changePct={metrics.totalCampaigns.change}
-          icon={Send}
-        />
-        <MetricCard
-          title="Average Growth Rate"
-          value={metrics.avgGrowthRate.value}
-          changePct={metrics.avgGrowthRate.change}
-          icon={TrendingUp}
-        />
+        {metrics && (
+          <>
+            <MetricCard
+              title="Total Customers"
+              value={metrics.totalCustomers}
+              changePct={metrics.totalCustomersChange}
+              icon={Users}
+            />
+
+            <MetricCard
+              title="Active Audiences"
+              value={metrics.activeAudiences}
+              changePct={metrics.activeAudiencesChange}
+              icon={Target}
+            />
+
+            <MetricCard
+              title="Total Campaigns"
+              value={metrics.totalCampaigns}
+              changePct={metrics.totalCampaignsChange}
+              icon={Send}
+            />
+
+            <MetricCard
+              title="Average Growth Rate"
+              value={`${metrics.avgGrowthRate.toFixed(1)}%`}
+              changePct={metrics.avgGrowthRateChange}
+              icon={TrendingUp}
+            />
+          </>
+        )}
       </section>
 
       {/* Audience Cards */}
@@ -850,9 +867,8 @@ export default function Audiences() {
                         setMaxError("");
                       }
                     }}
-                    className={`h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${
-                      minError ? "border-red-500 text-red-500" : ""
-                    }`}
+                    className={`h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${minError ? "border-red-500 text-red-500" : ""
+                      }`}
                   />
 
                   {minError && (
@@ -907,9 +923,8 @@ export default function Audiences() {
                         setMaxError("");
                       }
                     }}
-                    className={`h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${
-                      maxError ? "border-red-500 text-red-500" : ""
-                    }`}
+                    className={`h-11 w-1/2 sm:w-16 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${maxError ? "border-red-500 text-red-500" : ""
+                      }`}
                   />
 
                   {maxError && (
@@ -949,9 +964,8 @@ export default function Audiences() {
 
                     setFilterValue(val);
                   }}
-                  className={`h-11 w-full sm:w-32 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${
-                    filterError ? "border-red-500 text-red-500" : ""
-                  }`}
+                  className={`h-11 w-full sm:w-32 rounded-xl border-border/50 bg-muted/50 focus-visible:ring-ring ${filterError ? "border-red-500 text-red-500" : ""
+                    }`}
                 />
 
                 {/* This formats the input field and error message correctly, horizontally and vertically */}

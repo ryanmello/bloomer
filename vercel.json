@@ -5,5 +5,11 @@
   "framework": "nextjs",
   "env": {
     "NODE_OPTIONS": "--max-old-space-size=4096"
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/automation/run",
+      "schedule": "0 17 * * *"
+    }
+  ]
 }

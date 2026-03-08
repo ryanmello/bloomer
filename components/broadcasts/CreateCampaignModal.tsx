@@ -34,6 +34,10 @@ interface CreateCampaignModalProps {
   onClose: () => void;
   audiences: Audience[];
   onCampaignCreated: () => void;
+
+  prefillName?: string; 
+  prefillBody?: string;
+  prefillAudience?: string[];
 }
 
 export default function CreateCampaignModal({
@@ -41,9 +45,12 @@ export default function CreateCampaignModal({
   onClose,
   audiences,
   onCampaignCreated,
+  prefillName,
+  prefillBody,
+  prefillAudience,
 }: CreateCampaignModalProps) {
   const [campaignName, setCampaignName] = useState('');
-  const [selectedAudience, setSelectedAudience] = useState<string>('all');
+  const [selectedAudience, setSelectedAudience] = useState<string[]>(['all']);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customersLoading, setCustomersLoading] = useState(false);
@@ -54,10 +61,26 @@ export default function CreateCampaignModal({
   const [showSchedule, setShowSchedule] = useState(false);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
+  
+  //Prefill the modal
+  useEffect(() => {
+    if (isOpen) {
+    if (prefillName) {
+      setCampaignName(prefillName); 
+      setSubject(prefillName);    
+    }
+    if (prefillBody) {
+      setEmailBody(`Hi there! We’d love your feedback:\n\n${prefillBody}`);
+    }
+    if (prefillAudience && prefillAudience.length > 0) {
+      setSelectedAudience(prefillAudience); 
+    }
+   }
+  }, [isOpen, prefillName, prefillBody, prefillAudience]);
 
   // Fetch customers when "single" audience is selected
   useEffect(() => {
-    if (isOpen && selectedAudience === 'single') {
+    if (isOpen && selectedAudience.includes('single')) {
       setCustomersLoading(true);
       fetch('/api/customer')
         .then((res) => res.json())
@@ -77,7 +100,7 @@ export default function CreateCampaignModal({
       return;
     }
 
-    if (selectedAudience === 'single' && !selectedCustomerId) {
+    if (selectedAudience.includes('single') && !selectedCustomerId) {
       toast.error('Please select a customer to send the test email to');
       return;
     }
@@ -95,9 +118,9 @@ export default function CreateCampaignModal({
         campaignName,
         subject,
         emailBody,
-        audienceId: selectedAudience === 'all' ? undefined : selectedAudience,
+        audienceId: selectedAudience.includes('all') ? undefined : selectedAudience,
       };
-      if (selectedAudience === 'single' && selectedCustomerId) {
+      if (selectedAudience.includes('single') && selectedCustomerId) {
         payload.customerId = selectedCustomerId;
       }
 
@@ -140,7 +163,7 @@ export default function CreateCampaignModal({
       toast.success(successMessage);
 
       setCampaignName('');
-      setSelectedAudience('all');
+      setSelectedAudience(['all']);
       setSelectedCustomerId('');
       setSubject('');
       setEmailBody('');
@@ -221,25 +244,78 @@ export default function CreateCampaignModal({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="audience" className="flex items-center gap-1.5">
+            <Label className="flex items-center gap-1.5">
               <Users className="h-3.5 w-3.5 text-muted-foreground" />
               Audience
             </Label>
-            <Select
-              value={selectedAudience}
-              onValueChange={setSelectedAudience}
-              disabled={isDisabled}
-            >
+
+            <Select value={selectedAudience[0] || ''} disabled={isDisabled}>
               <SelectTrigger id="audience" className="w-full">
-                <SelectValue placeholder="All Customers" />
+                <SelectValue placeholder="All Customers">
+                  {selectedAudience.includes('all')
+                    ? 'All Customers'
+                    : selectedAudience
+                        .map((id) => audiences.find((a) => a.id === id)?.name || id)
+                        .join(', ')}
+                </SelectValue>
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Customers</SelectItem>
-                {audiences.map((audience) => (
-                  <SelectItem key={audience.id} value={audience.id}>
-                    {audience.name} ({audience.count.toLocaleString()} {audience.id === 'single' ? 'recipient' : 'customers'})
-                  </SelectItem>
-                ))}
+
+              <SelectContent className="max-h-60 overflow-auto">
+               
+                <div
+                  className="p-2 flex items-center justify-between cursor-pointer hover:bg-muted rounded"
+                  onClick={() => 
+                    setSelectedAudience((prev) =>
+                      prev.includes('all') ? [] : ['all'] 
+                    )
+                  }
+                >
+                  <span>All Customers</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedAudience.includes('all')}
+                    readOnly
+                    className="w-4 h-4"
+                  />
+                </div>
+
+                  {audiences.map((audience) => (
+                    <div
+                      key={audience.id}
+                      className="p-2 flex items-center justify-between cursor-pointer hover:bg-muted rounded"
+                      onClick={() =>
+                        setSelectedAudience((prev) => {
+                          
+                          let newSelection = prev.filter((id) => id !== 'all');
+
+                          if (prev.includes(audience.id)) {
+                            
+                            newSelection = newSelection.filter((id) => id !== audience.id);
+                          } else {
+                            
+                            newSelection.push(audience.id);
+                          }
+
+                          return newSelection;
+                        })
+                      }
+                    >
+                      <span>
+                        {audience.name} ({audience.count.toLocaleString()}{' '}
+                        {audience.id === 'single' ? 'recipient' : 'customers'})
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={
+                          selectedAudience.includes('all')
+                            ? false
+                            : selectedAudience.includes(audience.id)
+                        }
+                        readOnly
+                        className="w-4 h-4"
+                      />
+                    </div>
+                  ))}
               </SelectContent>
             </Select>
           </div>

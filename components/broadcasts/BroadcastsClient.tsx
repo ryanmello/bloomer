@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import HeaderSection from './HeaderSection';
 import CampaignsTable from './CampaignsTable';
 import CreateCampaignModal from './CreateCampaignModal';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Campaign {
   id: string;
@@ -52,6 +52,32 @@ export default function BroadcastsClient({ campaigns: initialCampaigns, audience
   const router = useRouter();
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [prefillName, setPrefillName] = useState<string | undefined>(undefined);
+  const [prefillBody, setPrefillBody] = useState<string | undefined>(undefined);
+  const [prefillAudience, setPrefillAudience] = useState<string[] | undefined>(undefined);
+
+  const searchParams = useSearchParams();
+
+
+  useEffect(() => {
+  const queryName = searchParams.get('prefillName');
+  const queryBody = searchParams.get('prefillBody');
+  const queryAudience = searchParams.get('prefillAudience');
+
+  if (queryName || queryBody || queryAudience) {
+    const decodedName = queryName ? decodeURIComponent(queryName) : undefined;
+    const decodedBody = queryBody ? decodeURIComponent(queryBody) : undefined;
+    const decodedAudience = queryAudience ? decodeURIComponent(queryAudience).split(',') : undefined;
+
+    setPrefillName(decodedName);
+    setPrefillBody(decodedBody);
+    setPrefillAudience(decodedAudience);
+    setIsModalOpen(true);
+
+    router.replace('/broadcasts');
+  }
+  }, [searchParams, router]);
+
   // Sync with server when props change (e.g. after router.refresh)
   useEffect(() => {
     setCampaigns(initialCampaigns);
@@ -72,6 +98,10 @@ export default function BroadcastsClient({ campaigns: initialCampaigns, audience
   const handleCampaignCreated = useCallback(async () => {
     setIsModalOpen(false);
     // Small delay so DB write is committed before we fetch
+
+    setPrefillName(undefined);
+    setPrefillBody(undefined);
+
     await new Promise(resolve => setTimeout(resolve, 300));
     await refreshCampaigns();
   }, [refreshCampaigns]);
@@ -129,6 +159,12 @@ export default function BroadcastsClient({ campaigns: initialCampaigns, audience
     return () => clearInterval(interval);
   }, [campaigns, refreshCampaigns]);
 
+  const openCampaignWithPrefill = (name?: string, body?: string) => {
+    setPrefillName(name);
+    setPrefillBody(body);
+    setIsModalOpen(true);
+  };
+
   return (
     <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       <HeaderSection onNewCampaign={() => setIsModalOpen(true)} />
@@ -142,6 +178,9 @@ export default function BroadcastsClient({ campaigns: initialCampaigns, audience
         onClose={() => setIsModalOpen(false)}
         audiences={audiences}
         onCampaignCreated={handleCampaignCreated}
+        prefillName={prefillName}  
+        prefillBody={prefillBody}
+        prefillAudience={prefillAudience}
       />
     </main>
   );

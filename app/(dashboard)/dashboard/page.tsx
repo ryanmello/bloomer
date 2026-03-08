@@ -5,56 +5,98 @@ import InventoryStatus from "@/components/dashboard/InventoryStatus";
 import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import { DollarSign, ShoppingBag, Users, Package } from "lucide-react";
 import CustomerOccasions from "@/components/dashboard/CustomerOccasions";
+import { getCurrentUser } from "@/actions/getCurrentUser";
+import { fetchSquareOrders, fetchSquareCustomerCount } from "@/lib/square";
+import db from "@/lib/prisma";
 
-// Force dynamic rendering - fetch fresh data on each request
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const metrics = {
-    revenue: { value: "$42,380", change: 12.5 },
-    orders: { value: 318, change: 4.2 },
-    customers: { value: 1_842, change: 8.3 },
-    inventory: { value: 2_913, change: -1.7 },
-  };
+  const user = await getCurrentUser();
+
+  let squareConnected = false;
+  let squareData = null;
+  let customerData = null;
+
+  if (user) {
+    const integration = await db.squareIntegration.findUnique({
+      where: { userId: user.id },
+    });
+    squareConnected = !!integration?.connected;
+
+    if (squareConnected) {
+      [squareData, customerData] = await Promise.all([
+        fetchSquareOrders(user.id),
+        fetchSquareCustomerCount(user.id),
+      ]);
+    }
+  }
+
+  const monthlyRevenue = squareData?.monthlyRevenue ?? [];
+  const lastMonth =
+    monthlyRevenue.length > 0 ? monthlyRevenue[monthlyRevenue.length - 1] : null;
+  const prevMonth =
+    monthlyRevenue.length > 1 ? monthlyRevenue[monthlyRevenue.length - 2] : null;
+
+  const totalRevenue = monthlyRevenue.reduce((sum, m) => sum + m.revenue, 0);
+  const revenueChange =
+    prevMonth && lastMonth && prevMonth.revenue > 0
+      ? ((lastMonth.revenue - prevMonth.revenue) / prevMonth.revenue) * 100
+      : undefined;
+
+  const totalOrders = squareData?.totalCompletedOrders ?? 0;
+  const ordersChange =
+    prevMonth && lastMonth && prevMonth.orders > 0
+      ? ((lastMonth.orders - prevMonth.orders) / prevMonth.orders) * 100
+      : undefined;
+
+  const totalCustomers = customerData?.totalCustomers ?? 0;
+  const customersChange =
+    customerData && customerData.newLastMonth > 0
+      ? ((customerData.newThisMonth - customerData.newLastMonth) /
+          customerData.newLastMonth) *
+        100
+      : undefined;
+
+  const recentOrders = squareData
+    ? [...squareData.completedOrders].reverse().slice(0, 10)
+    : null;
+
+  const formatCurrency = (amount: number) =>
+    `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
     <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
-      {/* Top header with Square status + Sync All / Configure */}
-      {/* <DashboardHeader
-        connected={true}
-        lastSyncIso={new Date().toISOString()}
-      /> */}
-
-      {/* Metric cards */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 w-full">
         <MetricCard
           title="Total Revenue"
-          value={metrics.revenue.value}
-          changePct={metrics.revenue.change}
+          value={squareData ? formatCurrency(totalRevenue) : "--"}
+          changePct={revenueChange}
           icon={DollarSign}
         />
         <MetricCard
           title="Orders"
-          value={metrics.orders.value}
-          changePct={metrics.orders.change}
+          value={squareData ? totalOrders : "--"}
+          changePct={ordersChange}
           icon={ShoppingBag}
         />
         <MetricCard
           title="Customers"
-          value={metrics.customers.value}
-          changePct={metrics.customers.change}
+          value={customerData ? totalCustomers.toLocaleString() : "--"}
+          changePct={customersChange}
           icon={Users}
         />
         <MetricCard
           title="Inventory Items"
-          value={metrics.inventory.value}
-          changePct={metrics.inventory.change}
+          value={2_913}
+          changePct={-1.7}
           icon={Package}
         />
       </section>
+
       <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
-        <TrendGraph />
-        <RecentActivity />
+        <TrendGraph monthlyRevenue={squareData ? monthlyRevenue : null} />
+        <RecentActivity recentOrders={recentOrders} />
       </div>
 
       <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
@@ -63,8 +105,6 @@ export default async function DashboardPage() {
       </div>
 
       <CustomerOccasions />
-
-      {/* ...rest of your dashboard sections (tables, charts, etc.) */}
     </main>
   );
 }

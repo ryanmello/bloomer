@@ -29,6 +29,7 @@ import MetricCard from "@/components/dashboard/MetricCard"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import clsx from "clsx"
+import { useRouter } from 'next/navigation';
 
 type Question = {
   id: string
@@ -54,9 +55,28 @@ type FormRow = {
   conversions: number
   updatedAt: string // ISO date
   changePct?: number
+
+  audiences?: { id: string; name: string }[]
+  
 }
 
+type Submission = {
+  id: string
+  formId: string
+  answers: Record<string, any> 
+  createdAt: string
+}
 
+type DisplayAnswer = {
+  questionId: string
+  questionText: string
+  type: "short" | "mcq" | "truefalse"
+  answer: string | string[] 
+}
+
+type DisplaySubmission = Submission & {
+  displayAnswers: DisplayAnswer[]
+}
 
 // ----- Small utilities -----
 function useDebounced<T>(value: T, delay = 250) {
@@ -96,12 +116,31 @@ export default function Forms() {
   const [newFormAccess, setNewFormAccess] = useState<FormAccess>("public")
   const [newFormQuestions, setNewFormQuestions] = useState<Question[]>([])
   const [editQuestions, setEditQuestions] = useState<Question[]>(editingForm?.questions || [])
+  const [editAccess, setEditAccess] = useState<FormAccess | undefined>(editingForm?.access)
+  const [editStatus, setEditStatus] = useState(editingForm?.status)
+  const [editSubmissions, setEditSubmissions] = useState(editingForm?.submissions || 0)
+  const [editTitle, setEditTitle] = useState(editingForm?.title || "");
+  const [editDescription, setEditDescription] = useState(editingForm?.description || "");
+
 
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [shareForm, setShareForm] = useState<FormRow | null>(null) 
   const [audiences, setAudiences] = useState<{ id: string; name: string }[]>([])
   const [selectedAudiences, setSelectedAudiences] = useState<string[]>([]) 
 
+  const [previewForm, setPreviewForm] = useState<FormRow | null>(null)
+
+  const [submissionsModalOpen, setSubmissionsModalOpen] = useState(false)
+  const [currentSubmissions, setCurrentSubmissions] = useState<DisplaySubmission[]>([])
+  const [selectedForm, setSelectedForm] = useState<FormRow | null>(null)
+
+  const [viewingSubmission, setViewingSubmission] = useState<DisplaySubmission | null>(null);
+  
+  const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
+  const [permissionsSelectedAudiences, setPermissionsSelectedAudiences] = useState<string[]>([]);
+
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
+  const [statsForm, setStatsForm] = useState<FormRow | null>(null);  
   // ----- filters + search -----
   const TABS: { key: "active" | "template" | "custom" | "all"; label: string }[] = [
     { key: "active", label: "Active" },
@@ -126,11 +165,18 @@ export default function Forms() {
   const [pageSize, setPageSize] = useState(12)
   const [page, setPage] = useState(1)
 
-   useEffect(() => {
-      if (editingForm) {
-        setEditQuestions(editingForm.questions || [])
-      }
-   }, [editingForm])
+  const router = useRouter();
+
+  useEffect(() => {
+  if (editingForm) {
+    setEditQuestions(editingForm.questions || [])
+    setEditAccess(editingForm.access )
+    setEditStatus(editingForm.status)
+    setEditTitle(editingForm.title)
+    setEditDescription(editingForm.description || "")
+    setPermissionsSelectedAudiences(editingForm.audiences?.map(a => a.id) || [])
+  }
+}, [editingForm])
 
    useEffect(() => {
     async function fetchForms() {
@@ -216,8 +262,14 @@ export default function Forms() {
 
   // Edit modal
   const handleOpenEdit = (form: FormRow) => {
-    setEditingForm(form)
-    setEditModalOpen(true)
+      setEditingForm(form)
+      setEditTitle(form.title)
+      setEditDescription(form.description || "")
+      setEditQuestions(form.questions || [])
+      setEditAccess(form.access)
+      setEditStatus(form.status)
+      setPermissionsSelectedAudiences(form.audiences?.map(a => a.id) || [])
+      setEditModalOpen(true)
   }
 
   // Update
@@ -231,7 +283,11 @@ export default function Forms() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...editingForm,
-        questions: editQuestions, 
+         access: editAccess,  
+         status: editStatus,
+         submissions: editSubmissions,                 
+        questions: editQuestions,
+        audienceIds: editingForm.audiences?.map(a => a.id) || [], 
         updatedAt: new Date().toISOString(),
       }),
     })
@@ -371,8 +427,86 @@ export default function Forms() {
     return { totalForms, activeForms, totalViews, totalSubmissions, totalConversions, conversionRate }
   }, [filtered])
 
+  const handleViewSubmissions = async (form: FormRow) => {
+    try {
+      const res = await fetch(`/api/forms/${form.id}/submissions`);
+      if (!res.ok) throw new Error("Failed to fetch submissions");
+
+      const data: {
+        id: string;
+        formId: string;
+        answers: { questionId: string; answer: any }[];
+        createdAt: string;
+      }[] = await res.json();
+
+      const mapped: DisplaySubmission[] = data.map((sub) => {
+        const answerMap: Record<string, any> = {};
+        sub.answers.forEach((a) => {
+          answerMap[a.questionId] = a.answer;
+        });
+
+        const displayAnswers: DisplayAnswer[] = sub.answers
+          .map((a) => {
+            const question = form.questions.find((q) => q.id === a.questionId);
+            if (!question) return null;
+
+            let answer: string | string[] = "";
+
+            switch (question.type) {
+              case "mcq": {
+                const opts = question.options ?? [];
+                if (Array.isArray(a.answer)) {
+                  answer = a.answer
+                    .map((ans) =>
+                      !isNaN(Number(ans)) ? opts[Number(ans)] : String(ans)
+                    )
+                    .filter(Boolean);
+                } else if (!isNaN(Number(a.answer))) {
+                  answer = opts[Number(a.answer)] ? [opts[Number(a.answer)]] : [];
+                } else {
+                  answer = [String(a.answer)];
+                }
+                break;
+              }
+
+              case "truefalse":
+                answer = a.answer === true || a.answer === "true" ? "true" : "false";
+                break;
+
+              case "short":
+                answer = String(a.answer ?? "");
+                break;
+            }
+
+            return {
+              questionId: a.questionId,
+              questionText: question.text,
+              type: question.type,
+              answer,
+            };
+          })
+          .filter(Boolean) as DisplayAnswer[];
+
+        return {
+          id: sub.id,
+          formId: sub.formId,
+          answers: answerMap,
+          createdAt: sub.createdAt,
+          displayAnswers,
+        };
+      });
+
+      setSelectedForm(form);
+      setCurrentSubmissions(mapped);
+      setSubmissionsModalOpen(true);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load submissions");
+    }
+  };
+
   useEffect(() => {
-    if (shareModalOpen) {
+    if (shareModalOpen || permissionsModalOpen ) {
       async function fetchAudiences() {
         try {
           const res = await fetch("/api/audience")
@@ -386,7 +520,7 @@ export default function Forms() {
       }
       fetchAudiences()
     }
-  }, [shareModalOpen])
+  }, [shareModalOpen, permissionsModalOpen ])
 
   return (
     <div className="p-6 relative">
@@ -436,46 +570,64 @@ export default function Forms() {
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">Status</label>
-                <Select value={newFormStatus} onValueChange={(value) => setNewFormStatus(value as FormStatus)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="template">Template</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Access</label>
-                <Select value={newFormAccess} onValueChange={(v) => setNewFormAccess(v as FormAccess)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="public">Public</SelectItem>
-                    <SelectItem value="verified">Verified</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Questions</label>
-                <div className="max-h-60 overflow-y-auto space-y-2">
-               
-
+              <div className="flex gap-4 items-end">
+                {/* Status */}
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-2 block">Status</label>
+                  <Select value={newFormStatus} onValueChange={(v) => setNewFormStatus(v as FormStatus)}>
+                    <SelectTrigger>
+                      <SelectValue>{newFormStatus}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="template">Template</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                {/* Access */}
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-2 block">Access</label>
+                  <Select value={newFormAccess} onValueChange={(v) => setNewFormAccess(v as FormAccess)}>
+                    <SelectTrigger>
+                      <SelectValue>{newFormAccess}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">Public</SelectItem>
+                      <SelectItem value="verified">Verified</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Permissions */}
+                <div className="flex-none">
+                  <label className="text-sm font-medium mb-2 block">Permissions</label>
+                  <Button
+                    size="sm"
+                    type="button"
+                    onClick={() => {
+                      setPermissionsSelectedAudiences(selectedAudiences) 
+                      setPermissionsModalOpen(true)
+                    }}
+                  >
+                    Set Permissions
+                  </Button>
+                </div>
+              </div>
+
+               <div>
+                <label className="text-sm font-medium mb-2 block">Questions</label>
+            
                 <Button 
                   type="button"
                   onClick={() => setNewFormQuestions([...newFormQuestions, { id: crypto.randomUUID(), type: "short", text: "" }])}>
                   Add Question
                 </Button>
-              </div>
+               </div>
 
-
-              <div className="flex flex-col gap-2 max-h-30 overflow-y-auto border p-2 rounded-md">
+              {newFormQuestions.length > 0 && (
+              <div className="flex flex-col gap-2 max-h-60 overflow-y-auto border p-2 rounded-md">
               {newFormQuestions.map((q, i) => (
                 <div key={q.id} className="flex flex-col gap-2 mb-2 border p-2 rounded-md">
                   <div className="flex gap-2">
@@ -589,7 +741,32 @@ export default function Forms() {
                 </div>
               ))}
               </div>
+              )}
               <div className="flex gap-2 mt-2">
+
+               <Button
+                  type="button"
+                  variant="outline"
+                  aria-label="Preview form"
+                  className="flex items-center gap-2"
+                  onClick={() => {
+                    const formData = {
+                      title: newFormTitle,
+                      description: newFormDescription,
+                      questions: newFormQuestions,
+                    } as any;
+
+                    if (formData.title?.trim() || formData.description?.trim() || formData.questions.length > 0) {
+                      setPreviewForm(formData);
+                    } else {
+                      toast("Nothing to preview");
+                    }
+                  }}
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>Preview</span>
+                </Button>
+
                 <Button type="submit" className="flex-1" disabled={!newFormTitle.trim()}>
                   Save Form
                 </Button>
@@ -625,52 +802,121 @@ export default function Forms() {
             >
               <X className="w-4 h-4" />
             </Button>
+
             <CardTitle>Edit Form</CardTitle>
             <CardDescription className="mb-4">Update the details for your form</CardDescription>
 
-            <form className="flex flex-col gap-4" onSubmit={handleUpdateForm}>
+            <form
+              className="flex flex-col gap-4"
+              onSubmit={async (e) => {
+                e.preventDefault()
+                if (!editingForm) return
+
+                try {
+                  const res = await fetch(`/api/forms/${editingForm.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      ...editingForm,
+                      title: editTitle,
+                      description: editDescription,
+                      questions: editQuestions,
+                      access: editAccess,
+                      status: editStatus,
+                      audienceIds: permissionsSelectedAudiences,
+                      updatedAt: new Date().toISOString(),
+                    }),
+                  })
+                  if (!res.ok) throw new Error("Failed to update form")
+                  const updatedForm = await res.json()
+                  setForms((prev) => prev.map((f) => (f.id === updatedForm.id ? updatedForm : f)))
+                  setEditModalOpen(false)
+                  setEditingForm(null)
+                  toast.success("Form updated successfully!")
+                } catch (err) {
+                  console.error(err)
+                  toast.error("Failed to update form")
+                }
+              }}
+            >
+              {/* Title */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Form Title *</label>
                 <input
                   type="text"
-                  placeholder="Enter form title"
-                  value={editingForm.title}
-                  onChange={(e) => setEditingForm({ ...editingForm, title: e.target.value })}
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
                   className="border rounded-md p-2 w-full bg-background"
                   required
                 />
               </div>
 
+              {/* Description */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Description</label>
                 <textarea
-                  placeholder="Enter form description (optional)"
-                  value={editingForm.description || ""}
-                  onChange={(e) => setEditingForm({ ...editingForm, description: e.target.value })}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
                   className="border rounded-md p-2 w-full bg-background"
                   rows={3}
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">Status</label>
-                <Select
-                  value={editingForm.status}
-                  onValueChange={(value) => setEditingForm({ ...editingForm, status: value as FormStatus })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="template">Template</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
+        
+              <div className="flex gap-4 items-end">
+                {/* Status */}
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-2 block">Status</label>
+                  <Select value={editStatus} onValueChange={(v) => setEditStatus(v as FormStatus)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="template">Template</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Access */}
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-2 block">Access</label>
+                  <Select value={editAccess} onValueChange={(v) => setEditAccess(v as FormAccess)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">Public</SelectItem>
+                      <SelectItem value="verified">Verified</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Permissions */}
+                <div className="flex-none">
+                  <label className="text-sm font-medium mb-2 block">Permissions</label>
+                  <Button
+                    size="sm"
+                    type="button"
+                    onClick={() => {
+                      setPermissionsSelectedAudiences(editingForm.audiences?.map(a => a.id) || [])
+                      setPermissionsModalOpen(true)
+                    }}
+                  >
+                    Set Permissions
+                  </Button>
+                </div>
               </div>
 
+              {/* Questions editor */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Questions</label>
+                <Button
+                  type="button"
+                  onClick={() => setEditQuestions([...editQuestions, { id: crypto.randomUUID(), type: "short", text: "" }])}
+                >
+                  Add Question
+                </Button>
+              </div>
+
+              {editQuestions.length > 0 && (
                 <div className="flex flex-col gap-2 max-h-60 overflow-y-auto border p-2 rounded-md">
                   {editQuestions.map((q, i) => (
                     <div key={q.id} className="flex flex-col gap-2 mb-2 border p-2 rounded-md">
@@ -680,20 +926,19 @@ export default function Forms() {
                           placeholder="Question text"
                           value={q.text}
                           onChange={(e) => {
-                            const copy = [...editQuestions];
-                            copy[i].text = e.target.value;
-                            setEditQuestions(copy);
+                            const copy = [...editQuestions]
+                            copy[i].text = e.target.value
+                            setEditQuestions(copy)
                           }}
                           className="border rounded-md p-2 flex-1"
                         />
                         <Select
                           value={q.type}
                           onValueChange={(v) => {
-                            const copy = [...editQuestions];
-                            copy[i].type = v as Question["type"];
-                            if (v === "mcq" && !copy[i].options) 
-                              copy[i].options = ["", ""];
-                            setEditQuestions(copy);
+                            const copy = [...editQuestions]
+                            copy[i].type = v as Question["type"]
+                            if (v === "mcq" && !copy[i].options) copy[i].options = ["", ""]
+                            setEditQuestions(copy)
                           }}
                         >
                           <SelectTrigger><SelectValue /></SelectTrigger>
@@ -703,103 +948,16 @@ export default function Forms() {
                             <SelectItem value="truefalse">True/False</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button
-                          variant="ghost"
-                          onClick={() => setEditQuestions(editQuestions.filter((_, idx) => idx !== i))}
-                        >
-                          Delete
-                        </Button>
+                        <Button variant="ghost" onClick={() => setEditQuestions(editQuestions.filter((_, idx) => idx !== i))}>Delete</Button>
                       </div>
-
-                      {/* MCQ Options + Multi-select */}
-                      {q.type === "mcq" && (
-                        <div className="flex flex-col gap-2 ml-4">
-                          {/* Multi-select toggle */}
-                          <div className="flex items-center gap-2 mb-2">
-                            <input
-                              type="checkbox"
-                              id={`multi-${q.id}`}
-                              checked={q.multiSelect || false}
-                              onChange={(e) => {
-                                const copy = [...editQuestions];
-                                copy[i].multiSelect = e.target.checked;
-                                setEditQuestions(copy);
-                              }}
-                            />
-                            <label htmlFor={`multi-${q.id}`} className="text-sm">
-                              Allow multiple selections
-                            </label>
-                          </div>
-
-                          {/* Options editor */}
-                          <div className="flex flex-col gap-2 max-h-40 overflow-y-auto border p-2 rounded-md">
-                            {q.options!.map((opt, oi) => (
-                              <div key={oi} className="flex gap-2">
-                                <input
-                                  type="text"
-                                  placeholder={`Option ${oi + 1}`}
-                                  value={opt}
-                                  onChange={(e) => {
-                                    const copy = [...editQuestions];
-                                    copy[i].options![oi] = e.target.value;
-                                    setEditQuestions(copy);
-                                  }}
-                                  className="border rounded-md p-2 flex-1"
-                                />
-                                <Button
-                                  variant="ghost"
-                                  onClick={() => {
-                                    const copy = [...editQuestions];                                    
-                                    copy[i].options!.splice(oi, 1);                                    
-                                    if (copy[i].selectedOptions)
-                                      copy[i].selectedOptions = copy[i].selectedOptions!.filter(o => o !== opt);
-                                    setEditQuestions(copy);
-                                  }}
-                                >
-                                  Delete
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-
-                          <Button
-                            type="button"
-                            onClick={() => {
-                              const copy = [...editQuestions];
-                              copy[i].options!.push("");
-                              setEditQuestions(copy);
-                            }}
-                          >
-                            Add Option
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* True/False */}
-                      {q.type === "truefalse" && (
-                        <div className="ml-4 text-sm text-muted-foreground">
-                          True/False question
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
+              )}
 
-                <Button
-                  type="button"
-                  onClick={() =>
-                    setEditQuestions([...editQuestions, { id: crypto.randomUUID(), type: "short", text: "" }])
-                  }
-                  className="mt-2"
-                >
-                  Add Question
-                </Button>
-              </div>
-
+              
               <div className="flex gap-2 mt-2">
-                <Button type="submit" className="flex-1">
-                  Update Form
-                </Button>
+                <Button type="submit" className="flex-1">Update Form</Button>
                 <Button
                   type="button"
                   variant="outline"
@@ -814,9 +972,7 @@ export default function Forms() {
             </form>
           </Card>
         </div>
-      )
-      
-      }
+      )}
 
       {shareModalOpen && shareForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -842,7 +998,6 @@ export default function Forms() {
                 <Button onClick={async () => {
                   try {
                     await navigator.share({ title: shareForm.title, text: `Check out this form: ${shareForm.title}`, url: formUrl(shareForm.id) });
-                    toast.success("Form shared successfully!");
                     setShareModalOpen(false);
                   } catch { toast.error("Share cancelled or failed"); }
                 }}>
@@ -874,12 +1029,20 @@ export default function Forms() {
                 </div>
               </div>
 
-              <Button onClick={() => {
-                toast.success(`Form shared with ${selectedAudiences.length} audience(s)!`);
-                setShareModalOpen(false);
-                setSelectedAudiences([]);
-              }}>
-                Share with Audiences
+              <Button
+                onClick={() => {
+                
+                  const prefillName = encodeURIComponent(shareForm.title);
+                  const prefillBody = encodeURIComponent(formUrl(shareForm.id));;
+                  const prefillAudience = encodeURIComponent(selectedAudiences.join(','));
+
+                  setShareModalOpen(false);
+                  setSelectedAudiences([]);
+
+                  router.push(`/broadcasts?prefillName=${prefillName}&prefillBody=${prefillBody}&prefillAudience=${prefillAudience}`);
+                }}
+              >
+                Share with Audiences via Email
               </Button>
             </div>
           </Card>
@@ -887,6 +1050,360 @@ export default function Forms() {
       )}
       
 
+      {/*  Permissions Modal */}
+      {permissionsModalOpen && editingForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-3/4 max-w-md p-6 relative bg-background">
+            <Button
+              size="sm"
+              className="absolute top-4 right-4"
+              onClick={() => setPermissionsModalOpen(false)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+
+            <CardTitle>Set Form Permissions</CardTitle>
+            <CardDescription className="mb-4">
+              Choose which audiences can access this form
+              <br /><br />
+              After setting permissions, update the form to save
+            </CardDescription>
+
+            <div className="flex flex-col gap-2 max-h-64 overflow-y-auto border p-2 rounded-md">
+              {audiences.length > 0 ? (
+                audiences.map((a) => (
+                  <label key={a.id} className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={permissionsSelectedAudiences.includes(a.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) setPermissionsSelectedAudiences([...permissionsSelectedAudiences, a.id])
+                          else setPermissionsSelectedAudiences(permissionsSelectedAudiences.filter(id => id !== a.id))
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span>{a.name}</span>
+                    </div>
+                    <span className="ml-auto text-sm text-white">
+                      {(a as any).customerCount ?? 0} {((a as any).customerCount ?? 0) === 1 ? "customer" : "customers"}
+                    </span>
+                  </label>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No audiences available</p>
+              )}
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <Button
+                onClick={() => {
+                  setEditingForm({
+                    ...editingForm,
+                    audiences: audiences.filter(a => permissionsSelectedAudiences.includes(a.id)),
+                  })
+                  setPermissionsModalOpen(false)
+                }}
+                className="flex-1"
+              >
+                Done
+              </Button>
+              <Button variant="outline" onClick={() => setPermissionsModalOpen(false)} className="flex-1">Cancel</Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      {previewForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-2xl max-h-[90vh] p-6 relative overflow-auto">
+            <Button
+              size="sm"
+              className="absolute top-4 right-4"
+              onClick={() => setPreviewForm(null)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+
+            <CardTitle className="text-3xl font-bold mb-2">{previewForm.title}</CardTitle>
+            {previewForm.description && (
+              <CardDescription className="text-lg mb-4">
+                {previewForm.description}
+              </CardDescription>
+            )}
+
+            <div className="flex flex-col space-y-6 mt-4">
+              {previewForm.questions.map((q, index) => (
+                <div key={q.id}>
+                  <label className="block font-medium mb-2">
+                    {index + 1}. {q.text}
+                  </label>
+
+                  {/* Short answer */}
+                  {q.type === "short" && (
+                    <input
+                      type="text"
+                      placeholder="Your answer..."
+                      className="border rounded-md p-2 w-full bg-background text-foreground"
+                    />
+                  )}
+
+                  {/* True/False */}
+                  {q.type === "truefalse" && (
+                    <div className="flex flex-col gap-2 ml-2">
+                      {["True", "False"].map((val) => (
+                        <label key={val} className="flex items-center gap-2">
+                          <input type="radio" name={q.id} />
+                          <span className="text-foreground">{val}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* MCQ */}
+                  {q.type === "mcq" && q.options && (
+                    <div className="flex flex-col gap-2 ml-2">
+                      {q.multiSelect
+                        ? q.options.map((opt, i) => (
+                            <label key={i} className="flex items-center gap-2">
+                              <input type="checkbox" />
+                              <span className="text-foreground">{opt}</span>
+                            </label>
+                          ))
+                        : q.options.map((opt, i) => (
+                            <label key={i} className="flex items-center gap-2">
+                              <input type="radio" name={q.id} />
+                              <span className="text-foreground">{opt}</span>
+                            </label>
+                          ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {/* Submit Button */}
+              <Button type="submit" className="mt-4 self-end">
+                Submit
+              </Button>
+            </div>
+            
+          </Card>
+        </div>
+      )}
+
+     
+      {/* Submissions Modal */}
+        {submissionsModalOpen && selectedForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <Card className="w-3/4 max-w-3xl p-6 relative overflow-auto">
+              <Button
+                size="sm"
+                className="absolute top-4 right-4"
+                onClick={() => setSubmissionsModalOpen(false)}
+              >
+                Close
+              </Button>
+
+              <CardTitle>Submissions for {selectedForm.title}</CardTitle>
+              {selectedForm.description && (
+                <p className="mt-2 text-sm text-muted-foreground">{selectedForm.description}</p>
+              )}
+
+              {currentSubmissions.length > 0 && (
+                <div className="mt-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setStatsForm(selectedForm);
+                      setStatsModalOpen(true);
+                    }}
+                  >
+                    View Statistics
+                  </Button>
+                </div>
+              )}
+
+              {currentSubmissions.length === 0 ? (
+                <p className="mt-4 text-sm text-muted-foreground">No submissions yet</p>
+              ) : (
+                <div className="mt-4 space-y-2">
+                  {currentSubmissions
+                    .slice() 
+                    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                    .map((sub, index) => (
+                      <div key={sub.id} className="border rounded p-2 flex justify-between items-center">
+                        <span className="font-medium">{index + 1}.</span>
+                        <Button size="sm" onClick={() => setViewingSubmission(sub)}>
+                          View
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
+
+        {/* Viewing Single Submission */}
+        {viewingSubmission && selectedForm && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
+            <Card className="w-3/4 max-w-3xl p-6 relative overflow-auto">
+              <Button
+                size="sm"
+                className="absolute top-4 right-4"
+                onClick={() => setViewingSubmission(null)}
+              >
+                Close
+              </Button>
+
+              <CardTitle>Submission Details</CardTitle>
+              <p className="text-sm text-muted-foreground mb-4">
+                Submitted at: {new Date(viewingSubmission.createdAt).toLocaleString()}
+              </p>
+
+              <div className="mt-4 space-y-6">
+                {selectedForm.questions.map((q, index) => {
+                  const ans = viewingSubmission.displayAnswers.find(a => a.questionId === q.id);
+
+                  return (
+                    <div key={q.id} className="flex flex-col gap-2">
+                      <label className="block font-medium">
+                        {index + 1}. {q.text}
+                      </label>
+
+                      {!ans ? (
+                        <p className="p-2 border rounded-md bg-background text-muted-foreground">
+                          No answer submitted
+                        </p>
+                      ) : q.type === "short" ? (
+                        <input
+                          type="text"
+                          value={ans.answer as string}
+                          disabled
+                          className="border rounded-md p-2 w-full bg-background"
+                        />
+                      ) : q.type === "truefalse" ? (
+                        <div className="flex flex-col gap-2 ml-2">
+                          {["true", "false"].map(val => (
+                            <label key={val} className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name={q.id}
+                                checked={ans.answer === val}
+                                disabled
+                              />
+                              <span>{val.charAt(0).toUpperCase() + val.slice(1)}</span>
+                            </label>
+                          ))}
+                        </div>
+                      ) : q.type === "mcq" && q.options ? (
+                        <div className="flex flex-col gap-2 ml-2">
+                          {q.options.map(opt => {
+                            const isChecked = q.multiSelect
+                              ? Array.isArray(ans.answer) && (ans.answer as string[]).includes(opt)
+                              : Array.isArray(ans.answer)
+                                ? ans.answer[0] === opt
+                                : ans.answer === opt;
+
+                            return (
+                              <label key={opt} className="flex items-center gap-2">
+                                <input
+                                  type={q.multiSelect ? "checkbox" : "radio"}
+                                  name={q.id}
+                                  checked={isChecked}
+                                  readOnly
+                                  
+                                />
+                                <span>{opt}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </div>
+        )}
+
+
+        {/* Statistics Modal */}
+        {statsModalOpen && statsForm && (
+          <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/50">
+            <Card className="w-3/4 max-w-3xl p-6 relative overflow-auto max-h-[90vh]">
+              
+              <Button
+                size="sm"
+                className="absolute top-4 right-4"
+                onClick={() => setStatsModalOpen(false)}
+              >
+                Close
+              </Button>
+
+              <CardTitle>Statistics for {statsForm.title}</CardTitle>
+              {statsForm.description && (
+                <p className="mt-2 text-sm text-muted-foreground">{statsForm.description}</p>
+              )}
+
+              {/* Questions */}
+              <div className="flex flex-col gap-6 mt-6">
+                {statsForm.questions.map((q, idx) => (
+                  <div key={q.id} className="flex flex-col gap-2">
+                    <p className="font-medium">{idx + 1}. {q.text}</p>
+
+                    {/* Multiple Choice or True/False */}
+                    {(q.type === "mcq" || q.type === "truefalse") && (
+                      <div className="flex flex-col gap-2 ml-2">
+                        {(q.options || (q.type === "truefalse" ? ["true", "false"] : [])).map(opt => {
+                          const count = currentSubmissions.filter(sub => {
+                            const ans = sub.displayAnswers.find(a => a.questionId === q.id)?.answer;
+                            if (q.multiSelect && Array.isArray(ans)) return ans.includes(opt);
+                            return ans === opt || (Array.isArray(ans) && ans[0] === opt);
+                          }).length;
+                          const total = currentSubmissions.length;
+                          const percent = total > 0 ? (count / total) * 100 : 0;
+
+                          return (
+                            <div key={opt} className="flex items-center gap-2">
+                              <span className="w-32">{opt.charAt(0).toUpperCase() + opt.slice(1)}</span>
+                              <div className="flex-1 h-5 bg-gray-200 rounded">
+                                <div
+                                  className="h-5 bg-blue-500 rounded"
+                                  style={{ width: `${percent}%` }}
+                                ></div>
+                              </div>
+                              <span className="w-16 text-sm text-right">
+                                {count} ({Math.round(percent)}%)
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Short Answer */}
+                    {q.type === "short" && (
+                      <div className="ml-2 flex flex-col gap-1 max-h-40 overflow-auto border rounded p-2 bg-background">
+                        {currentSubmissions
+                          .map(sub => sub.displayAnswers.find(a => a.questionId === q.id)?.answer as string)
+                          .filter(Boolean)
+                          .map((ans, i) => (
+                            <p key={i} className="text-sm border-b last:border-b-0 p-1">{ans}</p>
+                          ))}
+                        {currentSubmissions.every(sub => !sub.displayAnswers.find(a => a.questionId === q.id)?.answer) && (
+                          <p className="text-sm text-muted-foreground">No answers submitted yet</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        )}
 
       <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
         {/* Metric cards */}
@@ -1107,6 +1624,27 @@ export default function Forms() {
                           <Button className="flex-1" variant="secondary" onClick={() => handleOpenEdit(f)}>
                             <Pencil className="h-4 w-4 mr-2" /> Edit
                           </Button>
+                          
+                          {/*Preview*/}
+
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              if (
+                                f.title?.trim() ||
+                                f.description?.trim() ||
+                                (f.questions && f.questions.length > 0)
+                              ) {
+                                setPreviewForm(f);
+                              } else {
+                                toast("Nothing to preview");
+                              }
+                            }}
+                            aria-label="Preview form"
+                            title="Preview form"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
 
                           {/* Copy */}
                           <Button
@@ -1154,6 +1692,19 @@ export default function Forms() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
+
+                          {/* View Submissions */}
+                          <Button
+                            variant="outline"
+                            className="mt-3 w-full flex items-center justify-center gap-2"
+                            onClick={() => handleViewSubmissions(f)}
+                            aria-label="View submissions"
+                            title="Submissions"
+                          >
+                            <Inbox className="h-4 w-4" /> 
+                            View Submissions
+                          </Button>
+
                         </div>
                       </Card>
                     ))}
@@ -1224,6 +1775,10 @@ export default function Forms() {
                                   <Button size="sm" variant="secondary" onClick={() => handleOpenEdit(f)}>
                                     <Pencil className="h-4 w-4 mr-2" /> Edit
                                   </Button>
+                                  <Button size="sm" variant="outline" onClick={() => setPreviewForm(f)} title="Preview">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+
                                   <Button size="sm" variant="outline" onClick={() => handleCopy(f)} title="Copy link">
                                     {copiedId === f.id ? (
                                       <span className="text-xs font-medium">Copied</span>
@@ -1257,8 +1812,8 @@ export default function Forms() {
               </div>
             </div>
           )}
-        </section>
+        </section>       
       </main>
-    </div>
+    </div> 
   )
 }
