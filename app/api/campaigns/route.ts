@@ -113,28 +113,35 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const targetCustomers = targetAudience
+    // Fetch customers (MongoDB: unsubscribedAt may be missing on existing docs, so filter in code)
+    const rawCustomers = targetAudience
       ? await db.customer.findMany({
-        where: {
-          shopId: shopId,
-          id: { in: targetAudience.customerIds }
-        },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true
-        }
-      })
+          where: {
+            shopId: shopId,
+            id: { in: targetAudience.customerIds },
+          },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            unsubscribedAt: true,
+          },
+        })
       : await db.customer.findMany({
-        where: { shopId: shopId },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true
-        }
-      });
+          where: { shopId: shopId },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            unsubscribedAt: true,
+          },
+        });
+
+    const targetCustomers = rawCustomers.filter(
+      (c) => c.unsubscribedAt == null
+    );
 
     // If no customers found, return error
     if (targetCustomers.length === 0) {
@@ -223,7 +230,8 @@ export async function POST(req: NextRequest) {
           subject,
           emailBody,
           shop.name || 'Your Store',
-          shop.email
+          shop.email,
+          shop.address ?? ''
         ).catch(error => {
           console.error('Error sending campaign emails:', error);
           console.error('Error stack:', error?.stack);
