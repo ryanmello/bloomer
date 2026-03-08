@@ -62,6 +62,12 @@ function InboxContent() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [emailToDelete, setEmailToDelete] = useState<Email | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [fullEmail, setFullEmail] = useState<{
+    bodyHtml: string | null;
+    bodyPlain: string | null;
+    snippet: string;
+  } | null>(null);
+  const [loadingFullEmail, setLoadingFullEmail] = useState(false);
 
   // Check connection status on mount
   useEffect(() => {
@@ -251,8 +257,34 @@ function InboxContent() {
 
   const handleEmailClick = (email: Email) => {
     setSelectedEmail(email);
-    // In a real implementation, you would mark as read via API
+    setFullEmail(null);
   };
+
+  const connectedPlatform = integrationStatus.gmail?.connected ? "gmail" : null;
+
+  // Fetch full email content when selection changes
+  useEffect(() => {
+    if (!selectedEmail || !connectedPlatform) return;
+    setLoadingFullEmail(true);
+    const { id: emailId, preview: fallbackSnippet } = selectedEmail;
+    axios
+      .get(`/api/inbox/emails/${emailId}`)
+      .then((res) => {
+        setFullEmail({
+          bodyHtml: res.data.bodyHtml || null,
+          bodyPlain: res.data.bodyPlain || null,
+          snippet: res.data.snippet || "",
+        });
+      })
+      .catch(() => {
+        setFullEmail({
+          bodyHtml: null,
+          bodyPlain: null,
+          snippet: fallbackSnippet,
+        });
+      })
+      .finally(() => setLoadingFullEmail(false));
+  }, [selectedEmail, connectedPlatform]);
 
   const filteredEmails = emails.filter(email =>
     email.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -261,7 +293,6 @@ function InboxContent() {
   );
 
   const unreadCount = emails.filter(e => !e.read).length;
-  const connectedPlatform = integrationStatus.gmail?.connected ? 'gmail' : null;
 
   if (loading) {
     return (
@@ -545,15 +576,24 @@ function InboxContent() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="prose prose-sm max-w-none">
+                  {loadingFullEmail ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : fullEmail?.bodyHtml ? (
+                    <div
+                      className="prose prose-sm max-w-none dark:prose-invert"
+                      dangerouslySetInnerHTML={{ __html: fullEmail.bodyHtml }}
+                    />
+                  ) : fullEmail?.bodyPlain ? (
+                    <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">
+                      {fullEmail.bodyPlain}
+                    </pre>
+                  ) : (
                     <p className="text-muted-foreground whitespace-pre-wrap">
-                      {selectedEmail.preview}
+                      {fullEmail?.snippet || selectedEmail.preview}
                     </p>
-                    <p className="text-muted-foreground mt-4 text-sm">
-                      Full email content would be displayed here. In a production implementation, 
-                      this would fetch the complete email body from the API.
-                    </p>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             ) : (
