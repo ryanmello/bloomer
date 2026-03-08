@@ -1,8 +1,15 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { getUserFromDb } from "@/lib/auth-utils"
- 
+
+// Use secure cookies only when NOT on localhost (fixes session issues in local dev)
+const isLocalhost =
+  !process.env.NEXTAUTH_URL ||
+  process.env.NEXTAUTH_URL.includes("localhost") ||
+  process.env.NEXTAUTH_URL.includes("127.0.0.1")
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  useSecureCookies: !isLocalhost,
   providers: [
     Credentials({
       credentials: {

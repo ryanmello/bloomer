@@ -1,10 +1,19 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Mail, Inbox as InboxIcon, Send, Trash2, Archive, Star, Search, Filter, MailOpen, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useSearchParams } from "next/navigation";
@@ -15,6 +24,8 @@ import clsx from "clsx";
 
 type EmailPlatform = "gmail" | null;
 
+type InboxView = "inbox" | "starred" | "archived";
+
 type Email = {
   id: string;
   from: string;
@@ -23,6 +34,8 @@ type Email = {
   date: string;
   read: boolean;
   starred: boolean;
+  archived?: boolean;
+  canDelete?: boolean;
   important?: boolean;
 };
 
@@ -43,6 +56,12 @@ function InboxContent() {
   const [loading, setLoading] = useState(true);
   const [loadingEmails, setLoadingEmails] = useState(false);
   const [integrationStatus, setIntegrationStatus] = useState<IntegrationStatus>({ gmail: null });
+  const [view, setView] = useState<InboxView>("inbox");
+  const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [emailToDelete, setEmailToDelete] = useState<Email | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Check connection status on mount
   useEffect(() => {
@@ -65,12 +84,47 @@ function InboxContent() {
     }
   }, [searchParams, router]);
 
-  // Fetch emails when platform is connected
+  const fetchEmails = useCallback(
+    async (
+      platformToFetch: "gmail",
+      pageToken?: string,
+      loadMore = false
+    ) => {
+      try {
+        if (loadMore) {
+          setIsLoadingMore(true);
+        } else {
+          setLoadingEmails(true);
+        }
+        const params = new URLSearchParams({
+          platform: platformToFetch,
+          view,
+          ...(pageToken && { pageToken }),
+        });
+        const response = await axios.get(`/api/inbox/emails?${params.toString()}`);
+        const newEmails = response.data.emails || [];
+        const token = response.data.nextPageToken ?? null;
+        setNextPageToken(token);
+        setEmails(loadMore ? (prev) => [...prev, ...newEmails] : newEmails);
+      } catch (error: unknown) {
+        const err = axios.isAxiosError(error) ? error : null;
+        toast.error(err?.response?.data?.error || "Failed to fetch emails");
+        console.error("Fetch emails error:", error);
+      } finally {
+        setLoadingEmails(false);
+        setIsLoadingMore(false);
+      }
+    },
+    [view]
+  );
+
+  // Fetch emails when platform is connected or view changes
   useEffect(() => {
     if (platform && integrationStatus[platform]?.connected) {
-      fetchEmails(platform);
+      setNextPageToken(null);
+      fetchEmails(platform, undefined, false);
     }
-  }, [platform, integrationStatus]);
+  }, [platform, integrationStatus, view, fetchEmails]);
 
   const checkConnectionStatus = async () => {
     try {
@@ -117,16 +171,66 @@ function InboxContent() {
     }
   };
 
-  const fetchEmails = async (platformToFetch: "gmail") => {
+  const handleFavorite = async (email: Email) => {
+    if (actionLoading) return;
+    setActionLoading(email.id);
     try {
-      setLoadingEmails(true);
-      const response = await axios.get(`/api/inbox/emails?platform=${platformToFetch}`);
-      setEmails(response.data.emails || []);
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to fetch emails');
-      console.error('Fetch emails error:', error);
+      await axios.post(`/api/inbox/emails/${email.id}/favorite`, {
+        favorite: !email.starred,
+      });
+      const updated = { ...email, starred: !email.starred };
+      setEmails((prev) =>
+        prev.map((e) => (e.id === email.id ? updated : e))
+      );
+      if (selectedEmail?.id === email.id) setSelectedEmail(updated);
+      toast.success(email.starred ? "Removed from favorites" : "Added to favorites");
+    } catch (error: unknown) {
+      const err = axios.isAxiosError(error) ? error : null;
+      toast.error(err?.response?.data?.error || "Failed to update favorite");
     } finally {
-      setLoadingEmails(false);
+      setActionLoading(null);
+    }
+  };
+
+  const handleArchive = async (email: Email) => {
+    if (actionLoading) return;
+    setActionLoading(email.id);
+    try {
+      await axios.post(`/api/inbox/emails/${email.id}/archive`, {
+        archive: !email.archived,
+      });
+      const updated = { ...email, archived: !email.archived };
+      setEmails((prev) => prev.filter((e) => e.id !== email.id));
+      if (selectedEmail?.id === email.id) setSelectedEmail(null);
+      toast.success(email.archived ? "Restored to inbox" : "Archived");
+    } catch (error: unknown) {
+      const err = axios.isAxiosError(error) ? error : null;
+      toast.error(err?.response?.data?.error || "Failed to archive");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteClick = (email: Email) => {
+    setEmailToDelete(email);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!emailToDelete || actionLoading) return;
+    setActionLoading(emailToDelete.id);
+    try {
+      await axios.post(`/api/inbox/emails/${emailToDelete.id}/delete`);
+      setEmails((prev) => prev.filter((e) => e.id !== emailToDelete.id));
+      if (selectedEmail?.id === emailToDelete.id) setSelectedEmail(null);
+      toast.success("Email moved to trash");
+    } catch (error: unknown) {
+      const err = axios.isAxiosError(error) ? error : null;
+      toast.error(err?.response?.data?.error || "Failed to delete");
+    } finally {
+      setActionLoading(null);
+      setDeleteDialogOpen(false);
+      setEmailToDelete(null);
     }
   };
 
@@ -234,7 +338,11 @@ function InboxContent() {
                       className="pl-10"
                     />
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => fetchEmails(connectedPlatform)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchEmails(connectedPlatform, undefined, false)}
+                  >
                     <Filter className="h-4 w-4 mr-2" />
                     Refresh
                   </Button>
@@ -246,8 +354,10 @@ function InboxContent() {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Inbox</CardTitle>
-                  {unreadCount > 0 && (
+                  <CardTitle className="text-lg">
+                    {view === "inbox" ? "Inbox" : view === "starred" ? "Starred" : "Archived"}
+                  </CardTitle>
+                  {view === "inbox" && unreadCount > 0 && (
                     <Badge variant="default">{unreadCount} unread</Badge>
                   )}
                 </div>
@@ -313,10 +423,11 @@ function InboxContent() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // In real implementation, toggle star via API
+                                  handleFavorite(email);
                                 }}
+                                disabled={actionLoading === email.id}
                                 className={clsx(
-                                  "p-1 rounded hover:bg-accent transition-colors",
+                                  "p-1 rounded hover:bg-accent transition-colors disabled:opacity-50",
                                   email.starred && "text-yellow-500"
                                 )}
                               >
@@ -327,11 +438,50 @@ function InboxContent() {
                                   )}
                                 />
                               </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleArchive(email);
+                                }}
+                                disabled={actionLoading === email.id}
+                                className="p-1 rounded hover:bg-accent transition-colors disabled:opacity-50"
+                              >
+                                <Archive className="h-4 w-4" />
+                              </button>
+                              {email.canDelete !== false && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteClick(email);
+                                  }}
+                                  disabled={actionLoading === email.id}
+                                  className="p-1 rounded hover:bg-accent transition-colors disabled:opacity-50 text-muted-foreground hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
                       ))
                     )}
+                  </div>
+                )}
+                {nextPageToken && !loadingEmails && (
+                  <div className="p-4 border-t">
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() =>
+                        fetchEmails(connectedPlatform, nextPageToken, true)
+                      }
+                      disabled={isLoadingMore}
+                    >
+                      {isLoadingMore ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : null}
+                      Load more
+                    </Button>
                   </div>
                 )}
               </CardContent>
@@ -362,6 +512,8 @@ function InboxContent() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => handleFavorite(selectedEmail)}
+                        disabled={actionLoading === selectedEmail.id}
                       >
                         <Star
                           className={clsx(
@@ -370,12 +522,25 @@ function InboxContent() {
                           )}
                         />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleArchive(selectedEmail)}
+                        disabled={actionLoading === selectedEmail.id}
+                      >
                         <Archive className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {selectedEmail.canDelete !== false && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteClick(selectedEmail)}
+                          disabled={actionLoading === selectedEmail.id}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -410,20 +575,30 @@ function InboxContent() {
                   <Send className="h-4 w-4 mr-2" />
                   Compose Email
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start" 
+                <Button
+                  variant={view === "inbox" ? "default" : "outline"}
+                  className="w-full justify-start"
                   size="sm"
-                  onClick={() => fetchEmails(connectedPlatform)}
+                  onClick={() => setView("inbox")}
                 >
                   <InboxIcon className="h-4 w-4 mr-2" />
                   Inbox ({unreadCount})
                 </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
+                <Button
+                  variant={view === "starred" ? "default" : "outline"}
+                  className="w-full justify-start"
+                  size="sm"
+                  onClick={() => setView("starred")}
+                >
                   <Star className="h-4 w-4 mr-2" />
                   Starred
                 </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
+                <Button
+                  variant={view === "archived" ? "default" : "outline"}
+                  className="w-full justify-start"
+                  size="sm"
+                  onClick={() => setView("archived")}
+                >
                   <Archive className="h-4 w-4 mr-2" />
                   Archived
                 </Button>
@@ -467,6 +642,30 @@ function InboxContent() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete email?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move the email to trash. You can restore it from trash
+              later if needed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteConfirm();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
