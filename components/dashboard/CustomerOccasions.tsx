@@ -246,11 +246,11 @@ export default function CustomerOccasions() {
                   <td className="py-3 sm:py-4 px-2 sm:px-4">
                     <div className="flex flex-col gap-0.5 sm:gap-1">
                       <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
-                        <Mail className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                        <Mail className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" />
                         <span className="truncate max-w-[120px] sm:max-w-none">{occasion.email}</span>
                       </div>
                       <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
-                        <Phone className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                        <Phone className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" />
                         <span className="whitespace-nowrap">{occasion.phone}</span>
                       </div>
                     </div>

@@ -5,7 +5,7 @@ import { useParams } from "next/navigation"
 import { Card, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-
+import { useSession, signIn } from "next-auth/react"
 
 type Question = {
   id: string
@@ -26,15 +26,20 @@ type FormRow = {
   updatedAt: string
   questions?: Question[]
   access?: "public" | "verified"
+  audiences?: { id: string; customerEmails: string[] }[]
 }
+
 
 export default function PublicFormPage() {
   const params = useParams()
   const formId = params.id as string
 
+  const { data: session, status } = useSession()
+
   const [form, setForm] = useState<FormRow | null>(null)
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
   const [submitted, setSubmitted] = useState(false)
+
 
   useEffect(() => {
     if (!formId) return
@@ -43,7 +48,7 @@ export default function PublicFormPage() {
       try {
         const res = await fetch(`/api/forms/${formId}`)
         if (!res.ok) throw new Error("Failed to fetch form")
-        const data: FormRow = await res.json()
+        const data: FormRow = await res.json() 
         setForm(data)
       } catch (err) {
         console.error(err)
@@ -54,21 +59,73 @@ export default function PublicFormPage() {
     fetchForm()
   }, [formId])
 
-  if (!form) return <p className="p-6">Form not found</p>
+  if (!form) return <p className="p-6">Loading form...</p>
 
-  const handleChange = (qId: string, value: string) => {
-    setAnswers((prev) => ({ ...prev, [qId]: value }))
+  // Wait for session to load
+  if (status === "loading") return <p className="p-6">Checking authentication...</p>
+
+  // Prompt login if form is set to verified and user not signed in
+  if (form.access === "verified" && status === "unauthenticated") {
+    return (
+      <Card className="p-8 mx-auto my-12 w-full max-w-3xl">
+        <CardTitle>Sign in required</CardTitle>
+        <CardDescription>
+          You need to sign in with Google to access this form.
+        </CardDescription>
+        <Button onClick={() => signIn("google")}>Sign in with Google</Button>
+      </Card>
+    )
   }
 
+  // Audience check after user is authenticated
+  if (form.access === "verified" && status === "authenticated") {
+    const currentUserEmail = session.user?.email || ""
+
+    const allowed = (form.audiences || []).some(a =>
+      (a.customerEmails || []).includes(currentUserEmail)
+    )
+
+    if (!allowed) {
+      return (
+        <Card className="p-8 mx-auto my-12 w-full max-w-3xl">
+          <CardTitle>Access Denied</CardTitle>
+          <CardDescription>
+            Your email ({currentUserEmail}) is not allowed to access this form.
+          </CardDescription>
+        </Card>
+      )
+    }
+  }
+
+
+  if (!form) return <p className="p-6">Form not found</p>
+
+  const handleChange = (qId: string, value: string | string[]) => {
+  setAnswers((prev) => ({ ...prev, [qId]: value }))
+  }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     try {
-      console.log("Submitted answers:", answers)
+    
+      const payload = Object.entries(answers).map(([questionId, answer]) => ({
+        questionId,
+        answer,
+      }))
+
+      const res = await fetch(`/api/forms/${formId}/submissions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) throw new Error("Failed to submit form")
+
       setSubmitted(true)
       toast.success("Form submitted successfully!")
     } catch (err) {
-      toast.error("Failed to submit form")
       console.error(err)
+      toast.error("Failed to submit form")
     }
   }
 
@@ -97,10 +154,11 @@ export default function PublicFormPage() {
             {q.type === "short" && (
               <input
                 type="text"
+                placeholder="Your answer..."
                 value={answers[q.id] || ""}
                 onChange={(e) => handleChange(q.id, e.target.value)}
-                className="border rounded-md p-2 w-full"
-                required
+                className="border rounded-md p-2 w-full bg-background"
+                
               />
             )}
 
@@ -115,7 +173,7 @@ export default function PublicFormPage() {
                       value={val.toLowerCase()}
                       checked={answers[q.id] === val.toLowerCase()}
                       onChange={(e) => handleChange(q.id, e.target.value)}
-                      required
+                      
                     />
                     {val}
                   </label>
@@ -132,20 +190,17 @@ export default function PublicFormPage() {
                     <label key={`${q.id}-checkbox-${i}`} className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        value={i}
-                        checked={answers[q.id]?.split(",").includes(String(i)) || false}
+                        value={opt}
+                        checked={Array.isArray(answers[q.id]) && answers[q.id].includes(opt)}
                         onChange={(e) => {
-                          const selected = answers[q.id] ? answers[q.id].split(",") : []
+                        const selected = Array.isArray(answers[q.id]) ? (answers[q.id] as string[]) : []
 
-                          if (e.target.checked) {
-                            handleChange(q.id, [...selected, String(i)].join(","))
-                          } else {
-                            handleChange(
-                              q.id,
-                              selected.filter((o) => o !== String(i)).join(",")
-                            )
-                          }
-                        }}
+                        if (e.target.checked) {
+                          handleChange(q.id, [...selected, opt])
+                        } else {
+                          handleChange(q.id, selected.filter((o) => o !== opt))
+                        }
+                      }}
                       />
                       {opt}
                     </label>
@@ -157,10 +212,10 @@ export default function PublicFormPage() {
                       <input
                         type="radio"
                         name={q.id}
-                        value={i}
-                        checked={answers[q.id] === String(i)}
+                        value={opt}
+                        checked={answers[q.id] === opt}
                         onChange={(e) => handleChange(q.id, e.target.value)}
-                        required
+                       
                       />
                       {opt}
                     </label>
@@ -171,8 +226,11 @@ export default function PublicFormPage() {
           </div>
         ))}
 
-        <Button type="submit">Submit</Button>
+        <div className="flex justify-end mt-4">
+          <Button type="submit">Submit</Button>
+        </div>
       </form>
     </Card>
   )
 }
+

@@ -1,31 +1,52 @@
-// app/api/square/sync/route.ts
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/actions/getCurrentUser";
 import db from "@/lib/prisma";
 
 export async function GET() {
-  // Return current status for the header (connected + lastSyncAt)
-  const integ = await (db as any).squareIntegration.findFirst();
-  return NextResponse.json({
-    connected: integ?.connected ?? false,
-    lastSyncIso: integ?.lastSyncAt?.toISOString() ?? null,
-  });
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ connected: false, lastSyncIso: null });
+    }
+
+    const integration = await db.squareIntegration.findUnique({
+      where: { userId: user.id },
+    });
+
+    return NextResponse.json({
+      connected: integration?.connected ?? false,
+      lastSyncIso: null,
+    });
+  } catch (error) {
+    console.error("Square sync status error:", error);
+    return NextResponse.json({ connected: false, lastSyncIso: null });
+  }
 }
 
 export async function POST() {
-  // TODO: call your Square pipelines; here we just simulate the sync
-  await new Promise((r) => setTimeout(r, 1500));
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const existing = await (db as any).squareIntegration.findFirst();
-  if (existing) {
-    await (db as any).squareIntegration.update({
-      where: { id: existing.id },
-      data: { lastSyncAt: new Date() },
+    const integration = await db.squareIntegration.findUnique({
+      where: { userId: user.id },
     });
-  } else {
-    await (db as any).squareIntegration.create({
-      data: { connected: false, lastSyncAt: new Date() },
-    });
+
+    if (!integration?.connected) {
+      return NextResponse.json(
+        { error: "Square not connected" },
+        { status: 400 }
+      );
+    }
+
+    // TODO: implement actual sync pipelines using the user's token
+    await new Promise((r) => setTimeout(r, 1500));
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Square sync error:", error);
+    return NextResponse.json({ error: "Sync failed" }, { status: 500 });
   }
-
-  return NextResponse.json({ ok: true });
 }

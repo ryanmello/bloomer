@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,8 +30,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Plus, Filter, X } from "lucide-react";
+import { Search, Plus, Filter, X, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import axios from "axios";
 
 type OrderStatus = "Completed" | "Pending" | "Shipped" | "Cancelled" | "All";
 
@@ -43,15 +44,66 @@ interface Order {
   status: OrderStatus;
 }
 
+function mapSquareState(state: string): OrderStatus {
+  switch (state) {
+    case "COMPLETED":
+      return "Completed";
+    case "OPEN":
+      return "Pending";
+    case "CANCELED":
+      return "Cancelled";
+    default:
+      return "Pending";
+  }
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatMoney(amountCents?: number, currency?: string): string {
+  const dollars = (amountCents || 0) / 100;
+  return dollars.toLocaleString("en-US", {
+    style: "currency",
+    currency: currency || "USD",
+  });
+}
+
 export default function OrdersPageMockup() {
-  const [orders] = useState<Order[]>([
-    { id: "ORD-1001", customer: "Sarah Lopez", date: "Nov 5, 2025", total: "$152.00", status: "Completed" },
-    { id: "ORD-1002", customer: "Daniel Kim", date: "Nov 6, 2025", total: "$89.99", status: "Pending" },
-    { id: "ORD-1003", customer: "Emily Zhang", date: "Nov 6, 2025", total: "$240.00", status: "Cancelled" },
-    { id: "ORD-1004", customer: "James Rivera", date: "Nov 7, 2025", total: "$67.50", status: "Shipped" },
-    { id: "ORD-1005", customer: "Maria Garcia", date: "Nov 8, 2025", total: "$125.00", status: "Completed" },
-    { id: "ORD-1006", customer: "John Smith", date: "Nov 8, 2025", total: "$98.50", status: "Pending" },
-  ]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await axios.get("/api/square/orders");
+        const data = res.data;
+
+        console.log("Square orders API response:", data);
+
+        if (data.orders && data.orders.length > 0) {
+          const mapped: Order[] = data.orders.map((o: any) => ({
+            id: o.id,
+            customer: o.customer_id || "Walk-in",
+            date: formatDate(o.created_at),
+            total: formatMoney(o.total_money?.amount, o.total_money?.currency),
+            status: mapSquareState(o.state),
+          }));
+          setOrders(mapped);
+        }
+      } catch (error) {
+        console.error("Failed to fetch Square orders:", error);
+      } finally {
+        setOrdersLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus>("All");
@@ -204,7 +256,16 @@ export default function OrdersPageMockup() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredOrders.length === 0 ? (
+                {ordersLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading orders from Square...
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredOrders.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No orders found matching your filters.

@@ -21,41 +21,63 @@ async function main() {
 
   // Create test customers with various birthdays
   const today = new Date();
+
+  // Helper to get future date handling month overflow
+  const getFutureDate = (daysFromNow: number) => {
+    const date = new Date(today);
+    date.setDate(date.getDate() + daysFromNow);
+    return date;
+  };
+
+  const aliceBirthday = getFutureDate(3);
+  const bobBirthday = getFutureDate(7);
+  const carolBirthday = today; // Birthday today
+
   const customers = [
     {
       firstName: 'Alice',
       lastName: 'Johnson',
       email: 'alice@example.com',
       phoneNumber: '555-0101',
-      dateOfBirth: new Date(1990, today.getMonth(), today.getDate() + 3), // Birthday in 3 days
+      dateOfBirth: new Date(1990, aliceBirthday.getMonth(), aliceBirthday.getDate()),
+      birthMonth: aliceBirthday.getMonth() + 1, // 1-12
+      birthDay: aliceBirthday.getDate(), // 1-31
     },
     {
       firstName: 'Bob',
       lastName: 'Smith',
       email: 'bob@example.com',
       phoneNumber: '555-0102',
-      dateOfBirth: new Date(1985, today.getMonth(), today.getDate() + 7), // Birthday in 7 days
+      dateOfBirth: new Date(1985, bobBirthday.getMonth(), bobBirthday.getDate()),
+      birthMonth: bobBirthday.getMonth() + 1,
+      birthDay: bobBirthday.getDate(),
     },
     {
       firstName: 'Carol',
       lastName: 'Williams',
       email: 'carol@example.com',
       phoneNumber: '555-0103',
-      dateOfBirth: new Date(1992, today.getMonth(), today.getDate()), // Birthday today
+      dateOfBirth: new Date(1992, carolBirthday.getMonth(), carolBirthday.getDate()),
+      birthMonth: carolBirthday.getMonth() + 1,
+      birthDay: carolBirthday.getDate(),
     },
     {
       firstName: 'David',
       lastName: 'Brown',
       email: 'david@example.com',
       phoneNumber: '555-0104',
-      dateOfBirth: new Date(1988, 5, 15), // Random birthday
+      dateOfBirth: new Date(1988, 5, 15),
+      birthMonth: 6, // June
+      birthDay: 15,
     },
     {
       firstName: 'Emma',
       lastName: 'Davis',
       email: 'emma@example.com',
       phoneNumber: '555-0105',
-      dateOfBirth: new Date(1995, 11, 25), // Christmas baby
+      dateOfBirth: new Date(1995, 11, 25),
+      birthMonth: 12, // December
+      birthDay: 25,
     },
   ];
 
@@ -161,11 +183,110 @@ async function main() {
     }
   }
 
+  // Create test automations
+  const automations = [
+    {
+      name: 'Birthday Special',
+      description: 'Send birthday wishes 3 days before their birthday',
+      category: 'lifecycle',
+      triggerType: 'birthday',
+      timing: 3, // 3 days before
+      actionType: 'send_email',
+      status: 'active',
+      emailSubject: 'Happy Birthday {{firstName}}! 🎂 A special gift awaits',
+      emailBody: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #e91e63;">Happy Birthday, {{firstName}}! 🎉</h1>
+          <p>We hope your special day is filled with joy and beautiful blooms!</p>
+          <p>As a birthday treat, enjoy <strong>15% off</strong> your next order with code: <strong>BIRTHDAY15</strong></p>
+          <p>Wishing you a wonderful celebration!</p>
+          <p>With love,<br>{{shopName}}</p>
+        </div>
+      `,
+    },
+    {
+      name: 'Birthday Today',
+      description: 'Send birthday wishes on their birthday',
+      category: 'lifecycle',
+      triggerType: 'birthday',
+      timing: 0, // On their birthday
+      actionType: 'send_email',
+      status: 'active',
+      emailSubject: 'It\'s your birthday {{firstName}}! 🎈',
+      emailBody: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #e91e63;">Happy Birthday, {{firstName}}! 🎂</h1>
+          <p>Today is YOUR day! We're so grateful to have you as a customer.</p>
+          <p>Celebrate with <strong>15% off</strong> using code: <strong>BIRTHDAY15</strong></p>
+          <p>Have an amazing birthday!</p>
+          <p>Cheers,<br>{{shopName}}</p>
+        </div>
+      `,
+    },
+    {
+      name: 'Welcome New Customer',
+      description: 'Welcome email sent immediately after signup',
+      category: 'lifecycle',
+      triggerType: 'new_customer',
+      timing: 0, // Same day
+      actionType: 'send_email',
+      status: 'active',
+      emailSubject: 'Welcome to {{shopName}}, {{firstName}}! 🌸',
+      emailBody: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #4caf50;">Welcome, {{firstName}}! 🌷</h1>
+          <p>Thank you for joining our flower family!</p>
+          <p>As a welcome gift, here's <strong>10% off</strong> your first order: <strong>WELCOME10</strong></p>
+          <p>We can't wait to help you brighten someone's day!</p>
+          <p>Best,<br>{{shopName}}</p>
+        </div>
+      `,
+    },
+    {
+      name: 'We Miss You',
+      description: 'Re-engagement email for inactive customers',
+      category: 'lifecycle',
+      triggerType: 'inactive',
+      timing: 30, // 30 days without purchase
+      actionType: 'send_email',
+      status: 'active',
+      emailSubject: 'We miss you, {{firstName}}! 💐',
+      emailBody: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #ff9800;">We Miss You, {{firstName}}! 🌻</h1>
+          <p>It's been a while since your last visit, and we wanted to check in.</p>
+          <p>Come back and enjoy <strong>25% off</strong> with code: <strong>COMEBACK25</strong></p>
+          <p>We'd love to see you again!</p>
+          <p>Warmly,<br>{{shopName}}</p>
+        </div>
+      `,
+    },
+  ];
+
+  console.log('\n🤖 Creating automations...');
+  for (const automation of automations) {
+    const existing = await db.automation.findFirst({
+      where: { name: automation.name, shopId: shop.id },
+    });
+    if (existing) {
+      console.log(`  ⏭️  ${automation.name} already exists`);
+    } else {
+      await db.automation.create({
+        data: {
+          ...automation,
+          shopId: shop.id,
+        },
+      });
+      console.log(`  ✅ Created ${automation.name} (${automation.triggerType}, timing: ${automation.timing})`);
+    }
+  }
+
   console.log('\n✨ Seed completed!');
   console.log('\nSummary:');
   console.log(`  - ${customers.length} customers`);
   console.log(`  - ${coupons.length} coupons`);
   console.log(`  - ${audiences.length} audiences`);
+  console.log(`  - ${automations.length} automations`);
 }
 
 main()

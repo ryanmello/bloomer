@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import {useState} from "react";
+import {format} from "date-fns";
 
 interface Address {
   line1: string;
@@ -19,32 +20,46 @@ interface Customer {
   additionalNote?: string;
   squareId?: string;
   address?: Address[];
+  dateOfBirth?: string;
 }
 
 interface EditCustomerFormProps {
   customer: Customer;
   onSave: () => void;
-  onCancel?: () => void; 
+  onCancel?: () => void;
 }
 
-export default function EditCustomerForm({ customer, onSave, onCancel }: EditCustomerFormProps) {
+export default function EditCustomerForm({
+  customer,
+  onSave,
+  onCancel,
+}: EditCustomerFormProps) {
+  const formattedDOB = customer.dateOfBirth
+    ? format(new Date(customer.dateOfBirth), "yyyy-MM-dd")
+    : "";
   const [form, setForm] = useState({
     firstName: customer.firstName,
     lastName: customer.lastName,
     email: customer.email || "",
     phoneNumber: customer.phoneNumber || "",
+    dateOfBirth: formattedDOB || "",
     additionalNote: customer.additionalNote || "",
-    addresses: customer.address || [{ line1: "", line2: "", city: "", state: "", zip: "", country: "" }],
+    addresses: customer.address || [
+      {line1: "", line2: "", city: "", state: "", zip: "", country: ""},
+    ],
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, index?: number) => {
-    const { name, value } = e.target;
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    index?: number,
+  ) => {
+    const {name, value} = e.target;
     if (typeof index === "number") {
       const updatedAddresses = [...form.addresses];
-      updatedAddresses[index] = { ...updatedAddresses[index], [name]: value };
-      setForm({ ...form, addresses: updatedAddresses });
+      updatedAddresses[index] = {...updatedAddresses[index], [name]: value};
+      setForm({...form, addresses: updatedAddresses});
     } else {
-      setForm({ ...form, [name]: value });
+      setForm({...form, [name]: value});
     }
   };
 
@@ -53,8 +68,8 @@ export default function EditCustomerForm({ customer, onSave, onCancel }: EditCus
     try {
       const res = await fetch(`/api/customer`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: customer.id, ...form }),
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({id: customer.id, ...form}),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update customer");
@@ -67,7 +82,9 @@ export default function EditCustomerForm({ customer, onSave, onCancel }: EditCus
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 border border-gray-700 rounded bg-gray-900 text-gray-100 ">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4 p-4 border border-gray-700 rounded bg-gray-900 text-gray-100 ">
       <input
         type="text"
         name="firstName"
@@ -100,6 +117,14 @@ export default function EditCustomerForm({ customer, onSave, onCancel }: EditCus
         value={form.phoneNumber}
         onChange={handleChange}
         placeholder="Phone Number"
+        className="border rounded p-2 w-full"
+      />
+      <input
+        name="dateOfBirth"
+        type="date"
+        placeholder="Date of Birth"
+        value={form.dateOfBirth}
+        onChange={handleChange}
         className="border rounded p-2 w-full"
       />
       <textarea
@@ -164,15 +189,16 @@ export default function EditCustomerForm({ customer, onSave, onCancel }: EditCus
       ))}
 
       <div className="flex gap-2 mt-4">
-        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 text-white rounded">
           Save
         </button>
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border rounded hover:bg-gray-200"
-          >
+            className="px-4 py-2 border rounded hover:bg-gray-200">
             Cancel
           </button>
         )}

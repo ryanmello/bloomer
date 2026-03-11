@@ -1,21 +1,24 @@
-import { NextResponse } from "next/server";
+import {NextResponse} from "next/server";
 import db from "@/lib/prisma";
-import { getCurrentUser } from "@/actions/getCurrentUser";
+import {getCurrentUser} from "@/actions/getCurrentUser";
+import {getSquareAccessToken} from "@/lib/square";
+import {cookies} from "next/headers";
 
-const SQUARE_ACCESS_TOKEN = process.env.SQUARE_SANDBOX_TOKEN!;
-const SQUARE_LOCATION_ID = process.env.SQUARE_LOCATION_ID!;
+async function fetchOrders(accessToken: string, locationId: string, customerId: string) {
+  const isSandbox = process.env.NODE_ENV !== "production";
+  const baseUrl = isSandbox
+    ? "https://connect.squareupsandbox.com/v2"
+    : "https://connect.squareup.com/v2";
 
-// Fetch orders for a customer
-async function fetchOrders(customerId: string) {
-  const res = await fetch("https://connect.squareupsandbox.com/v2/orders/search", {
+  const res = await fetch(`${baseUrl}/orders/search`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${SQUARE_ACCESS_TOKEN}`,
+      Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      location_ids: [SQUARE_LOCATION_ID],
-      query: { filter: { customer_filter: { customer_ids: [customerId] } } },
+      location_ids: [locationId],
+      query: {filter: {customer_filter: {customer_ids: [customerId]}}},
     }),
   });
 
@@ -27,28 +30,61 @@ export async function POST() {
   try {
     const user = await getCurrentUser();
     if (!user) {
+      return NextResponse.json({message: "Not authenticated"}, {status: 401});
+    }
+
+    const accessToken = await getSquareAccessToken(user.id);
+    if (!accessToken) {
       return NextResponse.json(
-        { message: "Not authenticated" },
-        { status: 401 }
+        {message: "Square not connected. Please connect your Square account in Settings."},
+        {status: 400},
       );
     }
 
-    // Get the user's shop
-    const shop = await db.shop.findFirst({
-      where: { userId: user.id }
-    });
+    // Get the active shop ID from cookie
+    const cookieStore = await cookies();
+    const activeShopId = cookieStore.get("activeShopId")?.value;
+
+    let shop;
+
+    if (activeShopId) {
+      shop = await db.shop.findFirst({
+        where: {
+          id: activeShopId,
+          userId: user.id,
+        },
+      });
+    }
 
     if (!shop) {
-      return NextResponse.json(
-        { message: "No shop found for user" },
-        { status: 404 }
-      );
+      shop = await db.shop.findFirst({
+        where: {userId: user.id},
+      });
     }
 
-    // Fetch customers from Square
-    const res = await fetch("https://connect.squareupsandbox.com/v2/customers", {
+    if (!shop) {
+      return NextResponse.json({error: "No shop found"}, {status: 404});
+    }
+
+    const isSandbox = process.env.NODE_ENV !== "production";
+    const baseUrl = isSandbox
+      ? "https://connect.squareupsandbox.com/v2"
+      : "https://connect.squareup.com/v2";
+
+    // Fetch locations
+    const locationsRes = await fetch(`${baseUrl}/locations`, {
       headers: {
-        Authorization: `Bearer ${SQUARE_ACCESS_TOKEN}`,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+    const locationsData = await locationsRes.json();
+    const locationId = locationsData.locations?.[0]?.id;
+
+    // Fetch customers from Square
+    const res = await fetch(`${baseUrl}/customers`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
     });
@@ -56,12 +92,9 @@ export async function POST() {
     const data = await res.json();
     const customers = Array.isArray(data.customers) ? data.customers : [];
 
-    const result: { customerId: string; orderCount: number }[] = [];
-
     for (const c of customers) {
       if (!c.id) continue;
 
-      const name = `${c.given_name || ""} ${c.family_name || ""}`.trim();
       const email = c.email_address || "";
       const phoneNumber = c.phone_number || "";
       const addressData = c.address
@@ -77,18 +110,16 @@ export async function POST() {
           ]
         : [];
 
-      // Check if customer already exists by squareId
       const existingCustomer = await db.customer.findFirst({
-        where: { squareId: c.id },
-        include: { addresses: true },
+        where: {squareId: c.id},
+        include: {addresses: true},
       });
 
       let customerId: string;
 
       if (existingCustomer) {
-        // Update existing customer
         await db.customer.update({
-          where: { id: existingCustomer.id },
+          where: {id: existingCustomer.id},
           data: {
             firstName: c.given_name || "",
             lastName: c.family_name || "",
@@ -102,7 +133,6 @@ export async function POST() {
         });
         customerId = existingCustomer.id;
       } else {
-        // Create new customer with address
         const newCustomer = await db.customer.create({
           data: {
             squareId: c.id,
@@ -119,36 +149,37 @@ export async function POST() {
         customerId = newCustomer.id;
       }
 
-      // Fetch orders, spend, occasions
-      const orders = await fetchOrders(c.id);
-      const orderCount = orders.length;
-      let totalSpend = 0;
+      if (locationId) {
+        const orders = await fetchOrders(accessToken, locationId, c.id);
+        let totalSpend = 0;
 
-      for (const order of orders) {
-        const amount = order.total_money?.amount ?? order.net_total_money?.amount ?? 0;
-        totalSpend += amount;
+        for (const order of orders) {
+          const amount =
+            order.total_money?.amount ?? order.net_total_money?.amount ?? 0;
+          totalSpend += amount;
+        }
+
+        const spendInDollars = totalSpend / 100;
+
+        await db.customer.update({
+          where: {id: customerId},
+          data: {
+            orderCount: orders.length,
+            spendAmount: spendInDollars,
+            occasionsCount: orders.length,
+          },
+        });
       }
-
-      const spendInDollars = totalSpend / 100;
-      const occasions = orderCount; 
-
-      await db.customer.update({
-        where: { id: customerId },
-        data: {  orderCount: orders.length,             
-                 spendAmount: spendInDollars,         
-                 occasionsCount: orders.length },
-      });
     }
-     
 
     return NextResponse.json({
       message: "Customers imported successfully.",
     });
   } catch (err) {
-       console.error("Error importing customers:", err);
-      return NextResponse.json(
-      { error: "Failed to import customers" },
-      { status: 500 }
+    console.error("Error importing customers:", err);
+    return NextResponse.json(
+      {error: "Failed to import customers"},
+      {status: 500},
     );
   }
 }
