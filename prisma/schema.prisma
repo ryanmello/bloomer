@@ -38,6 +38,7 @@ model User {
   postal    String?
   phone     String?
   emailNotificationsEnabled Boolean @default(true)
+  timezone                  String?
 
   // Two-Factor Authentication
   twoFactorEnabled Boolean  @default(false)
