@@ -7,6 +7,7 @@ type Props = {
   value: string | number;
   icon: LucideIcon;
   changePct?: number;   // e.g. 12.5 means +12.5%
+  changeLabel?: string; // Override percentage display (e.g. "3 need attention")
   caption?: string;     // e.g. "from last month"
 };
 
@@ -15,6 +16,7 @@ export default function MetricCard({
   value,
   icon: Icon,
   changePct,
+  changeLabel,
   caption = "from last month",
 }: Props) {
   const up = typeof changePct === "number" ? changePct >= 0 : undefined;
@@ -48,8 +50,7 @@ export default function MetricCard({
             ].join(" ")}
           >
             {up ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
-            {up ? "+" : ""}
-            {changePct.toFixed(1)}%
+            {changeLabel ?? (up ? "+" : "") + changePct!.toFixed(1) + "%"}
           </span>
           <span className="text-muted-foreground">{caption}</span>
         </div>

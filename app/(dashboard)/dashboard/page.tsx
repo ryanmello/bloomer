@@ -5,6 +5,7 @@ import InventoryStatus from "@/components/dashboard/InventoryStatus";
 import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import { DollarSign, ShoppingBag, Users, Package } from "lucide-react";
 import CustomerOccasions from "@/components/dashboard/CustomerOccasions";
+import { getProductsForDashboard, getStockStatus } from "@/lib/inventory";
 import { getCurrentUser } from "@/actions/getCurrentUser";
 import { fetchSquareOrders, fetchSquareCustomerCount } from "@/lib/square";
 import db from "@/lib/prisma";
@@ -12,6 +13,14 @@ import db from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const { products: inventoryProducts } = await getProductsForDashboard();
+  const lowStockCount = inventoryProducts.filter(
+    (p) => getStockStatus(p.quantity, p.lowInventoryAlert) === "low-stock"
+  ).length;
+  const outOfStockCount = inventoryProducts.filter(
+    (p) => getStockStatus(p.quantity, p.lowInventoryAlert) === "out-of-stock"
+  ).length;
+
   const user = await getCurrentUser();
 
   let squareConnected = false;
@@ -88,8 +97,14 @@ export default async function DashboardPage() {
         />
         <MetricCard
           title="Inventory Items"
-          value={2_913}
-          changePct={-1.7}
+          value={String(inventoryProducts.length)}
+          changePct={lowStockCount + outOfStockCount > 0 ? -1 : undefined}
+          changeLabel={
+            lowStockCount + outOfStockCount > 0
+              ? `${lowStockCount + outOfStockCount} need attention`
+              : undefined
+          }
+          caption="from last month"
           icon={Package}
         />
       </section>
@@ -101,7 +116,7 @@ export default async function DashboardPage() {
 
       <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
         <UpcomingEvents />
-        <InventoryStatus />
+        <InventoryStatus products={inventoryProducts} />
       </div>
 
       <CustomerOccasions />

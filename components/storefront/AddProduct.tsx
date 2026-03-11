@@ -33,6 +33,7 @@ export default function AddProduct() {
     const [retailPrice, setRetailPrice] = useState('');
     const [description, setDescription] = useState('');
     const [inventoryCount, setInventoryCount] = useState('');
+    const [lowInventoryAlert, setLowInventoryAlert] = useState('10');
     const [category, setCategory] = useState('');
     const [margin, setMargin] = useState(0);
     const [profit, setProfit] = useState(0);
@@ -76,6 +77,7 @@ export default function AddProduct() {
                     costPrice: parseFloat(costPrice),
                     description,
                     inventoryCount: parseInt(inventoryCount),
+                    lowInventoryAlert: parseInt(lowInventoryAlert) || 10,
                     category,
                 }),
             });
@@ -92,6 +94,7 @@ export default function AddProduct() {
             setRetailPrice('');
             setDescription('');
             setInventoryCount('');
+            setLowInventoryAlert('10');
             setCategory('');
             setMargin(0);
             setProfit(0);
@@ -202,7 +205,7 @@ export default function AddProduct() {
                             )}
                         </div>
 
-                        {/* Inventory and Category */}
+                        {/* Inventory, Threshold, and Category */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="inventoryCount" className="flex items-center gap-2">
@@ -221,6 +224,22 @@ export default function AddProduct() {
                                 />
                             </div>
                             <div className="space-y-2">
+                                <Label htmlFor="lowInventoryAlert" className="flex items-center gap-2">
+                                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                                    Low Stock Threshold
+                                </Label>
+                                <Input
+                                    id="lowInventoryAlert"
+                                    type="number"
+                                    step="1"
+                                    min="0"
+                                    value={lowInventoryAlert}
+                                    onChange={(e) => setLowInventoryAlert(e.target.value)}
+                                    placeholder="10"
+                                />
+                                <p className="text-xs text-muted-foreground">Alert when stock falls below this</p>
+                            </div>
+                            <div className="space-y-2 col-span-2 sm:col-span-1">
                                 <Label htmlFor="category" className="flex items-center gap-2">
                                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                                     Category

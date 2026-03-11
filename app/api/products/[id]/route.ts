@@ -65,17 +65,22 @@ export async function PUT(
             );
         }
 
+        const updateData: Record<string, unknown> = {
+            name: data.name,
+            retailPrice: parseFloat(data.retailPrice),
+            costPrice: parseFloat(data.costPrice || data.retailPrice),
+            description: data.description || null,
+            quantity: parseInt(data.quantity),
+            category: data.category || "General",
+        };
+        if (data.lowInventoryAlert !== undefined) {
+            updateData.lowInventoryAlert = Math.max(0, parseInt(String(data.lowInventoryAlert), 10) || 10);
+        }
+
         // Update the product
         const updatedProduct = await db.product.update({
             where: { id },
-            data: {
-                name: data.name,
-                retailPrice: parseFloat(data.retailPrice),
-                costPrice: parseFloat(data.costPrice || data.retailPrice),
-                description: data.description || null,
-                quantity: parseInt(data.quantity),
-                category: data.category || "General",
-            },
+            data: updateData,
             include: {
                 shop: true
             }

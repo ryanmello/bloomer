@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Product } from '@/lib/types';
+import EditProductModal from './EditProductModal';
+import AdjustQuantityModal from './AdjustQuantityModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -14,6 +16,13 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -24,8 +33,16 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Package, AlertTriangle } from 'lucide-react';
-import EditProductModal from './EditProductModal';
+import { Package, AlertTriangle, SlidersHorizontal } from 'lucide-react';
+
+type StockFilter = 'all' | 'low' | 'out';
+
+function getStockStatus(product: Product): 'in-stock' | 'low-stock' | 'out-of-stock' {
+    const threshold = product.lowInventoryAlert ?? 10;
+    if (product.quantity === 0) return 'out-of-stock';
+    if (product.quantity <= threshold) return 'low-stock';
+    return 'in-stock';
+}
 
 interface StorefrontTableProps {
     products: Product[];
@@ -33,8 +50,20 @@ interface StorefrontTableProps {
 
 export default function StorefrontTable({ products }: StorefrontTableProps) {
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null);
+    const [stockFilter, setStockFilter] = useState<StockFilter>('all');
     const [isDeleting, setIsDeleting] = useState(false);
     const router = useRouter();
+
+    const filteredProducts = useMemo(() => {
+        if (stockFilter === 'all') return products;
+        return products.filter((p) => {
+            const status = getStockStatus(p);
+            if (stockFilter === 'low') return status === 'low-stock';
+            if (stockFilter === 'out') return status === 'out-of-stock';
+            return true;
+        });
+    }, [products, stockFilter]);
 
     const handleDelete = async (productId: string) => {
         setIsDeleting(true);
@@ -51,14 +80,28 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
         }
     };
 
-    const getStockStatus = (count: number) => {
-        if (count === 0) return { label: 'Out of Stock', variant: 'danger' as const };
-        if (count < 10) return { label: 'Low Stock', variant: 'warning' as const };
+    const getStockBadge = (product: Product) => {
+        const status = getStockStatus(product);
+        if (status === 'out-of-stock') return { label: 'Out of Stock', variant: 'danger' as const };
+        if (status === 'low-stock') return { label: 'Low Stock', variant: 'warning' as const };
         return { label: 'In Stock', variant: 'success' as const };
     };
 
     return (
         <>
+            <div className="flex items-center justify-between gap-4 mb-4">
+                <Select value={stockFilter} onValueChange={(v) => setStockFilter(v as StockFilter)}>
+                    <SelectTrigger className="w-[180px]">
+                        <SlidersHorizontal className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Filter by stock" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All products</SelectItem>
+                        <SelectItem value="low">Low stock only</SelectItem>
+                        <SelectItem value="out">Out of stock only</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
             <div className="rounded-lg border bg-card">
                 <Table>
                     <TableHeader>
@@ -73,18 +116,23 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {products.length === 0 ? (
+                        {filteredProducts.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={7} className="h-24 text-center">
                                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                                         <Package className="h-8 w-8" />
-                                        <p>No products found. Add your first product to get started.</p>
+                                        <p>
+                                            {products.length === 0
+                                                ? 'No products found. Add your first product to get started.'
+                                                : 'No products match the selected filter.'}
+                                        </p>
                                     </div>
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            products.map((product) => {
-                                const stockStatus = getStockStatus(product.quantity);
+                            filteredProducts.map((product) => {
+                                const stockBadge = getStockBadge(product);
+                                const threshold = product.lowInventoryAlert ?? 10;
                                 return (
                                     <TableRow key={product.id}>
                                         <TableCell>
@@ -116,13 +164,13 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                {product.quantity < 10 && product.quantity > 0 && (
+                                                {product.quantity <= threshold && product.quantity > 0 && (
                                                     <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
                                                 )}
                                                 <span className={
                                                     product.quantity === 0
                                                         ? "text-destructive font-medium"
-                                                        : product.quantity < 10
+                                                        : product.quantity <= threshold
                                                             ? "text-yellow-600 dark:text-yellow-500 font-medium"
                                                             : ""
                                                 }>
@@ -131,8 +179,8 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={stockStatus.variant}>
-                                                {stockStatus.label}
+                                            <Badge variant={stockBadge.variant}>
+                                                {stockBadge.label}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
@@ -144,6 +192,13 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setAdjustingProduct(product)}
+                                                >
+                                                    Adjust
+                                                </Button>
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -195,7 +250,14 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
                 product={editingProduct}
                 onClose={() => {
                     setEditingProduct(null);
-                    router.refresh(); // Refresh data after edit
+                    router.refresh();
+                }}
+            />
+            <AdjustQuantityModal
+                product={adjustingProduct}
+                onClose={() => {
+                    setAdjustingProduct(null);
+                    router.refresh();
                 }}
             />
         </>
