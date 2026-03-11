@@ -18,16 +18,19 @@ export default function SecurityTile({ twoFactorEnabled, onTwoFactorChange }: Se
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            <CardTitle>Security</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl p-2 bg-muted">
+              <Shield className="h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle>Security</CardTitle>
+              <CardDescription>
+                Manage your account security settings
+              </CardDescription>
+            </div>
           </div>
-          <CardDescription>
-            Manage your account security settings
-          </CardDescription>
         </CardHeader>
         <CardContent>
-
         <div className="space-y-3">
           {/* Reset Password Option */}
           <button

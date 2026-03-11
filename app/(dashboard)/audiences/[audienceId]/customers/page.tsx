@@ -111,6 +111,7 @@ export default function AudienceCustomersPage({
     }
   };
 
+  // fetch all customers for selection customer who were added into audience
   const fetchAllCustomers = async () => {
     try {
       const res = await fetch("/api/customer");
@@ -193,6 +194,7 @@ export default function AudienceCustomersPage({
     });
   };
 
+  // Search bar
   const filteredAllCustomers = allCustomers.filter((c) => {
     const fullName = `${c.firstName ?? ""} ${c.lastName ?? ""}`.toLowerCase();
     const query = addSearch.toLowerCase();

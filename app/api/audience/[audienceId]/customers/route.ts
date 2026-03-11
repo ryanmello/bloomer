@@ -9,6 +9,7 @@ import {
   getBirthdayNextMonth,
   getInactiveCustomers,
 } from "@/lib/audiences/predefined";
+import {cookies} from "next/headers";
 
 export async function GET(
   _req: NextRequest,
@@ -25,12 +26,34 @@ export async function GET(
       return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
-    const shop = await db.shop.findFirst({
-      where: {userId: user.id},
-    });
+    // Get the active shop ID from cookie
+    const cookieStore = await cookies();
+    const activeShopId = cookieStore.get("activeShopId")?.value;
 
+    let shop;
+
+    // Try to get the active shop if one is set
+    if (activeShopId) {
+      shop = await db.shop.findFirst({
+        where: {
+          id: activeShopId,
+          userId: user.id, // Security: ensure shop belongs to authenticated user
+        },
+      });
+    }
+
+    // Fallback: if no active shop or it doesn't exist, get user's first shop
     if (!shop) {
-      return NextResponse.json({message: "No shop found"}, {status: 404});
+      shop = await db.shop.findFirst({
+        where: {
+          userId: user.id,
+        },
+      });
+    }
+
+    // Return empty array if user has no shops
+    if (!shop) {
+      return NextResponse.json({error: "No shop found"}, {status: 404});
     }
 
     const audience = await db.audience.findFirst({
@@ -46,6 +69,7 @@ export async function GET(
     if (audience.type === "predefined") {
       switch (audience.name) {
         case "All Customers":
+          // { id: "1", firstName: "John", ... },{ id: "2", firstName: "Jane", ... }
           customers = await getAllCustomers(shop.id);
           break;
         case "New Customers":
@@ -95,12 +119,34 @@ export async function POST(
       return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
-    const shop = await db.shop.findFirst({
-      where: {userId: user.id},
-    });
+    // Get the active shop ID from cookie
+    const cookieStore = await cookies();
+    const activeShopId = cookieStore.get("activeShopId")?.value;
 
+    let shop;
+
+    // Try to get the active shop if one is set
+    if (activeShopId) {
+      shop = await db.shop.findFirst({
+        where: {
+          id: activeShopId,
+          userId: user.id, // Security: ensure shop belongs to authenticated user
+        },
+      });
+    }
+
+    // Fallback: if no active shop or it doesn't exist, get user's first shop
     if (!shop) {
-      return NextResponse.json({message: "No shop found"}, {status: 404});
+      shop = await db.shop.findFirst({
+        where: {
+          userId: user.id,
+        },
+      });
+    }
+
+    // Return empty array if user has no shops
+    if (!shop) {
+      return NextResponse.json({error: "No shop found"}, {status: 404});
     }
 
     const audience = await db.audience.findFirst({
