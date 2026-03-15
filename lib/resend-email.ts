@@ -1,5 +1,11 @@
 import { Resend } from "resend";
 import db from "@/lib/prisma";
+import {
+  getEmailFooterTemplate,
+  replaceFooterMergeTags,
+  type FooterMergeContext,
+} from "@/lib/email-footer";
+import { signUnsubscribeToken } from "@/lib/unsubscribe-token";
 
 // Helper to get Resend client with validation
 function getResendClient() {
@@ -10,14 +16,28 @@ function getResendClient() {
   return new Resend(apiKey);
 }
 
+const BASE_URL =
+  process.env.NEXTAUTH_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "http://localhost:3000";
+
+export type CampaignRecipient = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  unsubscribedAt?: Date | null;
+};
+
 // Helper function to send campaign emails
 export async function sendCampaignEmails(
   campaignId: string,
-  customers: Array<{ id: string; email: string; firstName: string; lastName: string }>,
+  customers: CampaignRecipient[],
   subject: string,
   emailBody: string,
   shopName: string,
-  shopEmail: string
+  shopEmail: string,
+  shopAddress: string
 ) {
   try {
     // Validate Resend API key
@@ -27,7 +47,11 @@ export async function sendCampaignEmails(
     }
 
     console.log(`Starting to send emails for campaign ${campaignId} to ${customers.length} customers`);
-    
+
+    // Shared footer template (merge tags replaced per recipient)
+    const footerTemplate = getEmailFooterTemplate();
+    const privacyUrl = `${BASE_URL}/privacy`;
+
     // Validate that we have customers to send to
     if (customers.length === 0) {
       console.warn('WARNING: No customers found for this campaign. Cannot send emails.');
@@ -40,18 +64,43 @@ export async function sendCampaignEmails(
 
     // Send emails in batches to respect rate limits
     const batchSize = 50;
-    
+
     for (let i = 0; i < customers.length; i += batchSize) {
       const batch = customers.slice(i, i + batchSize);
-      
+
       await Promise.all(
         batch.map(async (customer) => {
           try {
-            // Personalize email body
-            const personalizedBody = emailBody
-              .replace(/\{\{firstName\}\}/g, customer.firstName || 'Customer')
-              .replace(/\{\{lastName\}\}/g, customer.lastName || '')
-              .replace(/\{\{email\}\}/g, customer.email);
+            // Skip if customer has unsubscribed (DB guard)
+            if (customer.unsubscribedAt) {
+              console.log(`⏭️ Skipping ${customer.email} — unsubscribed`);
+              return;
+            }
+
+            // Signed JWT unsubscribe URL (tamper-proof, 30d expiry)
+            const token = signUnsubscribeToken(customer.id);
+            const unsubscribeUrl = `${BASE_URL}/unsubscribe?token=${token}`;
+            // One-click POST goes to API (same token); footer link goes to page
+            const listUnsubscribeUrl = `${BASE_URL}/api/unsubscribe?token=${token}`;
+
+            // Personalize body: merge tags for body content
+            const personalizedBody = replaceMergeTags(emailBody, {
+              firstName: customer.firstName,
+              lastName: customer.lastName,
+              email: customer.email,
+              shopName,
+              shopAddress,
+            });
+
+            // Footer with per-recipient unsubscribe and shared shop/privacy
+            const footerContext: FooterMergeContext = {
+              shopName,
+              shopAddress: shopAddress || "—",
+              unsubscribeUrl,
+              privacyUrl,
+            };
+            const footerHtml = replaceFooterMergeTags(footerTemplate, footerContext);
+            const fullHtml = personalizedBody + footerHtml;
 
             // Get Resend client (validates API key)
             const resend = getResendClient();
@@ -91,7 +140,11 @@ export async function sendCampaignEmails(
               from: `${shopName} <${fromEmail}>`,
               to: [customer.email],
               subject: subject,
-              html: personalizedBody,
+              html: fullHtml,
+              headers: {
+                "List-Unsubscribe": `<${listUnsubscribeUrl}>`,
+                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+              },
             });
             
             console.log(`📬 Resend API response received:`);
@@ -273,22 +326,36 @@ export async function sendPasswordResetEmail(
 }
 
 /**
- * Supported merge tags for emails
+ * Supported merge tags for emails (body and footer)
  */
-export const MERGE_TAGS = ['{{firstName}}', '{{lastName}}', '{{email}}', '{{shopName}}'] as const;
+export const MERGE_TAGS = [
+  '{{firstName}}',
+  '{{lastName}}',
+  '{{email}}',
+  '{{shopName}}',
+  '{{shopAddress}}',
+  '{{unsubscribeUrl}}',
+  '{{privacyUrl}}',
+] as const;
+
+export interface MergeTagData {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  shopName?: string;
+  shopAddress?: string;
+}
 
 /**
- * Replace merge tags in content with actual values
+ * Replace merge tags in content with actual values (body content only; footer has its own replace).
  */
-export function replaceMergeTags(
-  content: string,
-  data: { firstName?: string; lastName?: string; email?: string; shopName?: string }
-): string {
+export function replaceMergeTags(content: string, data: MergeTagData): string {
   return content
-    .replace(/\{\{firstName\}\}/g, data.firstName || 'Customer')
-    .replace(/\{\{lastName\}\}/g, data.lastName || '')
-    .replace(/\{\{email\}\}/g, data.email || '')
-    .replace(/\{\{shopName\}\}/g, data.shopName || 'Our Shop');
+    .replace(/\{\{firstName\}\}/g, data.firstName ?? 'Customer')
+    .replace(/\{\{lastName\}\}/g, data.lastName ?? '')
+    .replace(/\{\{email\}\}/g, data.email ?? '')
+    .replace(/\{\{shopName\}\}/g, data.shopName ?? 'Our Shop')
+    .replace(/\{\{shopAddress\}\}/g, data.shopAddress ?? '');
 }
 
 /**

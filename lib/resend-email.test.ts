@@ -22,6 +22,9 @@ describe('Ticket 2: Email Integration', () => {
       expect(MERGE_TAGS).toContain('{{lastName}}');
       expect(MERGE_TAGS).toContain('{{email}}');
       expect(MERGE_TAGS).toContain('{{shopName}}');
+      expect(MERGE_TAGS).toContain('{{shopAddress}}');
+      expect(MERGE_TAGS).toContain('{{unsubscribeUrl}}');
+      expect(MERGE_TAGS).toContain('{{privacyUrl}}');
     });
   });
 
@@ -84,6 +87,18 @@ describe('Ticket 2: Email Integration', () => {
       const html = '<h1>Hello {{firstName}}!</h1><p>From {{shopName}}</p>';
       const result = replaceMergeTags(html, { firstName: 'Alice', shopName: 'Bloomer' });
       expect(result).toBe('<h1>Hello Alice!</h1><p>From Bloomer</p>');
+    });
+
+    it('should replace {{shopAddress}} with provided value', () => {
+      const result = replaceMergeTags('Visit us at {{shopAddress}}', {
+        shopAddress: '123 Main St, Portland OR 97201, USA',
+      });
+      expect(result).toBe('Visit us at 123 Main St, Portland OR 97201, USA');
+    });
+
+    it('should use empty string for missing shopAddress', () => {
+      const result = replaceMergeTags('Address: {{shopAddress}}', {});
+      expect(result).toBe('Address: ');
     });
   });
 });

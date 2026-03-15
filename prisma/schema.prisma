@@ -103,6 +103,7 @@ model Customer {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  unsubscribedAt DateTime?
 
   shopId String @db.ObjectId
   shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
