@@ -1,0 +1,101 @@
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+// ---------------------------------------------------------------------------
+// Storage backend
+// ---------------------------------------------------------------------------
+// If Upstash credentials are available, use Redis for accurate cross-instance
+// rate limiting. Otherwise, fall back to an ephemeral in-memory store (useful
+// for local dev but unreliable in production serverless environments).
+// ---------------------------------------------------------------------------
+
+function createStore() {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (url && token) {
+    return new Redis({ url, token });
+  }
+
+  // No Redis credentials – use the built-in ephemeral map for local dev.
+  return undefined;
+}
+
+const store = createStore();
+
+// ---------------------------------------------------------------------------
+// Rate limiters
+// ---------------------------------------------------------------------------
+
+/** Auth routes: 100 requests per 60-second sliding window. */
+export const authLimiter = new Ratelimit({
+  redis: store as ConstructorParameters<typeof Ratelimit>[0]["redis"],
+  limiter: Ratelimit.slidingWindow(100, "60 s"),
+  analytics: false,
+  prefix: "ratelimit:auth",
+  ...(store ? {} : { ephemeralCache: new Map() }),
+});
+
+/** General API routes: 60 requests per 60-second sliding window. */
+export const apiLimiter = new Ratelimit({
+  redis: store as ConstructorParameters<typeof Ratelimit>[0]["redis"],
+  limiter: Ratelimit.slidingWindow(60, "60 s"),
+  analytics: false,
+  prefix: "ratelimit:api",
+  ...(store ? {} : { ephemeralCache: new Map() }),
+});
+
+// ---------------------------------------------------------------------------
+// Routes exempt from rate limiting (cron jobs, OAuth callbacks, webhooks).
+// ---------------------------------------------------------------------------
+
+const EXEMPT_PREFIXES = [
+  "/api/automation/run",
+  "/api/inbox/oauth/gmail/callback",
+  "/api/integrations/square/oauth/callback",
+];
+
+export function isExemptRoute(pathname: string): boolean {
+  return EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
+// ---------------------------------------------------------------------------
+// Core check function
+// ---------------------------------------------------------------------------
+
+export interface RateLimitResult {
+  allowed: boolean;
+  /** Remaining requests in the current window. */
+  remaining: number;
+  /** Unix ms timestamp when the window resets. */
+  reset: number;
+  /** Seconds until the window resets (for Retry-After header). */
+  retryAfterSeconds: number;
+}
+
+/**
+ * Check the rate limit for a given request.
+ *
+ * @param identifier - User ID or IP address.
+ * @param pathname   - The API route path (used to select the correct limiter).
+ */
+export async function checkRateLimit(
+  identifier: string,
+  pathname: string,
+): Promise<RateLimitResult> {
+  const limiter = pathname.startsWith("/api/auth/") ? authLimiter : apiLimiter;
+
+  const { success, remaining, reset } = await limiter.limit(identifier);
+
+  const retryAfterSeconds = Math.max(
+    0,
+    Math.ceil((reset - Date.now()) / 1000),
+  );
+
+  return {
+    allowed: success,
+    remaining,
+    reset,
+    retryAfterSeconds,
+  };
+}
