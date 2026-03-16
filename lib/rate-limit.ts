@@ -1,5 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { NextResponse } from "next/server";
 
 // ---------------------------------------------------------------------------
 // Storage backend
@@ -99,3 +100,41 @@ export async function checkRateLimit(
     retryAfterSeconds,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Response helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Standard rate-limit headers to attach to every API response so clients can
+ * monitor their remaining budget.
+ */
+export function rateLimitHeaders(result: RateLimitResult): HeadersInit {
+  return {
+    "X-RateLimit-Remaining": result.remaining.toString(),
+    "X-RateLimit-Reset": result.reset.toString(),
+  };
+}
+
+/**
+ * Build a 429 "Too Many Requests" response with the required Retry-After
+ * header and a JSON body describing the error.
+ */
+export function rateLimitExceededResponse(
+  result: RateLimitResult,
+): NextResponse {
+  return NextResponse.json(
+    {
+      error: "Rate limit exceeded",
+      retryAfter: result.retryAfterSeconds,
+    },
+    {
+      status: 429,
+      headers: {
+        "Retry-After": result.retryAfterSeconds.toString(),
+        ...rateLimitHeaders(result),
+      },
+    },
+  );
+}
+
