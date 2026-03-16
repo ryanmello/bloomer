@@ -2,12 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Mock @upstash/ratelimit before importing the module under test.
-// vi.hoisted() ensures mockLimit exists when the hoisted vi.mock factory runs.
+// vi.hoisted() ensures these run before any module-level code.
 // ---------------------------------------------------------------------------
 
-const { mockLimit } = vi.hoisted(() => ({
-  mockLimit: vi.fn(),
-}));
+const { mockLimit } = vi.hoisted(() => {
+  // Env vars must be set here so createStore() sees them when the module loads.
+  process.env.UPSTASH_REDIS_REST_URL = "https://fake.upstash.io";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "fake-token";
+
+  return { mockLimit: vi.fn() };
+});
 
 vi.mock("@upstash/ratelimit", () => {
   const slidingWindow = vi.fn().mockReturnValue("sliding-window-algo");
@@ -21,7 +25,7 @@ vi.mock("@upstash/ratelimit", () => {
 });
 
 vi.mock("@upstash/redis", () => ({
-  Redis: vi.fn(),
+  Redis: class MockRedis {},
 }));
 
 import {

@@ -10,7 +10,7 @@ import { NextResponse } from "next/server";
 // for local dev but unreliable in production serverless environments).
 // ---------------------------------------------------------------------------
 
-function createStore() {
+function createStore(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
@@ -18,33 +18,34 @@ function createStore() {
     return new Redis({ url, token });
   }
 
-  // No Redis credentials – use the built-in ephemeral map for local dev.
-  return undefined;
+  return null;
 }
 
 const store = createStore();
 
 // ---------------------------------------------------------------------------
-// Rate limiters
+// Rate limiters (only created when Redis is available)
 // ---------------------------------------------------------------------------
 
 /** Auth routes: 100 requests per 60-second sliding window. */
-export const authLimiter = new Ratelimit({
-  redis: store as ConstructorParameters<typeof Ratelimit>[0]["redis"],
-  limiter: Ratelimit.slidingWindow(100, "60 s"),
-  analytics: false,
-  prefix: "ratelimit:auth",
-  ...(store ? {} : { ephemeralCache: new Map() }),
-});
+export const authLimiter = store
+  ? new Ratelimit({
+      redis: store,
+      limiter: Ratelimit.slidingWindow(100, "60 s"),
+      analytics: false,
+      prefix: "ratelimit:auth",
+    })
+  : null;
 
 /** General API routes: 60 requests per 60-second sliding window. */
-export const apiLimiter = new Ratelimit({
-  redis: store as ConstructorParameters<typeof Ratelimit>[0]["redis"],
-  limiter: Ratelimit.slidingWindow(60, "60 s"),
-  analytics: false,
-  prefix: "ratelimit:api",
-  ...(store ? {} : { ephemeralCache: new Map() }),
-});
+export const apiLimiter = store
+  ? new Ratelimit({
+      redis: store,
+      limiter: Ratelimit.slidingWindow(60, "60 s"),
+      analytics: false,
+      prefix: "ratelimit:api",
+    })
+  : null;
 
 // ---------------------------------------------------------------------------
 // Routes exempt from rate limiting (cron jobs, OAuth callbacks, webhooks).
@@ -77,6 +78,9 @@ export interface RateLimitResult {
 /**
  * Check the rate limit for a given request.
  *
+ * When Redis is not configured the check is a no-op (always allowed) so that
+ * local development isn't blocked.
+ *
  * @param identifier - User ID or IP address.
  * @param pathname   - The API route path (used to select the correct limiter).
  */
@@ -85,6 +89,11 @@ export async function checkRateLimit(
   pathname: string,
 ): Promise<RateLimitResult> {
   const limiter = pathname.startsWith("/api/auth/") ? authLimiter : apiLimiter;
+
+  // No Redis configured – allow everything (local dev).
+  if (!limiter) {
+    return { allowed: true, remaining: -1, reset: 0, retryAfterSeconds: 0 };
+  }
 
   const { success, remaining, reset } = await limiter.limit(identifier);
 
