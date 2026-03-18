@@ -59,6 +59,7 @@ model User {
   audiences          Audience[]
   event              Event[]
   squareIntegration  SquareIntegration?
+  auditLogs          AuditLog[]
 }
 
 model Shop {
@@ -417,4 +418,19 @@ model SubmissionAnswer {
 
   @@index([questionId])
   @@index([submissionId])
+}
+
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  action     String   // e.g. USER_LOGIN, CUSTOMER_CREATE, ORDER_STATUS_CHANGE, SHOP_DISCONNECT
+  userId     String   @db.ObjectId
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetId   String?  // ID of the entity acted upon
+  targetType String?  // e.g. "Customer", "Order", "Shop"
+  metadata   Json?    // Flexible context: old/new values, IP, etc.
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }
