@@ -3,6 +3,7 @@ import db from "../../../lib/prisma";
 import {getCurrentUser} from "@/actions/getCurrentUser";
 import {cookies} from "next/headers";
 import {parseISO} from "date-fns";
+import {createAuditLog} from "@/lib/audit";
 
 export async function GET() {
   try {
@@ -104,6 +105,13 @@ export async function DELETE(req: Request) {
       where: {id},
     });
 
+    await createAuditLog({
+      action: "CUSTOMER_DELETE",
+      userId: user.id,
+      targetId: id,
+      targetType: "Customer",
+    });
+
     return NextResponse.json({message: "Customer deleted successfully"});
   } catch (err) {
     console.error("Error deleting customer:", err);
@@ -194,6 +202,17 @@ export async function PUT(req: Request) {
       include: {addresses: true},
     });
 
+    await createAuditLog({
+      action: "CUSTOMER_UPDATE",
+      userId: user.id,
+      targetId: id,
+      targetType: "Customer",
+      metadata: {
+        email: updatedCustomer.email,
+        name: `${updatedCustomer.firstName} ${updatedCustomer.lastName}`,
+      },
+    });
+
     return NextResponse.json({
       message: "Customer updated successfully",
       customer: updatedCustomer,
@@ -282,6 +301,17 @@ export async function POST(req: Request) {
       // Otherwise, Prisma would only return the customer fields
       include: {
         addresses: true,
+      },
+    });
+
+    await createAuditLog({
+      action: "CUSTOMER_CREATE",
+      userId: user.id,
+      targetId: newCustomer.id,
+      targetType: "Customer",
+      metadata: {
+        email: newCustomer.email,
+        name: `${newCustomer.firstName} ${newCustomer.lastName}`,
       },
     });
 
