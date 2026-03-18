@@ -1,4 +1,5 @@
 import db from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export type AuditAction =
   | "USER_LOGIN"
@@ -13,7 +14,7 @@ interface AuditLogParams {
   userId: string;
   targetId?: string;
   targetType?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Prisma.InputJsonValue;
 }
 
 /**
