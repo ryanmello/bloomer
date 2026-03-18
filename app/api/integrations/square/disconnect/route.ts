@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/actions/getCurrentUser";
 import db from "@/lib/prisma";
+import { createAuditLog } from "@/lib/audit";
 
 export async function POST() {
   try {
@@ -44,6 +45,14 @@ export async function POST() {
 
     await db.squareIntegration.delete({
       where: { id: integration.id },
+    });
+
+    await createAuditLog({
+      action: "SHOP_DISCONNECT",
+      userId: user.id,
+      targetId: integration.id,
+      targetType: "SquareIntegration",
+      metadata: { merchantId: integration.merchantId },
     });
 
     return NextResponse.json({ ok: true });
