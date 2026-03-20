@@ -8,7 +8,6 @@ import {
   Calendar,
   Mail,
   Sparkles,
-  Edit,
   Pencil,
 } from "lucide-react";
 import {Badge} from "@/components/ui/badge";
@@ -69,6 +68,12 @@ export default function AudienceCard({
   const handleViewDetails = () => {
     if (id) {
       router.push(`/audiences/${id}/customers`);
+    }
+  };
+
+  const handleViewEmailDetails = () => {
+    if (id) {
+      router.push(`/audiences/${id}/campaigns`);
     }
   };
 
@@ -231,6 +236,8 @@ export default function AudienceCard({
         <Button
           variant="outline"
           size="icon"
+          onClick={handleViewEmailDetails}
+          title="View email campaign details"
           className="shadow-sm hover:shadow-md transition-all duration-200">
           <Mail className="h-4 w-4" />
         </Button>
