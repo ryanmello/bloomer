@@ -76,9 +76,10 @@ function formatMoney(amountCents?: number, currency?: string): string {
 export default function OrdersPageMockup() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
+  const [defaultCurrency, setDefaultCurrency] = useState("USD");
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchOrders = async (currency: string) => {
       try {
         const res = await axios.get("/api/square/orders");
         const data = res.data;
@@ -90,7 +91,7 @@ export default function OrdersPageMockup() {
             id: o.id,
             customer: o.customer_id || "Walk-in",
             date: formatDate(o.created_at),
-            total: formatMoney(o.total_money?.amount, o.total_money?.currency),
+            total: formatMoney(o.total_money?.amount, currency || o.total_money?.currency),
             status: mapSquareState(o.state),
           }));
           setOrders(mapped);
@@ -102,7 +103,18 @@ export default function OrdersPageMockup() {
       }
     };
 
-    fetchOrders();
+    const loadData = async () => {
+      try {
+        const prefRes = await axios.get("/api/user/preferences");
+        const preferredCurrency = prefRes.data?.defaultCurrency || "USD";
+        setDefaultCurrency(preferredCurrency);
+        await fetchOrders(preferredCurrency);
+      } catch {
+        await fetchOrders("USD");
+      }
+    };
+
+    loadData();
   }, []);
 
   const [searchQuery, setSearchQuery] = useState("");

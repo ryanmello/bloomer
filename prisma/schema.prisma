@@ -39,6 +39,7 @@ model User {
   phone     String?
   emailNotificationsEnabled Boolean @default(true)
   timezone                  String?
+  defaultCurrency           String  @default("USD")
 
   // Two-Factor Authentication
   twoFactorEnabled Boolean  @default(false)

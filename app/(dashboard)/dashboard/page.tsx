@@ -22,6 +22,7 @@ export default async function DashboardPage() {
   ).length;
 
   const user = await getCurrentUser();
+  const defaultCurrency = user?.defaultCurrency ?? "USD";
 
   let squareConnected = false;
   let squareData = null;
@@ -72,7 +73,12 @@ export default async function DashboardPage() {
     : null;
 
   const formatCurrency = (amount: number) =>
-    `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: defaultCurrency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
 
   return (
     <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
@@ -110,8 +116,8 @@ export default async function DashboardPage() {
       </section>
 
       <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
-        <TrendGraph monthlyRevenue={squareData ? monthlyRevenue : null} />
-        <RecentActivity recentOrders={recentOrders} />
+        <TrendGraph monthlyRevenue={squareData ? monthlyRevenue : null} defaultCurrency={defaultCurrency} />
+        <RecentActivity recentOrders={recentOrders} defaultCurrency={defaultCurrency} />
       </div>
 
       <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
