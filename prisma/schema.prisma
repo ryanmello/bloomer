@@ -38,6 +38,8 @@ model User {
   postal    String?
   phone     String?
   emailNotificationsEnabled Boolean @default(true)
+  timezone                  String?
+  defaultCurrency           String  @default("USD")
 
   // Two-Factor Authentication
   twoFactorEnabled Boolean  @default(false)
@@ -102,6 +104,7 @@ model Customer {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  unsubscribedAt DateTime?
 
   shopId String @db.ObjectId
   shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
@@ -329,7 +332,7 @@ model Automation {
   name            String
   description     String?
   category        String  // "lifecycle", "marketing", "transactional"
-  triggerType     String  // "birthday", "inactive", "new_customer"
+  triggerType     String  // "birthday", "inactive", "new_customer", "holiday"
   timing          Int     // Days before/after trigger
   actionType      String  // "send_email"
   messageTemplate String? // Template key for predefined templates (e.g., "birthday_v1")
@@ -338,6 +341,11 @@ model Automation {
   // Email content
   emailSubject String? // Email subject line with merge tags (e.g., "Happy Birthday {{firstName}}!")
   emailBody    String? // HTML email body with merge tags
+
+  // Holiday trigger (e.g., Valentine's Day = Feb 14)
+  targetDate  DateTime? // Deprecated - use targetMonth/targetDay instead
+  targetMonth Int?      // 1-12 (like birthMonth)
+  targetDay   Int?      // 1-31 (like birthDay)
 
   // Coupon link
   couponId String? @db.ObjectId
@@ -355,6 +363,22 @@ model Automation {
 
   shopId String @db.ObjectId
   shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  // Automation run history
+  runs AutomationRun[]
+}
+
+model AutomationRun {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  automationId String   @db.ObjectId
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  customerId   String   @db.ObjectId
+  status       String   // "sent", "failed", "skipped"
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  @@index([automationId])
+  @@index([customerId])
 }
 
 model Form {

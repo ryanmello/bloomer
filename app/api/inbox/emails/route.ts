@@ -124,57 +124,70 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch emails based on platform
-    if (platform === 'gmail') {
-      // Gmail API
-      const response = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=in:inbox`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
+    const view = searchParams.get("view") || "inbox"; // inbox | starred | archived
+    const pageToken = searchParams.get("pageToken") || "";
+    const pageSize = Math.min(parseInt(searchParams.get("pageSize") || "20", 10) || 20, 50);
+
+    if (platform === "gmail") {
+      // Gmail query: inbox (default), starred, or archived (-in:inbox, not trash)
+      const qMap: Record<string, string> = {
+        inbox: "in:inbox",
+        starred: "is:starred",
+        archived: "-in:inbox -in:trash",
+      };
+      const q = qMap[view] || "in:inbox";
+
+      const listUrl = new URL("https://gmail.googleapis.com/gmail/v1/users/me/messages");
+      listUrl.searchParams.set("maxResults", String(pageSize));
+      listUrl.searchParams.set("q", q);
+      if (pageToken) listUrl.searchParams.set("pageToken", pageToken);
+
+      const response = await fetch(listUrl.toString(), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch Gmail messages');
+        const err = await response.text();
+        throw new Error(err || "Failed to fetch Gmail messages");
       }
 
       const data = await response.json();
       const messages = data.messages || [];
+      const nextPageToken = data.nextPageToken || null;
 
-      // Fetch full message details
       const emails = await Promise.all(
-        messages.slice(0, 20).map(async (msg: any) => {
+        messages.map(async (msg: any) => {
           const msgResponse = await fetch(
             `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
+            { headers: { Authorization: `Bearer ${accessToken}` } }
           );
           const msgData = await msgResponse.json();
 
-          const headers = msgData.payload.headers;
-          const getHeader = (name: string) => headers.find((h: any) => h.name === name)?.value || '';
+          const headers = msgData.payload?.headers || [];
+          const getHeader = (name: string) =>
+            headers.find((h: any) => h.name === name)?.value || "";
 
-          const snippet = msgData.snippet || '';
-          const date = new Date(parseInt(msgData.internalDate));
+          const snippet = msgData.snippet || "";
+          const date = new Date(parseInt(msgData.internalDate || "0", 10));
+          const labelIds = msgData.labelIds || [];
+          const inTrash = labelIds.includes("TRASH");
 
           return {
             id: msg.id,
-            from: getHeader('From'),
-            subject: getHeader('Subject'),
+            from: getHeader("From"),
+            subject: getHeader("Subject"),
             preview: snippet.substring(0, 100),
             date: formatDate(date),
-            read: !msgData.labelIds?.includes('UNREAD'),
-            starred: msgData.labelIds?.includes('STARRED'),
-            important: msgData.labelIds?.includes('IMPORTANT'),
+            read: !labelIds.includes("UNREAD"),
+            starred: labelIds.includes("STARRED"),
+            archived: !labelIds.includes("INBOX") && !inTrash,
+            important: labelIds.includes("IMPORTANT"),
+            canDelete: !inTrash,
           };
         })
       );
 
-      return NextResponse.json({ emails });
+      return NextResponse.json({ emails, nextPageToken });
     } else {
       // Outlook/Microsoft Graph API
       const response = await fetch(
@@ -194,16 +207,18 @@ export async function GET(request: NextRequest) {
 
       const emails = data.value.map((msg: any) => ({
         id: msg.id,
-        from: msg.from?.emailAddress?.address || msg.from?.emailAddress?.name || 'Unknown',
-        subject: msg.subject || '(No Subject)',
-        preview: msg.bodyPreview || '',
+        from: msg.from?.emailAddress?.address || msg.from?.emailAddress?.name || "Unknown",
+        subject: msg.subject || "(No Subject)",
+        preview: msg.bodyPreview || "",
         date: formatDate(new Date(msg.receivedDateTime)),
         read: msg.isRead,
-        starred: msg.flag?.flagStatus === 'flagged',
-        important: msg.importance === 'high',
+        starred: msg.flag?.flagStatus === "flagged",
+        important: msg.importance === "high",
+        archived: false,
+        canDelete: true,
       }));
 
-      return NextResponse.json({ emails });
+      return NextResponse.json({ emails, nextPageToken: null });
     }
   } catch (error: any) {
     console.error('Fetch emails error:', error);

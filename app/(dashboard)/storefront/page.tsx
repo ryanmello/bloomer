@@ -17,18 +17,23 @@ export interface Product {
   retailPrice: number;
   costPrice: number;
   quantity: number;
+  lowInventoryAlert?: number;
   description: string | null;
   category: string;
   updatedAt: string;
   createdAt: string;
 }
 
-async function getProducts() {
+async function getProducts(): Promise<{
+  products: Product[];
+  noShop: boolean;
+  noUser?: boolean;
+}> {
   try {
     const user = await getCurrentUser();
 
     if (!user) {
-      throw new Error('Unauthorized');
+      return { products: [], noShop: true, noUser: true };
     }
 
     const cookieStore = await cookies();
@@ -75,22 +80,59 @@ async function getProducts() {
 
   } catch (error) {
     console.error('Error fetching products:', error);
-    throw new Error('Failed to fetch products');
+    return { products: [], noShop: true, noUser: true };
   }
+}
+
+function getStockStatus(quantity: number, threshold: number) {
+  if (quantity === 0) return "out-of-stock" as const;
+  if (quantity <= threshold) return "low-stock" as const;
+  return "in-stock" as const;
 }
 
 function calculateStats(products: Product[]) {
   const totalProducts = products.length;
   const totalInventory = products.reduce((sum, p) => sum + p.quantity, 0);
   const totalValue = products.reduce((sum, p) => sum + (p.retailPrice * p.quantity), 0);
-  const lowStock = products.filter(p => p.quantity < 10 && p.quantity > 0).length;
-  const outOfStock = products.filter(p => p.quantity === 0).length;
+  const lowStock = products.filter(
+    (p) => getStockStatus(p.quantity, p.lowInventoryAlert ?? 10) === "low-stock"
+  ).length;
+  const outOfStock = products.filter((p) => p.quantity === 0).length;
   return { totalProducts, totalInventory, totalValue, lowStock, outOfStock };
 }
 
 export default async function StorefrontPage() {
-  const { products, noShop } = await getProducts();
+  const { products, noShop, noUser } = await getProducts();
   const stats = calculateStats(products);
+
+  // Session invalid or user not found
+  if (noUser) {
+    return (
+      <div className="flex min-h-screen">
+        <main className="flex-1 p-6">
+          <Card className="max-w-2xl mx-auto mt-12">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                <Package className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <CardTitle className="text-2xl">Sign In Required</CardTitle>
+              <CardDescription>
+                Please sign in to view and manage your inventory.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <a
+                href="/sign-in"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+              >
+                Sign In
+              </a>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   if (noShop) {
     return (

@@ -14,7 +14,8 @@ import {
   Filler,
 } from 'chart.js';
 import { useTheme } from 'next-themes';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, TrendingDown, Link as LinkIcon } from 'lucide-react';
+import type { MonthlyRevenue } from '@/lib/square';
 
 ChartJS.register(
   CategoryScale,
@@ -27,18 +28,31 @@ ChartJS.register(
   Filler
 );
 
-export default function TrendGraph() {
+type Props = {
+  monthlyRevenue?: MonthlyRevenue[] | null;
+  defaultCurrency?: string;
+};
+
+export default function TrendGraph({ monthlyRevenue, defaultCurrency = "USD" }: Props) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // Mock data showing upward trend
-  const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const revenueData = [3200, 3800, 3500, 4200, 4600, 5100, 5400, 5800, 6200, 6800, 7100, 7500];
-  
-  // Calculate percentage change
-  const firstValue = revenueData[0];
-  const lastValue = revenueData[revenueData.length - 1];
-  const percentChange = ((lastValue - firstValue) / firstValue * 100).toFixed(1);
+  const hasData = monthlyRevenue && monthlyRevenue.length > 0;
+
+  const labels = hasData
+    ? monthlyRevenue.map((m) => `${m.month} ${m.year}`)
+    : [];
+  const revenueData = hasData
+    ? monthlyRevenue.map((m) => m.revenue)
+    : [];
+
+  const firstValue = revenueData[0] ?? 0;
+  const lastValue = revenueData[revenueData.length - 1] ?? 0;
+  const percentChange =
+    firstValue > 0
+      ? ((lastValue - firstValue) / firstValue * 100).toFixed(1)
+      : '0.0';
+  const isUp = Number(percentChange) >= 0;
 
   const data = {
     labels,
@@ -74,7 +88,10 @@ export default function TrendGraph() {
         displayColors: false,
         callbacks: {
           label: function(context: any) {
-            return `$${context.parsed.y.toLocaleString()}`;
+            return new Intl.NumberFormat(undefined, {
+              style: "currency",
+              currency: defaultCurrency,
+            }).format(context.parsed.y);
           }
         }
       },
@@ -101,12 +118,40 @@ export default function TrendGraph() {
         ticks: {
           color: isDark ? 'rgb(163, 163, 163)' : 'rgb(115, 115, 115)',
           callback: function(value: any) {
-            return '$' + (value / 1000).toFixed(1) + 'k';
+            const amount = Number(value);
+            if (!Number.isFinite(amount)) return value;
+            const compact = new Intl.NumberFormat(undefined, {
+              style: "currency",
+              currency: defaultCurrency,
+              notation: "compact",
+              maximumFractionDigits: 1,
+            }).format(amount);
+            return compact;
           }
         },
       },
     },
   };
+
+  if (!hasData) {
+    return (
+      <div className='w-full xl:w-2/3 rounded-2xl border shadow-sm p-6 bg-card border-border min-w-0'>
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-foreground">Revenue Trend</h3>
+          <p className="text-sm text-muted-foreground mt-1">Monthly revenue over the past year</p>
+        </div>
+        <div className="h-72 flex flex-col items-center justify-center text-center">
+          <LinkIcon className="h-10 w-10 text-muted-foreground/40 mb-3" />
+          <p className="text-sm font-medium text-muted-foreground">No revenue data available</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Connect your Square account to see revenue trends
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const TrendIcon = isUp ? TrendingUp : TrendingDown;
 
   return (
     <div className='w-full xl:w-2/3 rounded-2xl border shadow-sm p-6 bg-card border-border min-w-0'>
@@ -115,9 +160,13 @@ export default function TrendGraph() {
           <h3 className="text-lg font-semibold text-foreground">Revenue Trend</h3>
           <p className="text-sm text-muted-foreground mt-1">Monthly revenue over the past year</p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:ring-emerald-700">
-          <TrendingUp className="h-4 w-4" />
-          <span className="text-sm font-medium">+{percentChange}%</span>
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ring-1 ${
+          isUp
+            ? 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:ring-emerald-700'
+            : 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:ring-rose-700'
+        }`}>
+          <TrendIcon className="h-4 w-4" />
+          <span className="text-sm font-medium">{isUp ? '+' : ''}{percentChange}%</span>
         </div>
       </div>
       <div className="h-72 min-w-0">

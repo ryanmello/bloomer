@@ -4,6 +4,7 @@ export interface Product {
     retailPrice: number;
     costPrice: number;
     quantity: number;
+    lowInventoryAlert?: number;
     description: string | null;
     category: string;
     updatedAt: string;

@@ -28,6 +28,7 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
     const [costPrice, setCostPrice] = useState('');
     const [description, setDescription] = useState('');
     const [quantity, setQuantity] = useState('');
+    const [lowInventoryAlert, setLowInventoryAlert] = useState('10');
     const [category, setCategory] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
@@ -40,6 +41,7 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
             setCostPrice(product.costPrice.toString());
             setDescription(product.description || '');
             setQuantity(product.quantity.toString());
+            setLowInventoryAlert(String(product.lowInventoryAlert ?? 10));
             setCategory(product.category || '');
         }
     }, [product]);
@@ -59,6 +61,7 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
                     costPrice: parseFloat(costPrice),
                     description,
                     quantity: parseInt(quantity),
+                    lowInventoryAlert: parseInt(lowInventoryAlert) || 10,
                     category,
                 }),
             });
@@ -138,6 +141,7 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
                                     id="quantity"
                                     type="number"
                                     step="1"
+                                    min="0"
                                     value={quantity}
                                     onChange={(e) => setQuantity(e.target.value)}
                                     className="col-span-2"
@@ -145,6 +149,20 @@ export default function EditProductModal({ product, onClose }: EditProductModalP
                                 />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="lowInventoryAlert" className="text-right col-span-2">
+                                    Low Stock Threshold
+                                </Label>
+                                <Input
+                                    id="lowInventoryAlert"
+                                    type="number"
+                                    step="1"
+                                    min="0"
+                                    value={lowInventoryAlert}
+                                    onChange={(e) => setLowInventoryAlert(e.target.value)}
+                                    className="col-span-2"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4 col-span-2">
                                 <Label htmlFor="category" className="text-right col-span-2">
                                     Category
                                 </Label>

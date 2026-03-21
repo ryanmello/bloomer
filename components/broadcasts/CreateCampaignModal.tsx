@@ -100,6 +100,11 @@ export default function CreateCampaignModal({
       return;
     }
 
+    if (selectedAudience.length === 0) {
+      toast.error('Please select an audience');
+      return;
+    }
+
     if (selectedAudience.includes('single') && !selectedCustomerId) {
       toast.error('Please select a customer to send the test email to');
       return;
@@ -114,11 +119,14 @@ export default function CreateCampaignModal({
     setLoading(true);
 
     try {
+      const selectedAudienceId = selectedAudience.find((id) => id !== 'all' && id !== 'single');
       const payload: any = {
         campaignName,
         subject,
         emailBody,
-        audienceId: selectedAudience.includes('all') ? undefined : selectedAudience,
+        audienceId: selectedAudience.includes('all') || selectedAudience.includes('single')
+          ? undefined
+          : selectedAudienceId,
       };
       if (selectedAudience.includes('single') && selectedCustomerId) {
         payload.customerId = selectedCustomerId;

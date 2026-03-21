@@ -1,4 +1,4 @@
-import {NextResponse} from "next/server";
+import {NextResponse, NextRequest} from "next/server";
 import db from "../../../lib/prisma";
 import {getCurrentUser} from "@/actions/getCurrentUser";
 import {cookies} from "next/headers";
@@ -44,10 +44,13 @@ export async function GET() {
       where: {shopId: shop.id, userId: user.id},
     });
 
-    return NextResponse.json(event || []);
+    return NextResponse.json(event);
   } catch (err) {
     console.error("Error fetching event:", err);
-    return NextResponse.json([]);
+    return NextResponse.json(
+      {message: "Failed to fetch events"},
+      {status: 500},
+    );
   }
 }
 
@@ -105,7 +108,7 @@ export async function POST(req: Request) {
     const createdEvent = await db.event.create({
       data: {
         title,
-        notes,
+        notes: notes ?? "",
         start,
         end,
         userId: user.id,
@@ -122,3 +125,5 @@ export async function POST(req: Request) {
     return NextResponse.json({error: "Failed to create event"}, {status: 500});
   }
 }
+
+

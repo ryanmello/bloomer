@@ -99,13 +99,16 @@ async function processScheduledCampaigns(req: NextRequest) {
         console.log(`   Scheduled for: ${campaign.scheduledFor?.toISOString()}`);
         console.log(`   Shop: ${campaign.shop.name}`);
 
-        // Get customers from recipients
-        const customers = campaign.recipients.map(r => ({
-          id: r.customer.id,
-          email: r.customer.email,
-          firstName: r.customer.firstName,
-          lastName: r.customer.lastName
-        }));
+        // Get customers from recipients (exclude those who unsubscribed since campaign was created)
+        const customers = campaign.recipients
+          .filter(r => !r.customer.unsubscribedAt)
+          .map(r => ({
+            id: r.customer.id,
+            email: r.customer.email,
+            firstName: r.customer.firstName,
+            lastName: r.customer.lastName,
+            unsubscribedAt: r.customer.unsubscribedAt,
+          }));
 
         console.log(`   Customers to send to: ${customers.length}`);
 
@@ -126,7 +129,8 @@ async function processScheduledCampaigns(req: NextRequest) {
           campaign.subject,
           campaign.emailBody,
           campaign.shop.name || 'Your Store',
-          campaign.shop.email || ''
+          campaign.shop.email || '',
+          campaign.shop.address ?? ''
         );
 
         console.log(`✅ Campaign ${campaign.id} completed successfully`);

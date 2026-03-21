@@ -149,6 +149,10 @@ export async function POST(req: Request) {
             );
         }
 
+        const lowInventoryAlert = data.lowInventoryAlert !== undefined
+            ? Math.max(0, parseInt(String(data.lowInventoryAlert), 10) || 10)
+            : 10;
+
         // Create the product in the database
         const newProduct = await db.product.create({
             data: {
@@ -156,6 +160,7 @@ export async function POST(req: Request) {
                 retailPrice: parseFloat(data.price),
                 costPrice: parseFloat(data.costPrice || data.price),
                 quantity: parseInt(data.inventoryCount),
+                lowInventoryAlert,
                 description: data.description || null,
                 category: data.category || "General",  // Use default instead of null
                 shop: {
