@@ -70,7 +70,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { campaignName, subject, emailBody, audienceId, status, scheduledFor, sentAt } = body;
+    const { campaignName, subject, emailBody, audienceId, customerId, status, scheduledFor, sentAt } = body;
+    const normalizedAudienceId = Array.isArray(audienceId) ? audienceId[0] : audienceId;
 
     if (!campaignName || !subject || !emailBody) {
       return NextResponse.json(
@@ -97,10 +98,10 @@ export async function POST(req: NextRequest) {
     // Validate audience
     let targetAudience = null;
 
-    if (audienceId) {
+    if (normalizedAudienceId) {
       targetAudience = await db.audience.findFirst({
         where: {
-          id: audienceId,
+          id: normalizedAudienceId,
           shopId: shopId
         }
       });
@@ -113,8 +114,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Fetch customers (MongoDB: unsubscribedAt may be missing on existing docs, so filter in code)
-    const rawCustomers = targetAudience
+    // Fetch customers
+    const rawCustomers = customerId
+      ? await db.customer.findMany({
+          where: {
+            shopId: shopId,
+            id: customerId,
+          },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            unsubscribedAt: true,
+          },
+        })
+      : targetAudience
       ? await db.customer.findMany({
           where: {
             shopId: shopId,
@@ -129,7 +144,9 @@ export async function POST(req: NextRequest) {
           },
         })
       : await db.customer.findMany({
-          where: { shopId: shopId },
+          where: {
+            shopId: shopId,
+          },
           select: {
             id: true,
             email: true,
@@ -138,10 +155,8 @@ export async function POST(req: NextRequest) {
             unsubscribedAt: true,
           },
         });
-
-    const targetCustomers = rawCustomers.filter(
-      (c) => c.unsubscribedAt == null
-    );
+    // Treat null/undefined as subscribed, any Date means unsubscribed
+    const targetCustomers = rawCustomers.filter((customer) => customer.unsubscribedAt == null);
 
     // If no customers found, return error
     if (targetCustomers.length === 0) {
@@ -173,7 +188,7 @@ export async function POST(req: NextRequest) {
         campaignName,
         subject,
         emailBody,
-        audienceId: audienceId ?? null,
+        audienceId: normalizedAudienceId ?? null,
         status: campaignStatus,
         scheduledFor: scheduledDate,
         sentAt: sentAt ? new Date(sentAt) : null,
@@ -192,9 +207,9 @@ export async function POST(req: NextRequest) {
     });
 
     if (campaignStatus === "Sent") {
-      if (audienceId) {
+      if (normalizedAudienceId) {
         await db.audience.update({
-          where: { id: audienceId },
+          where: { id: normalizedAudienceId },
           data: {
             campaignsSent: {
               increment: 1
