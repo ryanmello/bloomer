@@ -40,11 +40,11 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 // Authentication
 // ---------------------------------------------------------------------------
-describe("GET /api/customers/search - Authentication", () => {
+describe("GET /api/customer/search - Authentication", () => {
   it("returns 401 when user is not authenticated", async () => {
     mockGetCurrentUser.mockResolvedValue(null);
 
-    const res = await GET(buildRequest("/api/customers/search?q=alice"));
+    const res = await GET(buildRequest("/api/customer/search?q=alice"));
     const body = await res.json();
 
     expect(res.status).toBe(401);
@@ -55,13 +55,13 @@ describe("GET /api/customers/search - Authentication", () => {
 // ---------------------------------------------------------------------------
 // Shop scoping & authorization
 // ---------------------------------------------------------------------------
-describe("GET /api/customers/search - Shop scoping", () => {
+describe("GET /api/customer/search - Shop scoping", () => {
   it("returns 404 when user has no shops", async () => {
     mockGetCurrentUser.mockResolvedValue(MOCK_USER);
     mockCookieGet.mockReturnValue(undefined);
     mockFindFirst.mockResolvedValue(null);
 
-    const res = await GET(buildRequest("/api/customers/search?q=alice"));
+    const res = await GET(buildRequest("/api/customer/search?q=alice"));
     const body = await res.json();
 
     expect(res.status).toBe(404);
@@ -74,7 +74,7 @@ describe("GET /api/customers/search - Shop scoping", () => {
     mockFindFirst.mockResolvedValueOnce(MOCK_SHOP);
     mockFindMany.mockResolvedValue([]);
 
-    await GET(buildRequest("/api/customers/search?q=alice"));
+    await GET(buildRequest("/api/customer/search?q=alice"));
 
     expect(mockFindFirst).toHaveBeenCalledWith({
       where: { id: "shop-1", userId: "user-1" },
@@ -87,7 +87,7 @@ describe("GET /api/customers/search - Shop scoping", () => {
     mockFindFirst.mockResolvedValueOnce(MOCK_SHOP);
     mockFindMany.mockResolvedValue([]);
 
-    await GET(buildRequest("/api/customers/search?q=alice"));
+    await GET(buildRequest("/api/customer/search?q=alice"));
 
     expect(mockFindFirst).toHaveBeenCalledTimes(1);
     expect(mockFindFirst).toHaveBeenCalledWith({
@@ -102,7 +102,7 @@ describe("GET /api/customers/search - Shop scoping", () => {
     mockFindFirst.mockResolvedValueOnce(MOCK_SHOP); // fallback succeeds
     mockFindMany.mockResolvedValue([]);
 
-    await GET(buildRequest("/api/customers/search?q=test"));
+    await GET(buildRequest("/api/customer/search?q=test"));
 
     expect(mockFindFirst).toHaveBeenCalledTimes(2);
   });
@@ -113,7 +113,7 @@ describe("GET /api/customers/search - Shop scoping", () => {
     mockFindFirst.mockResolvedValueOnce(MOCK_SHOP);
     mockFindMany.mockResolvedValue([]);
 
-    await GET(buildRequest("/api/customers/search?q=alice"));
+    await GET(buildRequest("/api/customer/search?q=alice"));
 
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -126,13 +126,13 @@ describe("GET /api/customers/search - Shop scoping", () => {
 // ---------------------------------------------------------------------------
 // Validation
 // ---------------------------------------------------------------------------
-describe("GET /api/customers/search - Validation", () => {
+describe("GET /api/customer/search - Validation", () => {
   it("returns 400 when q parameter is missing", async () => {
     mockGetCurrentUser.mockResolvedValue(MOCK_USER);
     mockCookieGet.mockReturnValue(undefined);
     mockFindFirst.mockResolvedValue(MOCK_SHOP);
 
-    const res = await GET(buildRequest("/api/customers/search"));
+    const res = await GET(buildRequest("/api/customer/search"));
     const body = await res.json();
 
     expect(res.status).toBe(400);
@@ -144,7 +144,7 @@ describe("GET /api/customers/search - Validation", () => {
     mockCookieGet.mockReturnValue(undefined);
     mockFindFirst.mockResolvedValue(MOCK_SHOP);
 
-    const res = await GET(buildRequest("/api/customers/search?q="));
+    const res = await GET(buildRequest("/api/customer/search?q="));
     const body = await res.json();
 
     expect(res.status).toBe(400);
@@ -156,7 +156,7 @@ describe("GET /api/customers/search - Validation", () => {
     mockCookieGet.mockReturnValue(undefined);
     mockFindFirst.mockResolvedValue(MOCK_SHOP);
 
-    const res = await GET(buildRequest("/api/customers/search?q=%20%20"));
+    const res = await GET(buildRequest("/api/customer/search?q=%20%20"));
     const body = await res.json();
 
     expect(res.status).toBe(400);
@@ -167,7 +167,7 @@ describe("GET /api/customers/search - Validation", () => {
 // ---------------------------------------------------------------------------
 // Search behavior
 // ---------------------------------------------------------------------------
-describe("GET /api/customers/search - Search behavior", () => {
+describe("GET /api/customer/search - Search behavior", () => {
   beforeEach(() => {
     mockGetCurrentUser.mockResolvedValue(MOCK_USER);
     mockCookieGet.mockReturnValue(undefined);
@@ -177,7 +177,7 @@ describe("GET /api/customers/search - Search behavior", () => {
   it("searches across firstName, lastName, email, and phoneNumber", async () => {
     mockFindMany.mockResolvedValue([]);
 
-    await GET(buildRequest("/api/customers/search?q=alice"));
+    await GET(buildRequest("/api/customer/search?q=alice"));
 
     const call = mockFindMany.mock.calls[0][0];
     expect(call.where.OR).toEqual([
@@ -194,7 +194,7 @@ describe("GET /api/customers/search - Search behavior", () => {
       { id: "c2", firstName: "Bob", lastName: "Alice", email: "bob@example.com" },
     ]);
 
-    const res = await GET(buildRequest("/api/customers/search?q=alice"));
+    const res = await GET(buildRequest("/api/customer/search?q=alice"));
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -207,7 +207,7 @@ describe("GET /api/customers/search - Search behavior", () => {
   it("returns empty results array when no customers match", async () => {
     mockFindMany.mockResolvedValue([]);
 
-    const res = await GET(buildRequest("/api/customers/search?q=nonexistent"));
+    const res = await GET(buildRequest("/api/customer/search?q=nonexistent"));
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -217,7 +217,7 @@ describe("GET /api/customers/search - Search behavior", () => {
   it("only selects id, firstName, lastName, email from the database", async () => {
     mockFindMany.mockResolvedValue([]);
 
-    await GET(buildRequest("/api/customers/search?q=test"));
+    await GET(buildRequest("/api/customer/search?q=test"));
 
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -229,7 +229,7 @@ describe("GET /api/customers/search - Search behavior", () => {
   it("trims the search query before matching", async () => {
     mockFindMany.mockResolvedValue([]);
 
-    await GET(buildRequest("/api/customers/search?q=%20alice%20"));
+    await GET(buildRequest("/api/customer/search?q=%20alice%20"));
 
     const call = mockFindMany.mock.calls[0][0];
     expect(call.where.OR[0].firstName.contains).toBe("alice");
@@ -239,7 +239,7 @@ describe("GET /api/customers/search - Search behavior", () => {
 // ---------------------------------------------------------------------------
 // Limit / pagination
 // ---------------------------------------------------------------------------
-describe("GET /api/customers/search - Limit parameter", () => {
+describe("GET /api/customer/search - Limit parameter", () => {
   beforeEach(() => {
     mockGetCurrentUser.mockResolvedValue(MOCK_USER);
     mockCookieGet.mockReturnValue(undefined);
@@ -248,7 +248,7 @@ describe("GET /api/customers/search - Limit parameter", () => {
   });
 
   it("defaults to 20 results when limit is not provided", async () => {
-    await GET(buildRequest("/api/customers/search?q=a"));
+    await GET(buildRequest("/api/customer/search?q=a"));
 
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 20 }),
@@ -256,7 +256,7 @@ describe("GET /api/customers/search - Limit parameter", () => {
   });
 
   it("respects a valid limit parameter", async () => {
-    await GET(buildRequest("/api/customers/search?q=a&limit=5"));
+    await GET(buildRequest("/api/customer/search?q=a&limit=5"));
 
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 5 }),
@@ -264,7 +264,7 @@ describe("GET /api/customers/search - Limit parameter", () => {
   });
 
   it("caps limit at 50", async () => {
-    await GET(buildRequest("/api/customers/search?q=a&limit=100"));
+    await GET(buildRequest("/api/customer/search?q=a&limit=100"));
 
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 50 }),
@@ -272,7 +272,7 @@ describe("GET /api/customers/search - Limit parameter", () => {
   });
 
   it("ignores non-numeric limit and uses default", async () => {
-    await GET(buildRequest("/api/customers/search?q=a&limit=abc"));
+    await GET(buildRequest("/api/customer/search?q=a&limit=abc"));
 
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 20 }),
@@ -280,7 +280,7 @@ describe("GET /api/customers/search - Limit parameter", () => {
   });
 
   it("ignores zero or negative limit and uses default", async () => {
-    await GET(buildRequest("/api/customers/search?q=a&limit=0"));
+    await GET(buildRequest("/api/customer/search?q=a&limit=0"));
 
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 20 }),
@@ -291,14 +291,14 @@ describe("GET /api/customers/search - Limit parameter", () => {
 // ---------------------------------------------------------------------------
 // Error handling
 // ---------------------------------------------------------------------------
-describe("GET /api/customers/search - Error handling", () => {
+describe("GET /api/customer/search - Error handling", () => {
   it("returns 500 when an unexpected error occurs", async () => {
     mockGetCurrentUser.mockResolvedValue(MOCK_USER);
     mockCookieGet.mockReturnValue(undefined);
     mockFindFirst.mockResolvedValue(MOCK_SHOP);
     mockFindMany.mockRejectedValue(new Error("Database connection lost"));
 
-    const res = await GET(buildRequest("/api/customers/search?q=alice"));
+    const res = await GET(buildRequest("/api/customer/search?q=alice"));
     const body = await res.json();
 
     expect(res.status).toBe(500);
@@ -308,7 +308,7 @@ describe("GET /api/customers/search - Error handling", () => {
   it("returns 500 when getCurrentUser throws", async () => {
     mockGetCurrentUser.mockRejectedValue(new Error("Auth service down"));
 
-    const res = await GET(buildRequest("/api/customers/search?q=alice"));
+    const res = await GET(buildRequest("/api/customer/search?q=alice"));
     const body = await res.json();
 
     expect(res.status).toBe(500);
