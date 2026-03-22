@@ -247,7 +247,7 @@ describe("integration: rate limit check to response", () => {
     });
 
     const result = await checkRateLimit("user-42", "/api/customer");
-    const headers = rateLimitHeaders(result);
+    const headers = rateLimitHeaders(result) as Record<string, string>;
 
     expect(result.allowed).toBe(true);
     expect(headers["X-RateLimit-Remaining"]).toBe("58");
