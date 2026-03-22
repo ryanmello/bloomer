@@ -32,7 +32,7 @@ export async function GET() {
       return NextResponse.json({ error: "Shop not found" }, { status: 404 });
     }
 
-    // Fetch automations for this shop with audience data
+    // Fetch automations for this shop with audience data and run metrics
     const automations = await db.automation.findMany({
       where: { shopId: activeShopId },
       orderBy: { createdAt: "desc" },
@@ -43,10 +43,39 @@ export async function GET() {
             name: true,
           },
         },
+        runs: {
+          select: {
+            status: true,
+            openedAt: true,
+            clickedAt: true,
+          },
+        },
       },
     });
 
-    return NextResponse.json(automations);
+    // Map to include computed metrics
+    const automationsWithMetrics = automations.map((automation) => {
+      const runs = automation.runs;
+      const triggers = runs.length;
+      const sent = runs.filter(r => r.status === "sent" || r.status === "delivered").length;
+      const opened = runs.filter(r => r.openedAt !== null).length;
+      const clicked = runs.filter(r => r.clickedAt !== null).length;
+      const failed = runs.filter(r => r.status === "failed" || r.status === "bounced").length;
+
+      // Remove runs array from response (we don't need the raw data)
+      const { runs: _, ...automationData } = automation;
+
+      return {
+        ...automationData,
+        triggers,
+        sent,
+        opened,
+        clicked,
+        failed,
+      };
+    });
+
+    return NextResponse.json(automationsWithMetrics);
   } catch (error) {
     console.error("Error fetching automations:", error);
     return NextResponse.json(

@@ -9,6 +9,7 @@ import {
   getAlreadySentCustomerIds,
   isHolidayTriggerDay,
 } from "@/lib/automation-triggers";
+import { canSendMarketingEmail } from "@/lib/email-rate-limit";
 
 type Customer = {
   id: string;
@@ -23,12 +24,13 @@ type AutomationResult = {
   triggerType: string;
   customersMatched: number;
   customersSkipped: number;
+  customersRateLimited: number;
   emailsSent: number;
   emailsFailed: number;
   customers: Array<{
     id: string;
     email: string;
-    status: "sent" | "failed" | "skipped";
+    status: "sent" | "failed" | "skipped" | "rate_limited";
     error?: string;
   }>;
 };
@@ -39,6 +41,7 @@ type ProcessResult = {
   automationsProcessed: number;
   totalEmailsSent: number;
   totalEmailsFailed: number;
+  totalRateLimited: number;
   results: AutomationResult[];
 };
 
@@ -77,12 +80,14 @@ export async function processAutomationsForShop(
   const results: AutomationResult[] = [];
   let totalEmailsSent = 0;
   let totalEmailsFailed = 0;
+  let totalRateLimited = 0;
 
   for (const automation of automations) {
     const result = await processAutomation(automation, shop.name, dryRun);
     results.push(result);
     totalEmailsSent += result.emailsSent;
     totalEmailsFailed += result.emailsFailed;
+    totalRateLimited += result.customersRateLimited;
   }
 
   return {
@@ -91,6 +96,7 @@ export async function processAutomationsForShop(
     automationsProcessed: automations.length,
     totalEmailsSent,
     totalEmailsFailed,
+    totalRateLimited,
     results,
   };
 }
@@ -122,6 +128,7 @@ async function processAutomation(
     triggerType: automation.triggerType,
     customersMatched: 0,
     customersSkipped: 0,
+    customersRateLimited: 0,
     emailsSent: 0,
     emailsFailed: 0,
     customers: [],
@@ -225,6 +232,39 @@ async function processAutomation(
         continue;
       }
 
+      // Check rate limits before sending
+      // Birthday and holiday automations skip cooloff but still count toward monthly cap
+      const skipCooloff = automation.triggerType === "birthday" || automation.triggerType === "holiday";
+      const rateLimitCheck = await canSendMarketingEmail(customer.id, {
+        skipCooloff,
+      });
+
+      if (!rateLimitCheck.allowed) {
+        // Log the rate-limited attempt
+        console.log(
+          `⏸️ Rate limited: ${customer.email} - ${rateLimitCheck.reason} ` +
+          `(monthly: ${rateLimitCheck.monthlyCount}/5)`
+        );
+
+        await db.automationRun.create({
+          data: {
+            automationId: automation.id,
+            customerId: customer.id,
+            status: "rate_limited",
+            errorMessage: `Suppressed due to ${rateLimitCheck.reason === "cooloff" ? "3-day cooloff" : "monthly cap (5/month)"}`,
+          },
+        });
+
+        result.customersRateLimited++;
+        result.customers.push({
+          id: customer.id,
+          email: customer.email,
+          status: "rate_limited",
+          error: `Suppressed: ${rateLimitCheck.reason}`,
+        });
+        continue;
+      }
+
       // Send the email
       const emailResult = await sendAutomationEmail(
         automation.id,
@@ -234,13 +274,14 @@ async function processAutomation(
         shopName
       );
 
-      // Log the run
+      // Log the run with Resend email ID for webhook tracking
       await db.automationRun.create({
         data: {
           automationId: automation.id,
           customerId: customer.id,
           status: emailResult.success ? "sent" : "failed",
           errorMessage: emailResult.error,
+          resendEmailId: emailResult.emailId || null,
         },
       });
 
