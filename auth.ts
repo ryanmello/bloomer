@@ -1,6 +1,7 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { getUserFromDb } from "@/lib/auth-utils"
+import { createAuditLog } from "@/lib/audit"
 
 // Use secure cookies only when NOT on localhost (fixes session issues in local dev)
 const isLocalhost =
@@ -56,4 +57,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
   // Configure for Edge Runtime compatibility
   trustHost: true,
+  events: {
+    async signIn({ user }) {
+      if (user?.id) {
+        await createAuditLog({
+          action: "USER_LOGIN",
+          userId: user.id,
+          metadata: { email: user.email },
+        });
+      }
+    },
+  },
 })
