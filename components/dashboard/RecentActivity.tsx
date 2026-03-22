@@ -4,6 +4,7 @@ import type { SquareOrder } from '@/lib/square';
 
 type Props = {
   recentOrders?: SquareOrder[] | null;
+  defaultCurrency?: string;
 };
 
 function formatRelativeTime(isoDate: string): string {
@@ -23,7 +24,7 @@ function formatCurrency(amount: number, currency: string): string {
   }).format(amount / 100);
 }
 
-export default function RecentActivity({ recentOrders }: Props) {
+export default function RecentActivity({ recentOrders, defaultCurrency = "USD" }: Props) {
   const hasData = recentOrders && recentOrders.length > 0;
 
   if (!hasData) {
@@ -66,7 +67,7 @@ export default function RecentActivity({ recentOrders }: Props) {
               </p>
               <p className="text-sm text-muted-foreground truncate">
                 {order.total_money
-                  ? formatCurrency(order.total_money.amount, order.total_money.currency)
+                  ? formatCurrency(order.total_money.amount, defaultCurrency || order.total_money.currency)
                   : 'No total'}
                 {' '}&middot; {order.state}
               </p>
