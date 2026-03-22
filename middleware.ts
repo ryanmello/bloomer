@@ -1,27 +1,66 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import {
+  checkRateLimit,
+  isExemptRoute,
+  rateLimitExceededResponse,
+  rateLimitHeaders,
+} from "@/lib/rate-limit";
 
-export const runtime = 'nodejs'; // Use Node.js runtime instead of Edge to avoid Prisma WASM issues
+export const runtime = "nodejs"; // Use Node.js runtime instead of Edge to avoid Prisma WASM issues
 
-export default auth((req) => {
+export default auth(async (req) => {
   const { nextUrl } = req;
+  const pathname = nextUrl.pathname;
+
+  // -----------------------------------------------------------------
+  // API routes: apply rate limiting
+  // -----------------------------------------------------------------
+  if (pathname.startsWith("/api")) {
+    if (!isExemptRoute(pathname)) {
+      // Identify caller: authenticated user ID or IP fallback.
+      const identifier =
+        req.auth?.user?.id ??
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        "anonymous";
+
+      const result = await checkRateLimit(identifier, pathname);
+
+      if (!result.allowed) {
+        return rateLimitExceededResponse(result);
+      }
+
+      // Attach rate-limit info headers to the forwarded response.
+      const response = NextResponse.next();
+      const headers = rateLimitHeaders(result);
+      for (const [key, value] of Object.entries(headers)) {
+        response.headers.set(key, value);
+      }
+      return response;
+    }
+
+    return NextResponse.next();
+  }
+
+  // -----------------------------------------------------------------
+  // Page routes: auth redirects (unchanged)
+  // -----------------------------------------------------------------
   const isLoggedIn = !!req.auth;
 
   // Define auth pages
   const isAuthPage =
-    nextUrl.pathname.startsWith("/sign-in") ||
-    nextUrl.pathname.startsWith("/sign-up");
+    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
 
   // Define public pages that unauthenticated users can access
   const isPublicPage =
-    nextUrl.pathname === "/" ||
-    nextUrl.pathname.startsWith("/sign-in") ||
-    nextUrl.pathname.startsWith("/sign-up") ||
-    nextUrl.pathname.startsWith("/verify-2fa") ||
-    nextUrl.pathname.startsWith("/privacy") ||
-    nextUrl.pathname.startsWith("/terms") ||
-    nextUrl.pathname.startsWith("/unsubscribe") ||
-    nextUrl.pathname.startsWith("/subscribe");
+    pathname === "/" ||
+    pathname.startsWith("/sign-in") ||
+    pathname.startsWith("/sign-up") ||
+    pathname.startsWith("/verify-2fa") ||
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/terms") ||
+    pathname.startsWith("/unsubscribe") ||
+    pathname.startsWith("/subscribe");
 
   // Redirect authenticated users away from auth pages to dashboard
   if (isLoggedIn && isAuthPage) {
@@ -40,12 +79,11 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|public).*)",
+    "/((?!_next/static|_next/image|favicon.ico|public).*)",
   ],
 };
