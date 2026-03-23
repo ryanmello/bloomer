@@ -9,6 +9,7 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/prisma";
 import { getCurrentUser } from "@/actions/getCurrentUser";
+import { sendLowStockEmail } from "@/lib/resend-email";
 
 export async function PATCH(
   req: Request,
@@ -88,6 +89,58 @@ export async function PATCH(
       where: { id: productId },
       include: { shop: true },
     });
+
+
+    //  Low-stock email notification
+    if (crossedLowStockThreshold && updated) {
+     
+      console.log("Low stock email would be sent to users for product:", updated.name);
+      try {
+        const users = await db.user.findMany({
+          where: {
+            emailNotificationsEnabled: true,
+            lowStockNotificationsEnabled: true,
+          },
+        });
+
+        const batchSize = 50;
+        for (let i = 0; i < users.length; i += batchSize) {
+          const batch = users.slice(i, i + batchSize);
+
+
+          await Promise.all(
+            batch.map(async (user) => {
+              try {
+                await sendLowStockEmail(user.email, [
+                  {
+                    name: updated.name,
+                    quantity: updated.quantity,
+                    lowInventoryAlert: updated.lowInventoryAlert ?? 10,
+                  }
+                ], product.shop.name);
+
+                await db.scheduledEmail.create({
+                  data: {
+                    userEmail: user.email,
+                    productId: updated.id,
+                    shopName: updated.shop.name,
+                    sendAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days later
+                    sent: false
+                  }
+                });
+
+              } catch (err) {
+                console.error(`Failed to send low stock email to ${user.email}:`, err);
+              }
+            })
+          );
+
+          if (i + batchSize < users.length) await new Promise(res => setTimeout(res, 1000));
+        }
+      } catch (err) {
+        console.error("Failed to send low stock emails:", err);
+      }
+    }
 
     return NextResponse.json({
       product: updated,

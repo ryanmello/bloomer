@@ -38,6 +38,7 @@ model User {
   postal    String?
   phone     String?
   emailNotificationsEnabled Boolean @default(true)
+  lowStockNotificationsEnabled Boolean @default(true) 
   timezone                  String?
   defaultCurrency           String  @default("USD")
 
@@ -418,4 +419,15 @@ model SubmissionAnswer {
 
   @@index([questionId])
   @@index([submissionId])
+}
+
+model ScheduledEmail {
+  id         String   @id @default(cuid())
+  userEmail  String
+  productId  String
+  shopName   String
+  sendAt     DateTime
+  sent       Boolean  @default(false)
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt  DateTime @default(now())
 }

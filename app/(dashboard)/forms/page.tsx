@@ -327,9 +327,11 @@ export default function Forms() {
 }
   // URL + Copy + Share helpers
   function formUrl(id: string) {
-    if (typeof window === "undefined") return `/fillableform/${id}`
-    return `${window.location.origin}/fillableform/${id}`
-  }
+    const baseUrl =
+      process.env.NEXT_PUBLIC_PUBLIC_FORM_URL;
+
+    return `${baseUrl}/${id}`;
+ }
 
   async function handleCopy(form: FormRow) {
     const url = formUrl(form.id)

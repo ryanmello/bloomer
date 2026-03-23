@@ -6,7 +6,7 @@ export async function GET(
   req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  
+
   const { id } = await context.params;
 
   try {
@@ -27,6 +27,12 @@ export async function POST(
   req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+
+  const auth = req.headers.get("Authorization");
+    if (auth !== `Bearer ${process.env.PUBLIC_FORM_KEY}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  
   const { id: formId } = await context.params; 
   const answers = await req.json();
 

@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { emailNotificationsEnabled, timezone, defaultCurrency } = body;
+        const { emailNotificationsEnabled, timezone, defaultCurrency, lowStockNotificationsEnabled } = body;
 
         // Build update data from provided fields
         const data: Record<string, unknown> = {};
@@ -91,6 +91,15 @@ export async function PATCH(req: NextRequest) {
             );
         }
 
+        if (typeof lowStockNotificationsEnabled === "boolean") {
+            data.lowStockNotificationsEnabled = lowStockNotificationsEnabled;
+        } else if (lowStockNotificationsEnabled !== undefined) {
+            return NextResponse.json(
+                { message: "lowStockNotificationsEnabled must be a boolean" },
+                { status: 400 }
+        );
+        }
+
         if (Object.keys(data).length === 0) {
             return NextResponse.json(
                 { message: "No valid fields to update" },
@@ -105,6 +114,7 @@ export async function PATCH(req: NextRequest) {
                 emailNotificationsEnabled: true,
                 timezone: true,
                 defaultCurrency: true,
+                lowStockNotificationsEnabled: true,
             }
         });
 

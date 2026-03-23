@@ -3,6 +3,12 @@ import db from "../../../../lib/prisma";
 
 
 export async function GET(req: Request, context: any) {
+
+  const auth = req.headers.get("Authorization");
+    if (auth !== `Bearer ${process.env.PUBLIC_FORM_KEY}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await context.params
 
   const form = await db.form.findUnique({
@@ -35,6 +41,7 @@ export async function GET(req: Request, context: any) {
 
 export async function PUT(req: Request, context: { params: Promise<{ id: string }> } ) {
  
+
   const { id } = await context.params;
 
   const body = await req.json();
@@ -69,6 +76,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 }
 
 export async function DELETE(req: Request, context: any) {
+
   const { id } = await context.params;
   try {
     await db.form.delete({ where: { id } });
@@ -80,6 +88,8 @@ export async function DELETE(req: Request, context: any) {
 }
 
 export async function POST(req: Request, context: any) {
+
+
   const { id } = await context.params;
   try {
     const original = await db.form.findUnique({ where: { id } });

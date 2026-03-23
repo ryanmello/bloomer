@@ -33,11 +33,17 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
   const [isUpdatingTimezone, setIsUpdatingTimezone] = useState(false);
   const [isUpdatingCurrency, setIsUpdatingCurrency] = useState(false);
   const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
+  const [lowStockNotificationsEnabled, setLowStockNotificationsEnabled] = useState(false);
+  const [isUpdatingLowStock, setIsUpdatingLowStock] = useState(false);
+ 
 
   const fetchPreferences = useCallback(async () => {
     try {
       const response = await axios.get("/api/user/preferences");
       setEmailNotificationsEnabled(response.data.emailNotificationsEnabled);
+      setLowStockNotificationsEnabled(
+        response.data.lowStockNotificationsEnabled ?? false
+      );
       setTimezone(
         response.data.timezone ??
         Intl.DateTimeFormat().resolvedOptions().timeZone ??
@@ -127,6 +133,28 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
     onTwoFactorChange();
   };
 
+ const handleLowStockToggle = async (checked: boolean) => {
+  const previous = lowStockNotificationsEnabled;
+  setLowStockNotificationsEnabled(checked);
+  setIsUpdatingLowStock(true);
+
+  try {
+    await axios.patch("/api/user/preferences", {
+      lowStockNotificationsEnabled: checked,
+    });
+    toast.success(
+      checked
+        ? "Low stock notifications enabled"
+        : "Low stock notifications disabled"
+    );
+  } catch (error: any) {
+    setLowStockNotificationsEnabled(previous);
+    toast.error(error.response?.data?.message || "Failed to update preferences");
+  } finally {
+    setIsUpdatingLowStock(false);
+  }
+ };
+
   return (
     <>
       <Card>
@@ -164,6 +192,29 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
               className="ml-4"
             />
           </div>
+
+          {/*Low Stock Alerts*/}
+
+            <div
+              className={`flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors ml-6 ${
+                !emailNotificationsEnabled ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
+              <div className="flex-1">
+                <Label className="font-medium">
+                  Low Stock Alerts
+                </Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Get notified when products are running low
+                </p>
+              </div>
+              <Switch
+                checked={lowStockNotificationsEnabled}
+                onCheckedChange={handleLowStockToggle}
+                disabled={!emailNotificationsEnabled || isLoading || isUpdatingLowStock}
+              />
+            </div>
+
 
           <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors">
             <div className="flex-1">

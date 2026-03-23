@@ -408,3 +408,65 @@ export async function sendAutomationEmail(
     return { success: false, error: error?.message || 'Unknown error' };
   }
 }
+
+export async function sendLowStockEmail(
+  email: string,
+  products: { name: string; quantity: number; lowInventoryAlert: number }[],
+  shopName: string
+) {
+  try {
+    if (!email.includes("@")) return console.warn("Invalid email:", email);
+
+    const resend = getResendClient();
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+
+    const productRows = products
+      .map(
+        (p) => `
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>${p.name}</strong></td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${p.quantity}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${p.lowInventoryAlert}</td>
+        </tr>`
+      )
+      .join("");
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #ffcc00; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h2 style="margin: 0; color: #333;">⚠️ Low Stock Alert</h2>
+        </div>
+        <div style="background: #f9f9f9; padding: 20px; border-radius: 0 0 10px 10px;">
+          <p>Hello,</p>
+          <p>The following products are running low in stock for <strong>${shopName}</strong>:</p>
+          <table style="border-collapse: collapse; width: 100%; margin-top: 15px;">
+            <thead>
+              <tr>
+                <th style="padding: 8px; border-bottom: 2px solid #333; text-align: left;">Product</th>
+                <th style="padding: 8px; border-bottom: 2px solid #333; text-align: center;">Quantity Left</th>
+                <th style="padding: 8px; border-bottom: 2px solid #333; text-align: center;">Threshold</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${productRows}
+            </tbody>
+          </table>
+          <p style="margin-top: 20px;">Please restock these items soon to avoid running out.</p>
+        </div>
+      </div>
+    `;
+
+    // Send email
+    const { error } = await resend.emails.send({
+      from: `${shopName} <${fromEmail}>`,
+      to: [email],
+      subject: "Low Stock Alert",
+      html,
+    });
+
+    if (error) console.error("Low stock email error:", error);
+    else console.log("✅ Low stock email sent to", email);
+  } catch (err) {
+    console.error("sendLowStockEmail failed:", err);
+  }
+}
