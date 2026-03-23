@@ -201,7 +201,9 @@ export async function GET(req: NextRequest) {
           data: {
             totalAmount: o.totalAmount,
             status: o.status,
-            customerName: [o.customer.firstName, o.customer.lastName].filter(Boolean).join(" "),
+            customerName: o.customer
+              ? [o.customer.firstName, o.customer.lastName].filter(Boolean).join(" ")
+              : undefined,
           },
         },
       });
