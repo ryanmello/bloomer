@@ -241,6 +241,7 @@ async function processAutomation(
           customerId: customer.id,
           status: emailResult.success ? "sent" : "failed",
           errorMessage: emailResult.error,
+          resendEmailId: emailResult.emailId || null,
         },
       });
 

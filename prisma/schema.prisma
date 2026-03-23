@@ -214,6 +214,9 @@ model CampaignRecipient {
   openedAt  DateTime?
   clickedAt DateTime?
 
+  // Resend tracking
+  resendEmailId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -224,6 +227,7 @@ model CampaignRecipient {
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId, customerId])
+  @@index([resendEmailId])
 }
 
 model Product {
@@ -402,10 +406,17 @@ model AutomationRun {
   customerId   String   @db.ObjectId
   status       String   // "sent", "failed", "skipped"
   errorMessage String?
+
+  // Resend tracking
+  resendEmailId String?
+  openedAt      DateTime?
+  clickedAt     DateTime?
+
   createdAt    DateTime @default(now())
 
   @@index([automationId])
   @@index([customerId])
+  @@index([resendEmailId])
 }
 
 model Form {
