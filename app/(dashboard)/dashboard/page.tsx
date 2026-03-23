@@ -67,10 +67,6 @@ export default async function DashboardPage() {
         100
       : undefined;
 
-  const recentOrders = squareData
-    ? [...squareData.completedOrders].reverse().slice(0, 10)
-    : null;
-
   const formatCurrency = (amount: number) =>
     `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -111,7 +107,7 @@ export default async function DashboardPage() {
 
       <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
         <TrendGraph monthlyRevenue={squareData ? monthlyRevenue : null} />
-        <RecentActivity recentOrders={recentOrders} />
+        <RecentActivity />
       </div>
 
       <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
