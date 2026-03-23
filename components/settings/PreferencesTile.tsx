@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
@@ -16,11 +17,21 @@ interface PreferencesTileProps {
 }
 
 export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }: PreferencesTileProps) {
+  const currencyOptions = [
+    { value: "USD", label: "USD - US Dollar" },
+    { value: "EUR", label: "EUR - Euro" },
+    { value: "GBP", label: "GBP - British Pound" },
+    { value: "CAD", label: "CAD - Canadian Dollar" },
+    { value: "AUD", label: "AUD - Australian Dollar" },
+    { value: "JPY", label: "JPY - Japanese Yen" },
+  ] as const;
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
   const [timezone, setTimezone] = useState<string | null>(null);
+  const [defaultCurrency, setDefaultCurrency] = useState("USD");
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUpdatingTimezone, setIsUpdatingTimezone] = useState(false);
+  const [isUpdatingCurrency, setIsUpdatingCurrency] = useState(false);
   const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
 
   const fetchPreferences = useCallback(async () => {
@@ -32,6 +43,7 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
         Intl.DateTimeFormat().resolvedOptions().timeZone ??
         null
       );
+      setDefaultCurrency(response.data.defaultCurrency ?? "USD");
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Failed to fetch preferences"
@@ -85,6 +97,24 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
       );
     } finally {
       setIsUpdatingTimezone(false);
+    }
+  };
+
+  const handleCurrencyChange = async (currency: string) => {
+    const previousValue = defaultCurrency;
+    setDefaultCurrency(currency);
+    setIsUpdatingCurrency(true);
+
+    try {
+      await axios.patch("/api/user/preferences", { defaultCurrency: currency });
+      toast.success("Default currency updated");
+    } catch (error: any) {
+      setDefaultCurrency(previousValue);
+      toast.error(
+        error.response?.data?.message || "Failed to update default currency"
+      );
+    } finally {
+      setIsUpdatingCurrency(false);
     }
   };
 
@@ -171,6 +201,33 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
               onChange={handleTimezoneChange}
               disabled={isLoading || isUpdatingTimezone}
             />
+          </div>
+
+          <div className="p-4 border rounded-lg space-y-3">
+            <div>
+              <Label htmlFor="currency-selector" className="font-semibold">
+                Default Currency
+              </Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                Choose how monetary values are displayed across the app
+              </p>
+            </div>
+            <Select
+              value={defaultCurrency}
+              onValueChange={handleCurrencyChange}
+              disabled={isLoading || isUpdatingCurrency}
+            >
+              <SelectTrigger id="currency-selector">
+                <SelectValue placeholder="Select default currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {currencyOptions.map((currency) => (
+                  <SelectItem key={currency.value} value={currency.value}>
+                    {currency.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

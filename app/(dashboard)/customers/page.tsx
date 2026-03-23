@@ -54,6 +54,7 @@ export interface Customer {
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
+  const [defaultCurrency, setDefaultCurrency] = useState("USD");
   const [selectedGroups, setSelectedGroups] = useState<CustomerGroup[]>([]);
   const [editingCustomerIds, setEditingCustomerIds] = useState<Set<string>>(
     new Set(),
@@ -161,6 +162,20 @@ export default function CustomersPage() {
   useEffect(() => {
     fetchCustomers();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
+  }, []);
+
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        const res = await fetch("/api/user/preferences");
+        if (!res.ok) return;
+        const data = await res.json();
+        setDefaultCurrency(data.defaultCurrency ?? "USD");
+      } catch {
+        // Keep default USD if preferences call fails
+      }
+    };
+    fetchPreferences();
   }, []);
 
   useEffect(() => {
@@ -320,7 +335,7 @@ export default function CustomersPage() {
                         label: "Spend",
                         value: new Intl.NumberFormat("en-US", {
                           style: "currency",
-                          currency: "USD",
+                          currency: defaultCurrency,
                         }).format(customer.spendAmount ?? 0),
                       },
                       {label: "Occasions", value: customer.occasionsCount ?? 0},

@@ -30,9 +30,10 @@ ChartJS.register(
 
 type Props = {
   monthlyRevenue?: MonthlyRevenue[] | null;
+  defaultCurrency?: string;
 };
 
-export default function TrendGraph({ monthlyRevenue }: Props) {
+export default function TrendGraph({ monthlyRevenue, defaultCurrency = "USD" }: Props) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -87,7 +88,10 @@ export default function TrendGraph({ monthlyRevenue }: Props) {
         displayColors: false,
         callbacks: {
           label: function(context: any) {
-            return `$${context.parsed.y.toLocaleString()}`;
+            return new Intl.NumberFormat(undefined, {
+              style: "currency",
+              currency: defaultCurrency,
+            }).format(context.parsed.y);
           }
         }
       },
@@ -114,7 +118,15 @@ export default function TrendGraph({ monthlyRevenue }: Props) {
         ticks: {
           color: isDark ? 'rgb(163, 163, 163)' : 'rgb(115, 115, 115)',
           callback: function(value: any) {
-            return '$' + (value / 1000).toFixed(1) + 'k';
+            const amount = Number(value);
+            if (!Number.isFinite(amount)) return value;
+            const compact = new Intl.NumberFormat(undefined, {
+              style: "currency",
+              currency: defaultCurrency,
+              notation: "compact",
+              maximumFractionDigits: 1,
+            }).format(amount);
+            return compact;
           }
         },
       },
