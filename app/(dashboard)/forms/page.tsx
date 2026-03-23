@@ -31,6 +31,18 @@ import { toast } from "sonner"
 import clsx from "clsx"
 import { useRouter } from 'next/navigation';
 
+import { Download } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 type Question = {
   id: string
   text: string
@@ -167,6 +179,13 @@ export default function Forms() {
 
   const router = useRouter();
 
+  const [exportOpen, setExportOpen] = useState(false);
+  const [selectedForms, setSelectedForms] = useState<string[]>([]);
+  const [exportSummary, setExportSummary] = useState(true);
+  const [exportForms, setExportForms] = useState(true);
+  const [exportSubmissions, setExportSubmissions] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"csv" | "pdf">("csv");
+
   useEffect(() => {
   if (editingForm) {
     setEditQuestions(editingForm.questions || [])
@@ -238,6 +257,7 @@ export default function Forms() {
           status: newFormStatus,
           access: newFormAccess,
           questions: newFormQuestions,
+          audienceIds: permissionsSelectedAudiences,
         }),
       })
       if (!res.ok) throw new Error("Failed to create form")
@@ -307,9 +327,11 @@ export default function Forms() {
 }
   // URL + Copy + Share helpers
   function formUrl(id: string) {
-    if (typeof window === "undefined") return `/fillableform/${id}`
-    return `${window.location.origin}/fillableform/${id}`
-  }
+    const baseUrl =
+      process.env.NEXT_PUBLIC_PUBLIC_FORM_URL;
+
+    return `${baseUrl}/${id}`;
+ }
 
   async function handleCopy(form: FormRow) {
     const url = formUrl(form.id)
@@ -505,6 +527,287 @@ export default function Forms() {
     }
   };
 
+  const toggleSelectForm = (id: string) => {
+    if (selectedForms.includes(id)) {
+      setSelectedForms(selectedForms.filter((fid) => fid !== id));
+    } else {
+      setSelectedForms([...selectedForms, id]);
+    }
+  };
+  
+  const selectAllForms = () => {
+    if (selectedForms.length === forms.length) setSelectedForms([]);
+    else setSelectedForms(forms.map((f) => f.id));
+  };
+
+  const handleExport = async () => {
+    if (!exportForms || selectedForms.length === 0) {
+      toast("Please select at least one form to export.");
+      return;
+    }
+  
+    const formsToExport = forms.filter(f => selectedForms.includes(f.id));
+  
+    // CSV Export
+    if (exportFormat === "csv") {
+      let csv = "";
+  
+      // Overall summary
+      if (exportSummary) {
+        const totalForms = formsToExport.length;
+        const activeForms = formsToExport.filter(f => f.status === "active").length;
+        const totalViews = formsToExport.reduce((sum, f) => sum + f.views, 0);
+        const totalSubmissions = formsToExport.reduce((sum, f) => sum + f.submissions, 0);
+        const conversionRate = totalViews > 0 ? ((totalSubmissions / totalViews) * 100).toFixed(2) : "0";
+  
+        csv += `Total Forms,${totalForms}\n`;
+        csv += `Active Forms,${activeForms}\n`;
+        csv += `Total Views,${totalViews}\n`;
+        csv += `Total Submissions,${totalSubmissions}\n`;
+        csv += `Conversion (%),${conversionRate}\n\n`;
+      }
+  
+      for (const form of formsToExport) {
+        const formDate = new Date(form.updatedAt).toLocaleDateString('en-US', {
+          year: '2-digit', month: '2-digit', day: '2-digit'
+        });
+        const conversionRate = form.views > 0 ? ((form.submissions / form.views) * 100).toFixed(2) : "0";
+  
+        // Form Metrics 
+        csv += `"Title","Description","Views","Submissions","Conversion (%)","Date"\n`;
+        csv += `"${form.title}","${form.description ?? ''}",${form.views},${form.submissions},${conversionRate},${formDate}\n`;
+  
+        // Fetch submissions
+        let submissions: DisplaySubmission[] = [];
+        try {
+          const res = await fetch(`/api/forms/${form.id}/submissions`);
+          if (res.ok) {
+            const data = await res.json();
+            submissions = data.map((sub: any) => {
+              const answerMap: Record<string, any> = {};
+              sub.answers.forEach((a: any) => { answerMap[a.questionId] = a.answer; });
+  
+              const displayAnswers = form.questions.map(q => {
+                const rawAns = answerMap[q.id];
+                let answer: string[] = [];
+  
+                switch (q.type) {
+                  case "mcq": {
+                    const opts = q.options ?? [];
+                    if (Array.isArray(rawAns)) {
+                      answer = rawAns.map(a => (!isNaN(Number(a)) ? opts[Number(a)] : String(a))).filter(Boolean);
+                    } else if (!isNaN(Number(rawAns))) {
+                      answer = opts[Number(rawAns)] ? [opts[Number(rawAns)]] : [];
+                    } else {
+                      answer = [String(rawAns)];
+                    }
+                    break;
+                  }
+                  case "truefalse":
+                    answer = rawAns === true || rawAns === "true" ? ["True"] : ["False"];
+                    break;
+                  case "short":
+                    answer = [String(rawAns ?? "")];
+                    break;
+                }
+  
+                return { questionId: q.id, answer };
+              });
+  
+              return { ...sub, displayAnswers };
+            });
+          }
+        } catch (err) {
+          console.error("Failed to fetch submissions for CSV export:", err);
+        }
+  
+        // Questions Table for CSV
+        csv += `"Question","Type","Results"\n`;
+        form.questions.forEach((q, idx) => {
+          const questionText = q.text ? `${idx + 1}. ${q.text}` : `${idx + 1}.`;
+          const typeLabel = q.type === "mcq" ? "MCQ" : q.type === "truefalse" ? "True/False" : "Short";
+  
+          let resultsCell = "";
+  
+          if (q.type === "short") {
+            const answers = submissions
+              .map(sub => sub.displayAnswers.find(a => a.questionId === q.id)?.answer)
+              .filter(Boolean)
+              .flat();
+            resultsCell = answers.length ? answers.map(a => `• ${a}`).join("\n") : "No answers submitted yet";
+          } else {
+            const totalSubs = submissions.length;
+            const options = q.type === "truefalse" ? ["True", "False"] : q.options ?? [];
+            resultsCell = options.map(opt => {
+              const count = submissions.filter(sub => {
+                const ans = sub.displayAnswers.find(a => a.questionId === q.id)?.answer;
+                if (q.multiSelect && Array.isArray(ans)) return ans.includes(opt);
+                return String(ans?.[0]) === opt || String(ans) === opt;
+              }).length;
+              const percent = totalSubs > 0 ? Math.round((count / totalSubs) * 100) : 0;
+              return `• ${opt} (${count} / ${percent}%)`;
+            }).join("\n");
+          }
+  
+          csv += `"${questionText}","${typeLabel}","${resultsCell}"\n`;
+        });
+  
+        csv += "\n"; 
+      }
+  
+      // Download CSV
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `forms_export.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return; 
+    }
+  
+    // PDF Export
+    const doc = new jsPDF();
+    let yOffset = 10;
+  
+    // Overall summary
+    if (exportSummary) {
+      doc.setFontSize(16);
+      doc.text("Forms Overall Summary", 14, yOffset);
+      yOffset += 10;
+  
+      const totalForms = formsToExport.length;
+      const activeForms = formsToExport.filter(f => f.status === "active").length;
+      const totalViews = formsToExport.reduce((sum, f) => sum + f.views, 0);
+      const totalSubmissions = formsToExport.reduce((sum, f) => sum + f.submissions, 0);
+      const conversionRate = totalViews > 0 ? ((totalSubmissions / totalViews) * 100).toFixed(2) : "0";
+  
+      doc.setFontSize(12);
+      doc.text(`Total Forms: ${totalForms}`, 14, yOffset); yOffset += 6;
+      doc.text(`Active Forms: ${activeForms}`, 14, yOffset); yOffset += 6;
+      doc.text(`Total Views: ${totalViews}`, 14, yOffset); yOffset += 6;
+      doc.text(`Total Submissions: ${totalSubmissions}`, 14, yOffset); yOffset += 6;
+      doc.text(`Conversion (%): ${conversionRate}`, 14, yOffset); yOffset += 12;
+    }
+  
+    for (const form of formsToExport) {
+      doc.setFontSize(14);
+      doc.text(`Form: ${form.title}`, 14, yOffset);
+      yOffset += 6;
+  
+      if (form.description) {
+        doc.setFontSize(12);
+        doc.text(`Description: ${form.description}`, 14, yOffset);
+        yOffset += 6;
+      }
+  
+      const formDate = new Date(form.updatedAt).toLocaleDateString('en-US', {
+        year: '2-digit', month: '2-digit', day: '2-digit'
+      });
+      const conversionRate = form.views > 0 ? ((form.submissions / form.views) * 100).toFixed(2) : "0";
+  
+      autoTable(doc, {
+        startY: yOffset,
+        head: [["Views", "Submissions", "Conversion (%)", "Date"]],
+        body: [[
+          form.views,
+          form.submissions,
+          conversionRate,
+          formDate
+        ]],
+        headStyles: { fillColor: [255, 0, 0], textColor: 255 },
+        styles: { halign: "center", valign: "middle" },
+      });
+      yOffset = (doc as any).lastAutoTable.finalY + 6;
+  
+      // Fetch submissions
+      let submissions: DisplaySubmission[] = [];
+      try {
+        const res = await fetch(`/api/forms/${form.id}/submissions`);
+        if (res.ok) {
+          const data = await res.json();
+          submissions = data.map((sub: any) => {
+            const answerMap: Record<string, any> = {};
+            sub.answers.forEach((a: any) => { answerMap[a.questionId] = a.answer; });
+  
+            const displayAnswers = form.questions.map(q => {
+              const rawAns = answerMap[q.id];
+              let answer: string | string[] = "";
+  
+              switch (q.type) {
+                case "mcq": {
+                  const opts = q.options ?? [];
+                  if (Array.isArray(rawAns)) {
+                    answer = rawAns.map(a => (!isNaN(Number(a)) ? opts[Number(a)] : String(a))).filter(Boolean);
+                  } else if (!isNaN(Number(rawAns))) {
+                    answer = opts[Number(rawAns)] ? [opts[Number(rawAns)]] : [];
+                  } else {
+                    answer = [String(rawAns)];
+                  }
+                  break;
+                }
+                case "truefalse":
+                  answer = rawAns === true || rawAns === "true" ? "True" : "False";
+                  break;
+                case "short":
+                  answer = String(rawAns ?? "");
+                  break;
+              }
+  
+              return { questionId: q.id, answer };
+            });
+  
+            return { ...sub, displayAnswers };
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch submissions for PDF export:", err);
+      }
+  
+      // Questions Table
+      const questionRows: any[] = [];
+      form.questions.forEach((q, idx) => {
+        const questionText = q.text ? `${idx + 1}. ${q.text}` : `${idx + 1}.`;
+        const typeLabel = q.type === "mcq" ? "MCQ" : q.type === "truefalse" ? "True/False" : "Short";
+        let resultsCell = "";
+  
+        if (q.type === "short") {
+          const answers = submissions
+            .map(sub => sub.displayAnswers.find(a => a.questionId === q.id)?.answer as string)
+            .filter(Boolean);
+          resultsCell = answers.length ? answers.map(a => `• ${a}`).join("\n") : "No answers submitted yet";
+        } else {
+          const totalSubs = submissions.length;
+          const options = q.type === "truefalse" ? ["True", "False"] : q.options ?? [];
+          resultsCell = options.map(opt => {
+            const count = submissions.filter(sub => {
+              const ans = sub.displayAnswers.find(a => a.questionId === q.id)?.answer;
+              if (q.multiSelect && Array.isArray(ans)) return ans.includes(opt);
+              return String(ans) === opt || (Array.isArray(ans) && ans[0] === opt);
+            }).length;
+            const percent = totalSubs > 0 ? Math.round((count / totalSubs) * 100) : 0;
+            return `• ${opt}${' '.repeat(5)}${count} (${percent}%)`;
+          }).join("\n");
+        }
+  
+        questionRows.push([questionText, typeLabel, resultsCell]);
+      });
+  
+      autoTable(doc, {
+        startY: yOffset,
+        head: [["Question", "Type", "Results"]],
+        body: questionRows,
+        headStyles: { fillColor: [255, 0, 0], textColor: 255 },
+        styles: { cellWidth: 'wrap', valign: 'top', overflow: 'linebreak' },
+      });
+  
+      yOffset = (doc as any).lastAutoTable.finalY + 10;
+      if (yOffset > 270) { doc.addPage(); yOffset = 10; }
+    }
+  
+    doc.save(`forms_export.pdf`);
+  };
+
   useEffect(() => {
     if (shareModalOpen || permissionsModalOpen ) {
       async function fetchAudiences() {
@@ -531,15 +834,118 @@ export default function Forms() {
           <CardDescription>Create and share forms to collect valuable customer information</CardDescription>
         </div>
 
+        <Button
+          variant="outline"
+          onClick={() => setExportOpen(true)}
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Export
+        </Button>
+
+        <AlertDialog open={exportOpen} onOpenChange={setExportOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Export Forms</AlertDialogTitle>
+              <AlertDialogDescription>
+                Select export options below.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            {/* Export options */}
+            <div className="space-y-4 py-2">
+              {/* Summary Metrics */}
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={exportSummary}
+                  onChange={(e) => setExportSummary(e.target.checked)}
+                />
+                Summary Metrics
+              </label>
+
+              {/* Forms */}
+              <label className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={exportForms}
+                    onChange={(e) => setExportForms(e.target.checked)}
+                  />
+                  Forms
+                </div>
+
+                {/* Dropdown for selecting forms */}
+                {exportForms && (
+                  <div className="mt-1 max-h-40 overflow-y-auto border p-2 rounded">
+                    <div className="text-sm text-gray-500 mb-1">Select from forms:</div>
+                    {forms.map((f) => (
+                      <label key={f.id} className="flex items-center gap-2 py-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedForms.includes(f.id)}
+                          onChange={() => toggleSelectForm(f.id)}
+                        />
+                        {f.title}
+                      </label>
+                    ))}
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={selectAllForms}
+                      className="mt-2 w-full"
+                    >
+                      {selectedForms.length === forms.length ? "Deselect All" : "Select All"}
+                    </Button>
+                  </div>
+                )}
+              </label>
+
+              {/* Export format */}
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium">Export as:</span>
+                <label className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    name="exportFormat"
+                    value="csv"
+                    checked={exportFormat === "csv"}
+                    onChange={() => setExportFormat("csv")}
+                  />
+                  CSV
+                </label>
+                <label className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    name="exportFormat"
+                    value="pdf"
+                    checked={exportFormat === "pdf"}
+                    onChange={() => setExportFormat("pdf")}
+                  />
+                  PDF
+                </label>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setExportOpen(false)}>Cancel</Button>
+              <Button onClick={handleExport}>Export</Button>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <Button size="lg" className="flex items-center gap-2" onClick={() => setModalOpen(true)}>
           <Plus className="w-4 h-4" /> Create Form
         </Button>
+
       </Card>
 
       {/* Create Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-3/4 max-w-2xl p-6 relative">
+         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 py-12">
+          <Card className="w-3/4 max-w-2xl p-6 relative max-h-[90vh] overflow-y-auto">
             <Button size="sm" className="absolute top-4 right-4" onClick={() => setModalOpen(false)}>
               <X className="w-4 h-4" />
             </Button>
@@ -607,7 +1013,7 @@ export default function Forms() {
                     size="sm"
                     type="button"
                     onClick={() => {
-                      setPermissionsSelectedAudiences(selectedAudiences) 
+                      setPermissionsSelectedAudiences(permissionsSelectedAudiences) 
                       setPermissionsModalOpen(true)
                     }}
                   >
@@ -627,7 +1033,7 @@ export default function Forms() {
                </div>
 
               {newFormQuestions.length > 0 && (
-              <div className="flex flex-col gap-2 max-h-60 overflow-y-auto border p-2 rounded-md">
+              <div className="flex flex-col gap-2 border p-2 rounded-md">
               {newFormQuestions.map((q, i) => (
                 <div key={q.id} className="flex flex-col gap-2 mb-2 border p-2 rounded-md">
                   <div className="flex gap-2">
@@ -790,8 +1196,8 @@ export default function Forms() {
 
       {/* Edit Modal */}
       {editModalOpen && editingForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-3/4 max-w-2xl p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 py-12">
+         <Card className="w-3/4 max-w-2xl p-6 relative max-h-[90vh] overflow-y-auto">
             <Button
               size="sm"
               className="absolute top-4 right-4"
@@ -917,9 +1323,9 @@ export default function Forms() {
               </div>
 
               {editQuestions.length > 0 && (
-                <div className="flex flex-col gap-2 max-h-60 overflow-y-auto border p-2 rounded-md">
+                <div className="flex flex-col gap-2 border p-2 rounded-md ">
                   {editQuestions.map((q, i) => (
-                    <div key={q.id} className="flex flex-col gap-2 mb-2 border p-2 rounded-md">
+                    <div key={q.id} className="flex flex-col gap-2 mb-2 border p-2 rounded-md ">
                       <div className="flex gap-2">
                         <input
                           type="text"
@@ -1051,7 +1457,7 @@ export default function Forms() {
       
 
       {/*  Permissions Modal */}
-      {permissionsModalOpen && editingForm && (
+      {permissionsModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <Card className="w-3/4 max-w-md p-6 relative bg-background">
             <Button
@@ -1098,11 +1504,13 @@ export default function Forms() {
             <div className="mt-4 flex gap-2">
               <Button
                 onClick={() => {
-                  setEditingForm({
-                    ...editingForm,
-                    audiences: audiences.filter(a => permissionsSelectedAudiences.includes(a.id)),
-                  })
-                  setPermissionsModalOpen(false)
+                  if (editingForm) {
+                    setEditingForm({
+                      ...editingForm,
+                      audiences: audiences.filter(a => permissionsSelectedAudiences.includes(a.id)),
+                    });
+                  }
+                  setPermissionsModalOpen(false);
                 }}
                 className="flex-1"
               >

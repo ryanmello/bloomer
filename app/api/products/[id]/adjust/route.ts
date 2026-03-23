@@ -88,7 +88,7 @@ export async function PATCH(
       where: { id: productId },
       include: { shop: true },
     });
-
+    
     return NextResponse.json({
       product: updated,
       movement: {

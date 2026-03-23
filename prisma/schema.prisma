@@ -38,6 +38,7 @@ model User {
   postal    String?
   phone     String?
   emailNotificationsEnabled Boolean @default(true)
+  lowStockNotificationsEnabled Boolean @default(true) 
   timezone                  String?
   defaultCurrency           String  @default("USD")
 
@@ -250,6 +251,8 @@ model Product {
 
   inventoryMovements InventoryMovement[]
   orderItems       OrderItem[]
+
+  scheduledEmails    ScheduledEmail[]
 }
 
 model InventoryMovement {
@@ -447,6 +450,16 @@ model SubmissionAnswer {
   @@index([submissionId])
 }
 
+model ScheduledEmail {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userEmail  String
+  productId  String
+  shopName   String
+  sendAt     DateTime
+  sent       Boolean  @default(false)
+  product    Product  @relation(fields: [productId], references: [id])
+  createdAt  DateTime @default(now())
+}
 model AuditLog {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   action     String   // e.g. USER_LOGIN, CUSTOMER_CREATE, ORDER_STATUS_CHANGE, SHOP_DISCONNECT
