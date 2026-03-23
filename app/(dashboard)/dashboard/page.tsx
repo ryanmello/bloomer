@@ -68,10 +68,6 @@ export default async function DashboardPage() {
         100
       : undefined;
 
-  const recentOrders = squareData
-    ? [...squareData.completedOrders].reverse().slice(0, 10)
-    : null;
-
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat(undefined, {
       style: "currency",
@@ -117,7 +113,7 @@ export default async function DashboardPage() {
 
       <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
         <TrendGraph monthlyRevenue={squareData ? monthlyRevenue : null} defaultCurrency={defaultCurrency} />
-        <RecentActivity recentOrders={recentOrders} defaultCurrency={defaultCurrency} />
+        <RecentActivity />
       </div>
 
       <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
