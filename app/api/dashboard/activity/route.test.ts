@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
-const mockUser = { id: "user-1", email: "test@example.com" };
-const mockShop = { id: "shop-1" };
+const mockUser = { id: "user-1", email: "test@example.com" } as never;
+const mockShop = { id: "shop-1" } as never;
 
 vi.mock("@/actions/getCurrentUser", () => ({
   getCurrentUser: vi.fn(),
@@ -44,11 +45,11 @@ import { GET } from "./route";
 describe("Recent Activity Feed API (UN-747, UN-748, UN-752)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+    vi.mocked(getCurrentUser).mockResolvedValue(mockUser as never);
     vi.mocked(cookies).mockResolvedValue({
       get: vi.fn().mockReturnValue({ value: "shop-1" }),
     } as never);
-    vi.mocked(db.shop.findFirst).mockResolvedValue(mockShop);
+    vi.mocked(db.shop.findFirst).mockResolvedValue(mockShop as never);
     vi.mocked(db.order.findMany).mockResolvedValue([]);
     vi.mocked(db.customer.findMany).mockResolvedValue([]);
     vi.mocked(db.product.findMany).mockResolvedValue([]);
@@ -58,7 +59,7 @@ describe("Recent Activity Feed API (UN-747, UN-748, UN-752)", () => {
 
   it("returns 401 when not authenticated", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue(null);
-    const req = new Request("http://localhost/api/dashboard/activity");
+    const req = new NextRequest("http://localhost/api/dashboard/activity");
     const res = await GET(req);
     expect(res.status).toBe(401);
     const json = await res.json();
@@ -67,7 +68,7 @@ describe("Recent Activity Feed API (UN-747, UN-748, UN-752)", () => {
 
   it("returns empty feed when user has no shop", async () => {
     vi.mocked(db.shop.findFirst).mockResolvedValue(null);
-    const req = new Request("http://localhost/api/dashboard/activity");
+    const req = new NextRequest("http://localhost/api/dashboard/activity");
     const res = await GET(req);
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -91,7 +92,7 @@ describe("Recent Activity Feed API (UN-747, UN-748, UN-752)", () => {
     vi.mocked(db.product.findMany).mockResolvedValue([]);
     vi.mocked(db.inventoryMovement.findMany).mockResolvedValue([]);
 
-    const req = new Request("http://localhost/api/dashboard/activity?limit=10");
+    const req = new NextRequest("http://localhost/api/dashboard/activity?limit=10");
     const res = await GET(req);
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -102,12 +103,12 @@ describe("Recent Activity Feed API (UN-747, UN-748, UN-752)", () => {
   });
 
   it("respects limit query param", async () => {
-    const req = new Request(
+    const req = new NextRequest(
       "http://localhost/api/dashboard/activity?limit=5"
     );
-    await GET(req);
+    const res = await GET(req);
     expect(db.order.findMany).toHaveBeenCalled();
-    const json = await (await GET(req)).json();
+    const json = (await res.json()) as { items: unknown[] };
     expect(json.items.length).toBeLessThanOrEqual(5);
   });
 
@@ -126,7 +127,7 @@ describe("Recent Activity Feed API (UN-747, UN-748, UN-752)", () => {
     ] as never);
     vi.mocked(db.inventoryMovement.findMany).mockResolvedValue([]);
 
-    const req = new Request("http://localhost/api/dashboard/activity");
+    const req = new NextRequest("http://localhost/api/dashboard/activity");
     const res = await GET(req);
     const json = await res.json();
     const lowStock = json.items.filter((i: { type: string }) => i.type === "low_stock");
@@ -152,7 +153,7 @@ describe("Recent Activity Feed API (UN-747, UN-748, UN-752)", () => {
       },
     ] as never);
 
-    const req = new Request("http://localhost/api/dashboard/activity");
+    const req = new NextRequest("http://localhost/api/dashboard/activity");
     const res = await GET(req);
     const json = await res.json();
     const adj = json.items.filter(
@@ -164,7 +165,7 @@ describe("Recent Activity Feed API (UN-747, UN-748, UN-752)", () => {
   });
 
   it("filters by shopId from query when provided", async () => {
-    const req = new Request(
+    const req = new NextRequest(
       "http://localhost/api/dashboard/activity?shopId=shop-99"
     );
     vi.mocked(db.shop.findFirst).mockResolvedValueOnce({

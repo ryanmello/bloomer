@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
-const mockUser = { id: "user-1", email: "test@example.com" };
+const mockUser = { id: "user-1", email: "test@example.com" } as never;
 const mockProduct = {
   id: "prod-1",
   shopId: "shop-1",
@@ -39,14 +40,14 @@ import { GET } from "./route";
 describe("Inventory Movement History API (UN-770)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+    vi.mocked(getCurrentUser).mockResolvedValue(mockUser as never);
     vi.mocked(db.product.findUnique).mockResolvedValue(mockProduct as never);
     vi.mocked(db.inventoryMovement.findMany).mockResolvedValue([mockMovement] as never);
   });
 
   it("returns 401 when not authenticated", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue(null);
-    const req = new Request("http://localhost/api/products/prod-1/movements");
+    const req = new NextRequest("http://localhost/api/products/prod-1/movements");
     const res = await GET(req, {
       params: Promise.resolve({ id: "prod-1" }),
     });
@@ -57,7 +58,7 @@ describe("Inventory Movement History API (UN-770)", () => {
 
   it("returns 404 when product not found", async () => {
     vi.mocked(db.product.findUnique).mockResolvedValue(null);
-    const req = new Request("http://localhost/api/products/bad-id/movements");
+    const req = new NextRequest("http://localhost/api/products/bad-id/movements");
     const res = await GET(req, {
       params: Promise.resolve({ id: "bad-id" }),
     });
@@ -71,7 +72,7 @@ describe("Inventory Movement History API (UN-770)", () => {
       ...mockProduct,
       shop: { userId: "other-user" },
     } as never);
-    const req = new Request("http://localhost/api/products/prod-1/movements");
+    const req = new NextRequest("http://localhost/api/products/prod-1/movements");
     const res = await GET(req, {
       params: Promise.resolve({ id: "prod-1" }),
     });
@@ -81,7 +82,7 @@ describe("Inventory Movement History API (UN-770)", () => {
   });
 
   it("returns movement items with type, quantity, previous/new inventory, reason, timestamp", async () => {
-    const req = new Request("http://localhost/api/products/prod-1/movements");
+    const req = new NextRequest("http://localhost/api/products/prod-1/movements");
     const res = await GET(req, {
       params: Promise.resolve({ id: "prod-1" }),
     });
@@ -102,7 +103,7 @@ describe("Inventory Movement History API (UN-770)", () => {
 
   it("returns pagination metadata", async () => {
     vi.mocked(db.inventoryMovement.findMany).mockResolvedValue([mockMovement] as never);
-    const req = new Request("http://localhost/api/products/prod-1/movements?limit=5");
+    const req = new NextRequest("http://localhost/api/products/prod-1/movements?limit=5");
     const res = await GET(req, {
       params: Promise.resolve({ id: "prod-1" }),
     });
@@ -113,7 +114,7 @@ describe("Inventory Movement History API (UN-770)", () => {
   });
 
   it("respects limit query param", async () => {
-    const req = new Request("http://localhost/api/products/prod-1/movements?limit=3");
+    const req = new NextRequest("http://localhost/api/products/prod-1/movements?limit=3");
     await GET(req, { params: Promise.resolve({ id: "prod-1" }) });
     expect(db.inventoryMovement.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -123,7 +124,7 @@ describe("Inventory Movement History API (UN-770)", () => {
   });
 
   it("uses cursor for next page when provided", async () => {
-    const req = new Request(
+    const req = new NextRequest(
       "http://localhost/api/products/prod-1/movements?cursor=eyJpZCI6Im1vdi0xIn0"
     );
     await GET(req, { params: Promise.resolve({ id: "prod-1" }) });
