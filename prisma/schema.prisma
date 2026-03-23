@@ -61,6 +61,8 @@ model User {
   audiences          Audience[]
   event              Event[]
   squareIntegration  SquareIntegration?
+  auditLogs          AuditLog[]
+  orders Order[]
 }
 
 model Shop {
@@ -83,6 +85,7 @@ model Shop {
 
   inventoryMovements InventoryMovement[]
   automations        Automation[]
+  orders Order[]
 }
 
 model Customer {
@@ -119,22 +122,45 @@ model Customer {
 
 model Order {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  customerId String   @db.ObjectId
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-
   status      OrderStatus
   totalAmount Float       @default(0)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  notes String?
+  customerId String?   @db.ObjectId
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  userId        String @db.ObjectId
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopId        String? @db.ObjectId
+  shop          Shop?   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  
+  orderItems       OrderItem[]
 }
 
 enum OrderStatus {
   PENDING
   ACTIVE
+  SHIPPED
   COMPLETED
   CANCELLED
+}
+
+model OrderItem {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  quantity   Int
+  availableQty Int    @default(0)
+  neededQty    Int    @default(0)
+  unitPrice  Float
+  subPrice   Float
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  orderId    String   @db.ObjectId
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId   String   @db.ObjectId
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
 }
 
 model Address {
@@ -224,6 +250,7 @@ model Product {
   shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   inventoryMovements InventoryMovement[]
+  orderItems       OrderItem[]
 }
 
 model InventoryMovement {
@@ -430,4 +457,18 @@ model ScheduledEmail {
   sent       Boolean  @default(false)
   product   Product  @relation(fields: [productId], references: [id])
   createdAt  DateTime @default(now())
+}
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  action     String   // e.g. USER_LOGIN, CUSTOMER_CREATE, ORDER_STATUS_CHANGE, SHOP_DISCONNECT
+  userId     String   @db.ObjectId
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetId   String?  // ID of the entity acted upon
+  targetType String?  // e.g. "Customer", "Order", "Shop"
+  metadata   Json?    // Flexible context: old/new values, IP, etc.
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }

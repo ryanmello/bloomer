@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/actions/getCurrentUser";
 import db from "@/lib/prisma";
+import { createAuditLog } from "@/lib/audit";
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,6 +27,13 @@ export async function POST(request: NextRequest) {
 
     if (result.count === 0) {
       console.warn("[Inbox Disconnect] No integration found for user/platform", user.id, platform);
+    } else {
+      await createAuditLog({
+        action: "SHOP_DISCONNECT",
+        userId: user.id,
+        targetType: "EmailIntegration",
+        metadata: { platform },
+      });
     }
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

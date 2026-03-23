@@ -42,6 +42,8 @@ export async function POST() {
     }
 
     // TODO: implement actual sync pipelines using the user's token
+    // TODO: add audit logging (ORDER_STATUS_CHANGE) when orders are created/updated locally
+    //   see createAuditLog in @/lib/audit
     await new Promise((r) => setTimeout(r, 1500));
 
     return NextResponse.json({ ok: true });
