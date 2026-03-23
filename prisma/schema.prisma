@@ -251,6 +251,8 @@ model Product {
 
   inventoryMovements InventoryMovement[]
   orderItems       OrderItem[]
+
+  scheduledEmails    ScheduledEmail[]
 }
 
 model InventoryMovement {
@@ -449,13 +451,13 @@ model SubmissionAnswer {
 }
 
 model ScheduledEmail {
-  id         String   @id @default(cuid())
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
   userEmail  String
   productId  String
   shopName   String
   sendAt     DateTime
   sent       Boolean  @default(false)
-  product   Product  @relation(fields: [productId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id])
   createdAt  DateTime @default(now())
 }
 model AuditLog {

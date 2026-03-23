@@ -6,42 +6,67 @@ export async function GET() {
   try {
     const now = new Date();
 
-    // Get all scheduled emails due
-    const dueEmails = await db.scheduledEmail.findMany({
-      where: { sent: false, sendAt: { lte: now } },
+    // Find all scheduled emails that are due
+    const emails = await db.scheduledEmail.findMany({
+      where: {
+        sent: false,
+        sendAt: { lte: now },
+      },
+      include: {
+        product: true,
+      },
     });
 
-    for (const emailRow of dueEmails) {
-      try {
-        const product = await db.product.findUnique({ where: { id: emailRow.productId } });
-        if (!product) continue;
+    const batchSize = 50; 
+    let sentCount = 0;
 
-        // Only send if stock is still below threshold
-        if (product.quantity <= (product.lowInventoryAlert ?? 10)) {
-          await sendLowStockEmail(
-            emailRow.userEmail,
-            [{
-              name: product.name,
-              quantity: product.quantity,
-              lowInventoryAlert: product.lowInventoryAlert ?? 10,
-            }],
-            emailRow.shopName
-          );
-        }
+    for (let i = 0; i < emails.length; i += batchSize) {
+      const batch = emails.slice(i, i + batchSize);
 
-        // Mark as sent
-        await db.scheduledEmail.update({
-          where: { id: emailRow.id },
-          data: { sent: true },
-        });
-      } catch (err) {
-        console.error("Failed to send scheduled email:", err);
+      await Promise.all(
+        batch.map(async (email) => {
+          if (!email.product) return;
+
+          const threshold = email.product.lowInventoryAlert ?? 10;
+
+          try {
+            // Only send if product still below threshold
+            if (email.product.quantity <= threshold) {
+              await sendLowStockEmail(
+                email.userEmail,
+                [
+                  {
+                    name: email.product.name,
+                    quantity: email.product.quantity,
+                    lowInventoryAlert: threshold,
+                  },
+                ],
+                email.shopName
+              );
+            }
+
+            // Mark as sent 
+            await db.scheduledEmail.update({
+              where: { id: email.id },
+              data: { sent: true },
+            });
+
+            sentCount++;
+          } catch (err) {
+            console.error(`Failed sending email for ${email.userEmail}`, err);
+          }
+        })
+      );
+
+      // Small delay between batches 
+      if (i + batchSize < emails.length) {
+        await new Promise((res) => setTimeout(res, 500)); 
       }
     }
 
-    return NextResponse.json({ success: true, sent: dueEmails.length });
+    return NextResponse.json({ success: true, sent: sentCount });
   } catch (err) {
-    console.error("Cron handler failed:", err);
-    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Unknown" }, { status: 500 });
+    console.error("Cron error:", err);
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }
