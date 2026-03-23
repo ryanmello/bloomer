@@ -12,7 +12,7 @@
       "schedule": "0 17 * * *"
     },
     {
-      "path": "/api/cron/send-low-stock",
+      "path": "/api/cron/sendlowstock",
       "schedule": "0 * * * *" 
     }
   ]
