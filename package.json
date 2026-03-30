@@ -81,6 +81,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/bcrypt": "^6.0.0",
     "@types/google.maps": "^3.58.1",
