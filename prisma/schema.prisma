@@ -209,7 +209,7 @@ model Campaign {
 model CampaignRecipient {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  // Email delivery status: Pending, Sent, Failed, Opened, Clicked
+  // Email delivery status: Pending, Sent, Failed, Opened, Clicked, RateLimited
   status    String    @default("Pending")
   sentAt    DateTime?
   openedAt  DateTime?
@@ -407,7 +407,7 @@ model AutomationRun {
   automationId String   @db.ObjectId
   automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
   customerId   String   @db.ObjectId
-  status       String   // "sent", "failed", "skipped"
+  status       String   // "sent", "failed", "skipped", "rate_limited"
   errorMessage String?
 
   // Resend tracking
