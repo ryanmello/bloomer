@@ -189,8 +189,8 @@ export async function sendCampaignEmails(
             } else {
               console.log(`✅ Successfully sent email to ${customer.email}, Resend ID: ${data?.id}`);
               console.log(`📧 Email should appear in Resend dashboard with ID: ${data?.id}`);
-              
-              // Update recipient status to Sent
+
+              // Update recipient status to Sent with Resend email ID for webhook tracking
               await db.campaignRecipient.updateMany({
                 where: {
                   campaignId: campaignId,
@@ -198,7 +198,8 @@ export async function sendCampaignEmails(
                 },
                 data: {
                   status: 'Sent',
-                  sentAt: new Date()
+                  sentAt: new Date(),
+                  resendEmailId: data?.id || null
                 }
               });
             }
