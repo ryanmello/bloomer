@@ -1,7 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/actions/getCurrentUser";
+import {NextRequest, NextResponse} from "next/server";
+import {getCurrentUser} from "@/actions/getCurrentUser";
 import db from "@/lib/prisma";
-import { sendCampaignEmails } from "@/lib/resend-email";
+import {sendCampaignEmails} from "@/lib/resend-email";
+import {
+  getAllCustomers,
+  getNewCustomers,
+  getVipCustomers,
+  getHighSpenders,
+  getBirthdayNextMonth,
+  getInactiveCustomers,
+} from "@/lib/audiences/predefined";
 
 // GET - Fetch all campaigns for the user's shop
 export async function GET(req: NextRequest) {
@@ -9,28 +17,22 @@ export async function GET(req: NextRequest) {
     const user = await getCurrentUser();
 
     if (!user) {
-      return NextResponse.json(
-        { message: "Not authenticated" },
-        { status: 401 }
-      );
+      return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
     // Use same shop resolution as broadcasts page (most recent shop)
     const shop = await db.shop.findFirst({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' }
+      where: {userId: user.id},
+      orderBy: {createdAt: "desc"},
     });
 
     if (!shop) {
-      return NextResponse.json(
-        { message: "No shop found" },
-        { status: 404 }
-      );
+      return NextResponse.json({message: "No shop found"}, {status: 404});
     }
 
     const campaigns = await db.campaign.findMany({
       where: {
-        shopId: shop.id
+        shopId: shop.id,
       },
       include: {
         audience: true,
@@ -38,23 +40,59 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             status: true,
-            customerId: true
-          }
-        }
+            customerId: true,
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: "desc",
+      },
     });
 
     return NextResponse.json(campaigns);
   } catch (error) {
     console.error("Error fetching campaigns:", error);
     return NextResponse.json(
-      { error: "Failed to fetch campaigns" },
-      { status: 500 }
+      {error: "Failed to fetch campaigns"},
+      {status: 500},
     );
   }
+}
+
+const selectCustomerFields = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  unsubscribedAt: true,
+};
+
+async function getPredefinedAudienceCustomers(
+  shopId: string,
+  predefinedType: string,
+) {
+  const customers =
+    predefinedType === "all"
+      ? await getAllCustomers(shopId)
+      : predefinedType === "new"
+        ? await getNewCustomers(shopId)
+        : predefinedType === "vip"
+          ? await getVipCustomers(shopId)
+          : predefinedType === "high_spenders"
+            ? await getHighSpenders(shopId)
+            : predefinedType === "birthday_next_month"
+              ? await getBirthdayNextMonth(shopId)
+              : predefinedType === "inactive"
+                ? await getInactiveCustomers(shopId)
+                : [];
+
+  return customers.map((customer) => ({
+    id: customer.id,
+    email: customer.email,
+    firstName: customer.firstName,
+    lastName: customer.lastName,
+    unsubscribedAt: customer.unsubscribedAt,
+  }));
 }
 
 // POST - Create a new campaign
@@ -63,21 +101,18 @@ export async function POST(req: NextRequest) {
     const user = await getCurrentUser();
 
     if (!user) {
-      return NextResponse.json(
-        { message: "Not authenticated" },
-        { status: 401 }
-      );
+      return NextResponse.json({message: "Not authenticated"}, {status: 401});
     }
 
     // Validate Resend API key
     if (!process.env.RESEND_API_KEY) {
-      console.error('RESEND_API_KEY is not set in environment variables');
+      console.error("RESEND_API_KEY is not set in environment variables");
       return NextResponse.json(
-        { 
+        {
           message: "Email system not configured, Resend API Key.",
-          error: "RESEND_API_KEY is missing from environment variables"
+          error: "RESEND_API_KEY is missing from environment variables",
         },
-        { status: 500 }
+        {status: 500},
       );
     }
 
@@ -86,34 +121,42 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           message: "Email system not configured, UNSUBSCRIBE key.",
-          error: "UNSUBSCRIBE_SECRET is missing from environment variables"
+          error: "UNSUBSCRIBE_SECRET is missing from environment variables",
         },
-        { status: 500 }
+        {status: 500},
       );
     }
 
     const body = await req.json();
-    const { campaignName, subject, emailBody, audienceId, customerId, status, scheduledFor, sentAt } = body;
-    const normalizedAudienceId = Array.isArray(audienceId) ? audienceId[0] : audienceId;
+    const {
+      campaignName,
+      subject,
+      emailBody,
+      audienceId,
+      customerId,
+      status,
+      scheduledFor,
+      sentAt,
+    } = body;
+    const normalizedAudienceId = Array.isArray(audienceId)
+      ? audienceId[0]
+      : audienceId;
 
     if (!campaignName || !subject || !emailBody) {
       return NextResponse.json(
-        { message: "Missing required fields" },
-        { status: 400 }
+        {message: "Missing required fields"},
+        {status: 400},
       );
     }
 
     // Get the user's shop (same resolution as GET and broadcasts page)
     const shop = await db.shop.findFirst({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' }
+      where: {userId: user.id},
+      orderBy: {createdAt: "desc"},
     });
 
     if (!shop) {
-      return NextResponse.json(
-        { message: "No shop found" },
-        { status: 404 }
-      );
+      return NextResponse.json({message: "No shop found"}, {status: 404});
     }
 
     const shopId = shop.id;
@@ -125,14 +168,20 @@ export async function POST(req: NextRequest) {
       targetAudience = await db.audience.findFirst({
         where: {
           id: normalizedAudienceId,
-          shopId: shopId
-        }
+          shopId: shopId,
+        },
+        select: {
+          id: true,
+          type: true,
+          predefinedType: true,
+          customerIds: true,
+        },
       });
 
       if (!targetAudience) {
         return NextResponse.json(
-          { message: "Audience not found" },
-          { status: 400 }
+          {message: "Audience not found"},
+          {status: 400},
         );
       }
     }
@@ -142,67 +191,65 @@ export async function POST(req: NextRequest) {
       ? await db.customer.findMany({
           where: {
             shopId: shopId,
-            id: customerId,
+            id: Array.isArray(customerId) ? {in: customerId} : customerId,
           },
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            unsubscribedAt: true,
-          },
+          select: selectCustomerFields,
         })
       : targetAudience
-      ? await db.customer.findMany({
-          where: {
-            shopId: shopId,
-            id: { in: targetAudience.customerIds },
-          },
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            unsubscribedAt: true,
-          },
-        })
-      : await db.customer.findMany({
-          where: {
-            shopId: shopId,
-          },
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            unsubscribedAt: true,
-          },
-        });
+        ? targetAudience.type === "custom"
+          ? await db.customer.findMany({
+              where: {
+                shopId: shopId,
+                id: {in: targetAudience.customerIds ?? []},
+              },
+              select: selectCustomerFields,
+            })
+          : targetAudience.type === "predefined"
+            ? targetAudience.predefinedType
+              ? await getPredefinedAudienceCustomers(
+                  shopId,
+                  targetAudience.predefinedType,
+                )
+              : []
+            : []
+        : await db.customer.findMany({
+            where: {
+              shopId: shopId,
+            },
+            select: selectCustomerFields,
+          });
+
+    console.log("targetAudience:", targetAudience);
+
     // Treat null/undefined as subscribed, any Date means unsubscribed
-    const targetCustomers = rawCustomers.filter((customer) => customer.unsubscribedAt == null);
+    const targetCustomers = rawCustomers.filter(
+      (customer) => customer.unsubscribedAt == null,
+    );
 
     // If no customers found, return error
     if (targetCustomers.length === 0) {
       return NextResponse.json(
         {
           message: "No customers found for selected audience",
-          error: "Cannot create campaign with no target customers"
+          error: "Cannot create campaign with no target customers",
         },
-        { status: 400 }
+        {status: 400},
       );
     }
 
     // Determine campaign status
-    let campaignStatus = status || 'Draft';
+    let campaignStatus = status || "Draft";
     let scheduledDate: Date | null = null;
 
     if (scheduledFor) {
-      campaignStatus = 'Scheduled';
+      campaignStatus = "Scheduled";
       scheduledDate = new Date(scheduledFor);
       console.log(`📅 Creating scheduled campaign:`);
       console.log(`   Scheduled for: ${scheduledDate.toISOString()}`);
       console.log(`   Current time: ${new Date().toISOString()}`);
-      console.log(`   Will be sent in: ${Math.round((scheduledDate.getTime() - new Date().getTime()) / 1000 / 60)} minutes`);
+      console.log(
+        `   Will be sent in: ${Math.round((scheduledDate.getTime() - new Date().getTime()) / 1000 / 60)} minutes`,
+      );
     }
 
     // Create the campaign
@@ -218,47 +265,51 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         shopId: shopId,
         recipients: {
-          create: targetCustomers.map(customer => ({
+          create: targetCustomers.map((customer) => ({
             customerId: customer.id,
-            status: 'Pending'
-          }))
-        }
+            status: "Pending",
+          })),
+        },
       },
       include: {
-        recipients: true
-      }
+        recipients: true,
+      },
     });
 
     if (campaignStatus === "Sent") {
       if (normalizedAudienceId) {
         await db.audience.update({
-          where: { id: normalizedAudienceId },
+          where: {id: normalizedAudienceId},
           data: {
             campaignsSent: {
-              increment: 1
+              increment: 1,
             },
             lastCampaignName: campaignName,
-            lastCampaignAt: new Date()
-          }
+            lastCampaignAt: new Date(),
+          },
         });
       }
     }
 
-    if (campaignStatus === 'Scheduled') {
+    if (campaignStatus === "Scheduled") {
       console.log(`✅ Campaign "${campaignName}" scheduled successfully`);
-      console.log(`   It will be sent automatically when the scheduled time arrives.`);
-      console.log(`   To test immediately, call: GET /api/campaigns/send-schedule`);
+      console.log(
+        `   It will be sent automatically when the scheduled time arrives.`,
+      );
+      console.log(
+        `   To test immediately, call: GET /api/campaigns/send-schedule`,
+      );
     }
 
     // If status is 'Sent', send emails immediately
-    if (campaignStatus === 'Sent') {
+    if (campaignStatus === "Sent") {
       // Validate API key before starting background process
       if (!process.env.RESEND_API_KEY) {
-        console.error('RESEND_API_KEY is missing - cannot send emails');
+        console.error("RESEND_API_KEY is missing - cannot send emails");
         // Update campaign to Failed status
         await db.campaign.update({
-          where: { id: campaign.id },
-          data: { status: 'Failed' }
+          where: {id: campaign.id},
+          data: {status: "Failed"},
         });
       } else {
         // Send emails in the background (don't await to return response quickly)
@@ -267,25 +318,25 @@ export async function POST(req: NextRequest) {
           targetCustomers,
           subject,
           emailBody,
-          shop.name || 'Your Store',
+          shop.name || "Your Store",
           shop.email,
-          shop.address ?? ''
-        ).catch(error => {
-          console.error('Error sending campaign emails:', error);
-          console.error('Error stack:', error?.stack);
+          shop.address ?? "",
+        ).catch((error) => {
+          console.error("Error sending campaign emails:", error);
+          console.error("Error stack:", error?.stack);
         });
       }
     }
 
     return NextResponse.json(
-      { message: "Campaign created successfully", campaign },
-      { status: 201 }
+      {message: "Campaign created successfully", campaign},
+      {status: 201},
     );
   } catch (error) {
     console.error("Error creating campaign:", error);
     return NextResponse.json(
-      { error: "Failed to create campaign" },
-      { status: 500 }
+      {error: "Failed to create campaign"},
+      {status: 500},
     );
   }
 }

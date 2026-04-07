@@ -286,6 +286,15 @@ enum AudienceType {
   predefined
 }
 
+enum PredefinedAudienceType {
+  all
+  new
+  vip
+  high_spenders
+  birthday_next_month
+  inactive
+}
+
 model Audience {
   id          String         @id @default(auto()) @map("_id") @db.ObjectId
   name        String
@@ -294,6 +303,7 @@ model Audience {
   type        AudienceType   @default(custom)
   customerIds String[]       @default([])
   field       String?
+  predefinedType PredefinedAudienceType?
 
   // Metrics for audience analytics
   campaignsSent Int @default(0)
