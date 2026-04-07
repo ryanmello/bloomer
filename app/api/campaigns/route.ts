@@ -81,7 +81,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-
+    // Validate UNSUBSCRIBE_SECRET key
+    if (!process.env.UNSUBSCRIBE_SECRET) {
+      return NextResponse.json(
+        {
+          message: "Email system not configured, UNSUBSCRIBE key.",
+          error: "UNSUBSCRIBE_SECRET is missing from environment variables"
+        },
+        { status: 500 }
+      );
+    }
 
     const body = await req.json();
     const { campaignName, subject, emailBody, audienceId, customerId, status, scheduledFor, sentAt } = body;
