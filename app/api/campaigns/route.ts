@@ -69,6 +69,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Validate Resend API key
+    if (!process.env.RESEND_API_KEY) {
+      console.error('RESEND_API_KEY is not set in environment variables');
+      return NextResponse.json(
+        { 
+          message: "Email system not configured, Resend API Key.",
+          error: "RESEND_API_KEY is missing from environment variables"
+        },
+        { status: 500 }
+      );
+    }
+
+
+
     const body = await req.json();
     const { campaignName, subject, emailBody, audienceId, customerId, status, scheduledFor, sentAt } = body;
     const normalizedAudienceId = Array.isArray(audienceId) ? audienceId[0] : audienceId;
