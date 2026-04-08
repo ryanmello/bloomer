@@ -8,6 +8,41 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Mail } from 'lucide-react';
 import Link from 'next/link';
+import {
+  getAllCustomers,
+  getNewCustomers,
+  getVipCustomers,
+  getHighSpenders,
+  getBirthdayNextMonth,
+  getInactiveCustomers,
+} from "@/lib/audiences/predefined";
+
+async function getAudienceCount(audience: any, shopId: string) {
+  if (audience.type === "custom") {
+    return audience.customerIds?.length ?? 0;
+  }
+
+  if (audience.type === "predefined") {
+    const customers =
+      audience.predefinedType === "all"
+        ? await getAllCustomers(shopId)
+        : audience.predefinedType === "new"
+        ? await getNewCustomers(shopId)
+        : audience.predefinedType === "vip"
+        ? await getVipCustomers(shopId)
+        : audience.predefinedType === "high_spenders"
+        ? await getHighSpenders(shopId)
+        : audience.predefinedType === "birthday_next_month"
+        ? await getBirthdayNextMonth(shopId)
+        : audience.predefinedType === "inactive"
+        ? await getInactiveCustomers(shopId)
+        : [];
+
+    return customers.length;
+  }
+
+  return 0;
+}
 
 // Fetch campaigns for a shop
 async function getCampaigns(shopId: string) {
@@ -82,11 +117,13 @@ export default async function BroadcastsPage() {
     })
   ]);
 
-  const audiences = rawAudiences.map(a => ({
-    id: a.id,
-    name: a.name,
-    count: a.customerIds?.length ?? 0,
-  }));
+  const audiences = await Promise.all(
+    rawAudiences.map(async (a) => ({
+      id: a.id,
+      name: a.name,
+      count: await getAudienceCount(a, shop.id),
+    }))
+  );
 
   // Transform campaigns to match the component interface
   const campaigns = rawCampaigns.map(campaign => ({
