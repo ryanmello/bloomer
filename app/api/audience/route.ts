@@ -2,6 +2,64 @@ import { NextResponse } from "next/server";
 import db from "../../../lib/prisma";
 import { getCurrentUser } from "@/actions/getCurrentUser";
 import { cookies } from "next/headers";
+import {
+  getAllCustomers,
+  getNewCustomers,
+  getVipCustomers,
+  getHighSpenders,
+  getBirthdayNextMonth,
+  getInactiveCustomers,
+} from "@/lib/audiences/predefined";
+
+type MetricCustomer = {
+  id: string;
+  createdAt: Date;
+  orderCount?: number;
+  spendAmount?: number;
+};
+
+async function getAudienceCustomers(aud: any, shopId: string): Promise<MetricCustomer[]> {
+  if (aud.type === "custom") {
+    const customerIds = aud.customerIds ?? [];
+    if (customerIds.length === 0) return [];
+
+    return db.customer.findMany({
+      where: { id: { in: customerIds } },
+      select: {
+        id: true,
+        createdAt: true,
+        orderCount: true,
+        spendAmount: true,
+      },
+    });
+  }
+
+  if (aud.type === "predefined") {
+    const customers =
+      aud.predefinedType === "all"
+        ? await getAllCustomers(shopId)
+        : aud.predefinedType === "new"
+        ? await getNewCustomers(shopId)
+        : aud.predefinedType === "vip"
+        ? await getVipCustomers(shopId)
+        : aud.predefinedType === "high_spenders"
+        ? await getHighSpenders(shopId)
+        : aud.predefinedType === "birthday_next_month"
+        ? await getBirthdayNextMonth(shopId)
+        : aud.predefinedType === "inactive"
+        ? await getInactiveCustomers(shopId)
+        : [];
+
+    return customers.map((customer) => ({
+      id: customer.id,
+      createdAt: customer.createdAt,
+      orderCount: customer.orderCount,
+      spendAmount: customer.spendAmount,
+    }));
+  }
+
+  return [];
+}
 
 // fetch audiences card
 export async function GET() {
@@ -72,11 +130,9 @@ export async function GET() {
     const audiencesWithMetrics = await Promise.all(
       audiences.map(async (aud) => {
         // remove undefined safely
-        const definedCustomers = (aud.customerIds || [])
-          .map((id) => customerMap.get(id))
-          .filter((c): c is NonNullable<typeof c> => Boolean(c));
+       const audienceCustomers = await getAudienceCustomers(aud, shop.id);
 
-        const customerCount = definedCustomers.length;
+        const customerCount = audienceCustomers.length;
 
         // campaigns sent
         const campaignsSent = await db.campaign.count({
@@ -89,7 +145,7 @@ export async function GET() {
         });
 
         // growth Rate
-        const customersBefore = definedCustomers.filter(
+        const customersBefore = audienceCustomers.filter(
           (c) => c.createdAt < thirtyDaysAgo
         ).length;
 
@@ -117,7 +173,7 @@ export async function GET() {
 
         return {
           ...aud,
-          customers: definedCustomers,
+          customers: audienceCustomers,
           customerCount,
           campaignsSent,
           lastCampaignName: lastCampaignObj?.campaignName ?? "",
