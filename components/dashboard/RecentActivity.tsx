@@ -9,6 +9,7 @@ import {
   Link as LinkIcon,
   Loader2,
 } from "lucide-react";
+import { useCurrency } from "@/context/CurrencyContext";
 import type { ActivityItem } from "@/app/api/dashboard/activity/route";
 
 function formatRelativeTime(isoDate: string): string {
@@ -19,13 +20,6 @@ function formatRelativeTime(isoDate: string): string {
   if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
   const days = Math.floor(hours / 24);
   return `${days} day${days === 1 ? "" : "s"} ago`;
-}
-
-function formatCurrency(amount: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-  }).format(amount);
 }
 
 function ActivityIcon({ type }: { type: ActivityItem["type"] }) {
@@ -56,6 +50,8 @@ function ActivityIcon({ type }: { type: ActivityItem["type"] }) {
 }
 
 function ActivityContent({ item }: { item: ActivityItem }) {
+  const { formatPrice } = useCurrency();
+
   switch (item.type) {
     case "order":
       return (
@@ -65,10 +61,7 @@ function ActivityContent({ item }: { item: ActivityItem }) {
           </p>
           <p className="text-sm text-muted-foreground truncate">
             {item.data.totalAmount != null
-              ? formatCurrency(
-                  item.data.totalAmount,
-                  item.data.currency ?? "USD"
-                )
+              ? formatPrice(item.data.totalAmount)
               : "No total"}
             {" · "}
             {item.data.status}

@@ -1,17 +1,18 @@
-import StorefrontTable from '@/components/storefront/Storefront';
-import AddProduct from '@/components/storefront/AddProduct';
-import ShopSelector from '@/components/shop/ShopSelector';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Package, TrendingUp, AlertCircle, DollarSign, ShoppingBag } from 'lucide-react';
-import db from '@/lib/prisma';
-import { getCurrentUser } from '@/actions/getCurrentUser';
-import { cookies } from 'next/headers';
-import Link from 'next/link';
+"use client";
 
-export const dynamic = 'force-dynamic';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Package, TrendingUp, AlertCircle, DollarSign, ShoppingBag } from "lucide-react";
+import StorefrontTable from "@/components/storefront/Storefront";
+import AddProduct from "@/components/storefront/AddProduct";
+import ShopSelector from "@/components/shop/ShopSelector";
+import { Product } from "@/lib/types";
+import { useCurrency } from "@/context/CurrencyContext";
 
-export interface Product {
+interface LocalProduct {
   id: string;
   name: string;
   retailPrice: number;
@@ -24,85 +25,76 @@ export interface Product {
   createdAt: string;
 }
 
-async function getProducts(): Promise<{
-  products: Product[];
-  noShop: boolean;
-  noUser?: boolean;
-}> {
-  try {
-    const user = await getCurrentUser();
+export default function StorefrontPage() {
+  const [products, setProducts] = useState<LocalProduct[]>([]);
+  const [noShop, setNoShop] = useState(false);
+  const [noUser, setNoUser] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { formatPrice } = useCurrency();
 
-    if (!user) {
-      return { products: [], noShop: true, noUser: true };
-    }
-
-    const cookieStore = await cookies();
-    const activeShopId = cookieStore.get('activeShopId')?.value;
-
-    let shop;
-    if (activeShopId) {
-      shop = await db.shop.findFirst({
-        where: {
-          id: activeShopId,
-          userId: user.id
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/products');
+        if (!response.ok) {
+          if (response.status === 401) {
+            setNoUser(true);
+          } else if (response.status === 404) {
+            setNoShop(true);
+          }
+          return;
         }
-      });
-    }
+        const data: any[] = await response.json();
+        const formattedProducts: LocalProduct[] = data.map(p => ({
+          id: p.id,
+          name: p.name,
+          retailPrice: p.retailPrice,
+          costPrice: p.costPrice,
+          quantity: p.quantity,
+          lowInventoryAlert: p.lowInventoryAlert,
+          description: p.description,
+          category: p.category,
+          updatedAt: p.updatedAt,
+          createdAt: p.createdAt,
+        }));
+        setProducts(formattedProducts);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (!shop) {
-      shop = await db.shop.findFirst({
-        where: {
-          userId: user.id
-        }
-      });
-    }
+    fetchProducts();
+  }, []);
 
-    if (!shop) {
-      return { products: [], noShop: true };
-    }
+  const getStockStatus = (quantity: number, threshold: number) => {
+    if (quantity === 0) return "out-of-stock" as const;
+    if (quantity <= threshold) return "low-stock" as const;
+    return "in-stock" as const;
+  };
 
-    const products = await db.product.findMany({
-      where: {
-        shopId: shop.id
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  const calculateStats = (products: LocalProduct[]) => {
+    const totalProducts = products.length;
+    const totalInventory = products.reduce((sum, p) => sum + p.quantity, 0);
+    const totalValue = products.reduce((sum, p) => sum + (p.retailPrice * p.quantity), 0);
+    const lowStock = products.filter(
+      (p) => getStockStatus(p.quantity, p.lowInventoryAlert ?? 10) === "low-stock"
+    ).length;
+    const outOfStock = products.filter((p) => p.quantity === 0).length;
+    return { totalProducts, totalInventory, totalValue, lowStock, outOfStock };
+  };
 
-    const formattedProducts = products.map(p => ({
-      ...p,
-      updatedAt: p.updatedAt.toISOString(),
-      createdAt: p.createdAt.toISOString(),
-      description: p.description || null,
-      category: p.category || "General"
-    }));
-
-    return { products: formattedProducts, noShop: false };
-
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    return { products: [], noShop: true, noUser: true };
+  if (loading) {
+    return (
+      <main className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div>Loading...</div>
+        </div>
+      </main>
+    );
   }
-}
 
-function getStockStatus(quantity: number, threshold: number) {
-  if (quantity === 0) return "out-of-stock" as const;
-  if (quantity <= threshold) return "low-stock" as const;
-  return "in-stock" as const;
-}
-
-function calculateStats(products: Product[]) {
-  const totalProducts = products.length;
-  const totalInventory = products.reduce((sum, p) => sum + p.quantity, 0);
-  const totalValue = products.reduce((sum, p) => sum + (p.retailPrice * p.quantity), 0);
-  const lowStock = products.filter(
-    (p) => getStockStatus(p.quantity, p.lowInventoryAlert ?? 10) === "low-stock"
-  ).length;
-  const outOfStock = products.filter((p) => p.quantity === 0).length;
-  return { totalProducts, totalInventory, totalValue, lowStock, outOfStock };
-}
-
-export default async function StorefrontPage() {
-  const { products, noShop, noUser } = await getProducts();
   const stats = calculateStats(products);
 
   // Session invalid or user not found
@@ -174,7 +166,7 @@ export default async function StorefrontPage() {
     },
     {
       title: "Inventory Value",
-      value: `$${stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      value: formatPrice(stats.totalValue),
       subtitle: "Total retail value",
       icon: DollarSign,
     },
