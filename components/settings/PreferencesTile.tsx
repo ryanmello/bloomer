@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import axios from "axios";
 import TwoFactorAuthModal from "./TwoFactorAuthModal";
 import TimezoneSelector from "./TimezoneSelector";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface PreferencesTileProps {
   twoFactorEnabled: boolean;
@@ -17,6 +18,7 @@ interface PreferencesTileProps {
 }
 
 export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }: PreferencesTileProps) {
+  const { setCurrency } = useCurrency();
   const currencyOptions = [
     { value: "USD", label: "USD - US Dollar" },
     { value: "EUR", label: "EUR - Euro" },
@@ -109,6 +111,7 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
   const handleCurrencyChange = async (currency: string) => {
     const previousValue = defaultCurrency;
     setDefaultCurrency(currency);
+    setCurrency(currency);
     setIsUpdatingCurrency(true);
 
     try {
@@ -116,6 +119,7 @@ export default function PreferencesTile({ twoFactorEnabled, onTwoFactorChange }:
       toast.success("Default currency updated");
     } catch (error: any) {
       setDefaultCurrency(previousValue);
+      setCurrency(previousValue);
       toast.error(
         error.response?.data?.message || "Failed to update default currency"
       );

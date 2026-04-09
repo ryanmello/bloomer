@@ -34,6 +34,7 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Package, AlertTriangle, SlidersHorizontal } from 'lucide-react';
+import { useCurrency } from '@/context/CurrencyContext';
 
 type StockFilter = 'all' | 'low' | 'out';
 
@@ -54,6 +55,7 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
     const [stockFilter, setStockFilter] = useState<StockFilter>('all');
     const [isDeleting, setIsDeleting] = useState(false);
     const router = useRouter();
+    const { formatPrice } = useCurrency();
 
     const filteredProducts = useMemo(() => {
         if (stockFilter === 'all') return products;
@@ -151,7 +153,7 @@ export default function StorefrontTable({ products }: StorefrontTableProps) {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">${product.retailPrice.toFixed(2)}</div>
+                                            <div className="font-medium">{formatPrice(product.retailPrice)}</div>
                                         </TableCell>
                                         <TableCell>
                                             {product.category ? (

@@ -11,6 +11,7 @@ import EditCustomerForm from "@/components/customers/EditCustomerForm";
 import {Download} from "lucide-react";
 import CustomerFilter from "@/components/customers/CustomerFilter";
 import {Input} from "@/components/ui/input";
+import { useCurrency } from "@/context/CurrencyContext";
 
 type CustomerGroup = "VIP" | "Repeat" | "New" | "Potential";
 
@@ -62,6 +63,7 @@ export default function CustomersPage() {
   const [detailsOpen, setDetailsOpen] = useState<Set<string>>(new Set());
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const { formatPrice } = useCurrency();
 
   const groupFiltered = useMemo(() => {
     if (selectedGroups.length === 0) return customers;
@@ -102,12 +104,8 @@ export default function CustomersPage() {
         const orderCount = customer.orders?.length ?? 0;
         const occasionsCount = customer.occasionsCount ?? orderCount;
 
-        // Compute spendAmount excluding cancelled orders
-        const spendAmount =
-          customer.orders?.reduce((sum, order) => {
-            if (order.status === "CANCELLED") return sum;
-            return sum + (order.totalAmount ?? 0);
-          }, 0) ?? 0;
+        // Use spendAmount from database
+        const spendAmount = customer.spendAmount ?? 0;
 
         return {
           ...customer,
@@ -333,10 +331,7 @@ export default function CustomersPage() {
                       {label: "Orders", value: customer.orderCount ?? 0},
                       {
                         label: "Spend",
-                        value: new Intl.NumberFormat("en-US", {
-                          style: "currency",
-                          currency: defaultCurrency,
-                        }).format(customer.spendAmount ?? 0),
+                        value: formatPrice(customer.spendAmount ?? 0),
                       },
                       {label: "Occasions", value: customer.occasionsCount ?? 0},
                     ].map((stat, i) => (
