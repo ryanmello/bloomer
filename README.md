@@ -1,8 +1,26 @@
+# README TODO:
+
+Screenshots of product ui + descriptions and examples
+
+Team or project logo
+
+Testing section
+
+Clear deployment instructions
+
 # 🌸 Bloomer
 
 **Grow with Bloomer: Customer Relationship Management for Flower Shops**
 
+### Project Description
+
 Bloomer is a comprehensive, all-in-one CRM platform specifically designed for flower shops and florists. It provides powerful tools for customer management, marketing automation, inventory tracking, and business analytics to help flower shops thrive in the modern marketplace.
+
+### What the Application Does
+Bloomer allows users to manage customer relationships, track inventory with stock and expiration monitoring, and create targeted marketing campaigns through email broadcasts and automation workflows. It also provides business analytics through a real-time dashboard, supports audience segmentation for personalized outreach, and integrates with Square to synchronize customer and order data. The platform streamlines core business processes such as order tracking, occasion reminders, and promotional campaign management.
+
+### Why This Application Was Created
+This application was created to address the lack of affordable, industry-specific CRM solutions for flower shops. Existing CRM platforms are often too generic or costly, failing to account for the unique operational needs of florists, such as managing perishable inventory, tracking customer occasions like birthdays and anniversaries, and handling time-sensitive orders and seasonal demand. Bloomer was developed to fill this gap by providing a tailored, cost-effective solution that helps floral businesses operate more efficiently and grow through data-driven decision-making.
 
 ---
 
@@ -30,11 +48,11 @@ Bloomer is a specialized Customer Relationship Management (CRM) solution built s
 - [Developer Instructions](#-developer-instructions)
 - [Testing](#-testing)
 - [Deployment](#-deployment)
-- [Project Timeline](#-project-timeline)
 - [Project Structure](#-project-structure)
 - [Database Schema](#-database-schema)
 - [Square Integration](#-square-integration)
 - [Contributing](#-contributing)
+- [Team Members](#-team-members)
 
 ---
 ## ERD 
@@ -333,60 +351,6 @@ npm test:e2e          # Run E2E tests
 
 ---
 
-## 📅 Project Timeline
-
-### CSC 191 Spring 2026 - Key Milestones
-
-| Sprint | Weeks | Features | Story Points |
-|--------|-------|----------|--------------|
-| **Sprint 1** | 1-3 | Email Campaign Enhancement: Template builder, scheduling, automated sends | 13 pts |
-| **Sprint 2** | 4-6 | Advanced Customer Segmentation: Custom audience builder, dynamic filters | 13 pts |
-| **Sprint 3** | 7-9 | Order Management: Complete order workflow, status tracking, delivery scheduling | 21 pts |
-| **Sprint 4** | 10-11 | Inventory System: Product management, stock tracking, low-stock alerts, shelf-life monitoring | 13 pts |
-| **Sprint 5** | 12-13 | Marketing Automation: Workflow engine, occasion reminders, automated follow-ups | 13 pts |
-| **Sprint 6** | 14 | Testing & QA: Unit tests, integration tests, E2E tests, bug fixes | 8 pts |
-| **Sprint 7** | 15 | Deployment: Production setup, monitoring, documentation | 5 pts |
-| **Beta Release** | 16 | Final presentation and user acceptance testing | - |
-
-**Total Story Points:** 86
-
-### Key Feature Breakdown
-
-**Sprint 1 - Campaign Enhancement (Weeks 1-3)**
-- JIRA-45: Email template builder with drag-and-drop interface
-- JIRA-46: Campaign scheduling with timezone support
-- JIRA-47: Automated email sending with retry logic
-
-**Sprint 2 - Segmentation (Weeks 4-6)**
-- JIRA-50: Visual custom audience builder
-- JIRA-51: Dynamic customer filters (spend, orders, occasions)
-- JIRA-52: Smart groups with auto-update
-
-**Sprint 3 - Orders (Weeks 7-9)**
-- JIRA-60: Order creation workflow
-- JIRA-61: Order status tracking system
-- JIRA-62: Delivery scheduling with calendar
-
-**Sprint 4 - Inventory (Weeks 10-11)**
-- JIRA-70: Product management interface
-- JIRA-71: Inventory movement tracking
-- JIRA-72: Low-stock and expiration alerts
-
-**Sprint 5 - Automation (Weeks 12-13)**
-- JIRA-80: Automation workflow builder
-- JIRA-81: Occasion-based reminder system
-- JIRA-82: Automated email sequences
-
-**Sprint 6 - Testing (Week 14)**
-- JIRA-90: Unit and integration test suite
-- JIRA-91: E2E testing with Playwright
-
-**Sprint 7 - Deployment (Week 15)**
-- JIRA-95: Production environment setup
-- JIRA-96: Monitoring and analytics
-
----
-
 ## 📁 Project Structure
 
 ```
@@ -624,6 +588,44 @@ Contributions are welcome! Please follow these steps:
 - [Chart.js](https://www.chartjs.org/) - Data Visualization
 - [Lucide](https://lucide.dev/) - Icon Library
 - [Square](https://squareup.com/) - POS Integration
+
+---
+
+## 👥 Team Members
+
+### 1. Zyale Brown-Sanger
+- **Email:** zyaleparis@gmail.com
+- **GitHub:** github.com/Zyale21
+
+### 2. Pavel Bratan
+- **Email:** pbratan@csus.edu
+- **GitHub:** github.com/Proxtron
+
+### 3. Ryan Mello
+- **Email:** ryanmello897@gmail.com
+- **GitHub:** github.com/ryanmello
+
+### 4. Brendan Wong
+- **Email:** tobrendanw@gmail.com
+- **GitHub:** github.com/BrendanMWong
+
+### 5. Arianna Hernandez
+- **Email:** ari.hernandez0010@gmail.com
+- **GitHub:** github.com/ahernandez41
+
+### 6. Edgar Castaneda
+- **Email:** edgar.castaneda1211@gmail.com
+- **GitHub:** github.com/edgarcastaneda89
+
+### 7. Chik Pan Wong
+- **Email:** chikpanwong@gmail.com
+- **GitHub:** github.com/chikpanwong
+
+### 8. Caillou Xiong
+- **Email:** caillouxiong@csus.edu
+- **GitHub:** github.com/cxiiong
+
+---
 
 **Built with ❤️ for flower shops everywhere**
 
