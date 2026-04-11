@@ -247,6 +247,10 @@ model Product {
   image             String?
   isActive          Boolean  @default(true)
   notes             String?
+  /// Square Catalog ITEM object id (parent)
+  squareCatalogItemId       String?
+  /// Square Catalog ITEM_VARIATION object id (unique per seller; used for inventory + matching)
+  squareCatalogVariationId  String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -255,8 +259,9 @@ model Product {
 
   inventoryMovements InventoryMovement[]
   orderItems       OrderItem[]
-
   scheduledEmails    ScheduledEmail[]
+
+  @@index([shopId, squareCatalogVariationId])
 }
 
 model InventoryMovement {
@@ -335,6 +340,7 @@ model SquareIntegration {
   refreshToken String
   expiresAt    DateTime
   connected    Boolean  @default(false)
+  lastSyncAt   DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
