@@ -2,6 +2,58 @@ import { NextResponse } from "next/server";
 import db from "@/lib/prisma";
 import { getCurrentUser } from "@/actions/getCurrentUser";
 import { startOfMonth, subMonths } from "date-fns";
+import {
+  getAllCustomers,
+  getNewCustomers,
+  getVipCustomers,
+  getHighSpenders,
+  getBirthdayNextMonth,
+  getInactiveCustomers,
+} from "@/lib/audiences/predefined";
+
+type MetricCustomer = {
+  id: string;
+  createdAt: Date;
+};
+
+async function getAudienceCustomers(aud: any, shopId: string): Promise<MetricCustomer[]> {
+  if (aud.type === "custom") {
+    const customerIds = aud.customerIds ?? [];
+    if (customerIds.length === 0) return [];
+
+    return db.customer.findMany({
+      where: { id: { in: customerIds } },
+      select: {
+        id: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  if (aud.type === "predefined") {
+    const customers =
+      aud.predefinedType === "all"
+        ? await getAllCustomers(shopId)
+        : aud.predefinedType === "new"
+        ? await getNewCustomers(shopId)
+        : aud.predefinedType === "vip"
+        ? await getVipCustomers(shopId)
+        : aud.predefinedType === "high_spenders"
+        ? await getHighSpenders(shopId)
+        : aud.predefinedType === "birthday_next_month"
+        ? await getBirthdayNextMonth(shopId)
+        : aud.predefinedType === "inactive"
+        ? await getInactiveCustomers(shopId)
+        : [];
+
+    return customers.map((customer) => ({
+      id: customer.id,
+      createdAt: customer.createdAt,
+    }));
+  }
+
+  return [];
+}
 
 export async function GET() {
     try {
@@ -50,7 +102,9 @@ export async function GET() {
             where: { shopId: shop.id },
             select: {
                 id: true,
+                type: true,
                 customerIds: true,
+                predefinedType: true,
             },
         });
 
@@ -78,13 +132,12 @@ export async function GET() {
         let growthCount = 0;
 
         for (const aud of audiences) {
-            const definedCustomers = (aud.customerIds || [])
-                .map((id) => customerMap.get(id))
-                .filter(Boolean) as { id: string; createdAt: Date }[];
+            const audienceCustomers = await getAudienceCustomers(aud, shop.id);
 
-            const customerCount = definedCustomers.length;
 
-            const customersBeforeCurrent = definedCustomers.filter(
+            const customerCount = audienceCustomers.length;
+
+            const customersBeforeCurrent = audienceCustomers.filter(
                 (c) => c.createdAt < startLastMonth,
             ).length;
 
@@ -100,11 +153,11 @@ export async function GET() {
             growthSum += growthRate;
 
             // Last Month Growth
-            const customersAtStartOfLastMonth = definedCustomers.filter(
+            const customersAtStartOfLastMonth = audienceCustomers.filter(
                 (c) => c.createdAt < startLastMonth,
             ).length;
 
-            const customersBeforeLastMonth = definedCustomers.filter(
+            const customersBeforeLastMonth = audienceCustomers.filter(
                 (c) => c.createdAt < startTwoMonthsAgo,
             ).length;
 

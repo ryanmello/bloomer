@@ -6,6 +6,7 @@ import {
   type FooterMergeContext,
 } from "@/lib/email-footer";
 import { signUnsubscribeToken } from "@/lib/unsubscribe-token";
+import { canSendMarketingEmail } from "@/lib/email-rate-limit";
 
 // Helper to get Resend client with validation
 function getResendClient() {
@@ -74,6 +75,27 @@ export async function sendCampaignEmails(
             // Skip if customer has unsubscribed (DB guard)
             if (customer.unsubscribedAt) {
               console.log(`⏭️ Skipping ${customer.email} — unsubscribed`);
+              return;
+            }
+
+            // Check rate limits before sending
+            const rateLimitCheck = await canSendMarketingEmail(customer.id);
+            if (!rateLimitCheck.allowed) {
+              console.log(
+                `⏸️ Rate limited: ${customer.email} - ${rateLimitCheck.reason} ` +
+                `(monthly: ${rateLimitCheck.monthlyCount}/5)`
+              );
+
+              // Update recipient status to rate limited
+              await db.campaignRecipient.updateMany({
+                where: {
+                  campaignId: campaignId,
+                  customerId: customer.id
+                },
+                data: {
+                  status: 'RateLimited',
+                }
+              });
               return;
             }
 
@@ -163,7 +185,7 @@ export async function sendCampaignEmails(
                 name: error.name,
                 statusCode: error.statusCode
               });
-              
+
               // Check if it's a domain verification error
               if (error.statusCode === 403 && error.message?.includes('verify a domain')) {
                 console.error('\n🔴 DOMAIN VERIFICATION REQUIRED:');
@@ -174,7 +196,7 @@ export async function sendCampaignEmails(
                 console.error('   3. Set RESEND_FROM_EMAIL environment variable to an email from your verified domain');
                 console.error('      Example: RESEND_FROM_EMAIL=noreply@yourdomain.com');
               }
-              
+
               // Update recipient status to Failed
               await db.campaignRecipient.updateMany({
                 where: {
@@ -189,8 +211,8 @@ export async function sendCampaignEmails(
             } else {
               console.log(`✅ Successfully sent email to ${customer.email}, Resend ID: ${data?.id}`);
               console.log(`📧 Email should appear in Resend dashboard with ID: ${data?.id}`);
-              
-              // Update recipient status to Sent
+
+              // Update recipient status to Sent with Resend email ID for webhook tracking
               await db.campaignRecipient.updateMany({
                 where: {
                   campaignId: campaignId,
@@ -198,7 +220,8 @@ export async function sendCampaignEmails(
                 },
                 data: {
                   status: 'Sent',
-                  sentAt: new Date()
+                  sentAt: new Date(),
+                  resendEmailId: data?.id || null
                 }
               });
             }

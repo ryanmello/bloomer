@@ -67,24 +67,24 @@ export async function GET(
     let customers: any[] = [];
 
     if (audience.type === "predefined") {
-      switch (audience.name) {
-        case "All Customers":
-          // { id: "1", firstName: "John", ... },{ id: "2", firstName: "Jane", ... }
+      switch (audience.predefinedType) {
+        // { id: "1", firstName: "John", ... },{ id: "2", firstName: "Jane", ... }
+        case "all":
           customers = await getAllCustomers(shop.id);
           break;
-        case "New Customers":
+        case "new":
           customers = await getNewCustomers(shop.id);
           break;
-        case "VIP Customers":
+        case "vip":
           customers = await getVipCustomers(shop.id);
           break;
-        case "High Spenders":
+        case "high_spenders":
           customers = await getHighSpenders(shop.id);
           break;
-        case "Birthday Club":
+        case "birthday_next_month":
           customers = await getBirthdayNextMonth(shop.id);
           break;
-        case "Inactive Customers":
+        case "inactive":
           customers = await getInactiveCustomers(shop.id);
           break;
         default:

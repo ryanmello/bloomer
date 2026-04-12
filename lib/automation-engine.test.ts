@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockDb, mockedSendEmail, mockedTriggers } = vi.hoisted(() => {
   const fn = vi.fn;
-  const model = () => ({ findUnique: fn(), findMany: fn(), create: fn(), update: fn(), delete: fn() });
+  const model = () => ({ findUnique: fn(), findMany: fn(), create: fn(), update: fn(), delete: fn(), updateMany: fn() });
   return {
-    mockDb: { shop: model(), automation: model(), automationRun: model() },
+    mockDb: { shop: model(), automation: model(), automationRun: model(), campaignRecipient: model() },
     mockedSendEmail: fn(),
     mockedTriggers: {
       getCustomersForBirthdayTrigger: fn(),
@@ -115,6 +115,8 @@ describe('automation-engine', () => {
     it('should send real emails and log runs when not in dry-run', async () => {
       mockDb.shop.findUnique.mockResolvedValue(mockShop);
       mockDb.automation.findMany.mockResolvedValue([baseAutomation]);
+      mockDb.campaignRecipient.findMany.mockResolvedValue([]);
+      mockDb.automationRun.findMany.mockResolvedValue([]);
       mockedGetBirthday.mockResolvedValue([customers[0]]);
       mockedFilterAudience.mockResolvedValue([customers[0]]);
       mockedAlreadySent.mockResolvedValue(new Set());
@@ -137,6 +139,8 @@ describe('automation-engine', () => {
     it('should record failures when email send fails', async () => {
       mockDb.shop.findUnique.mockResolvedValue(mockShop);
       mockDb.automation.findMany.mockResolvedValue([baseAutomation]);
+      mockDb.campaignRecipient.findMany.mockResolvedValue([]);
+      mockDb.automationRun.findMany.mockResolvedValue([]);
       mockedGetBirthday.mockResolvedValue([customers[0]]);
       mockedFilterAudience.mockResolvedValue([customers[0]]);
       mockedAlreadySent.mockResolvedValue(new Set());

@@ -41,7 +41,7 @@ import { toast } from "sonner"
 type AutomationStatus = "active" | "paused" | "template" | "custom"
 type AutomationCategory = "lifecycle" | "marketing" | "transactional" | "other"
 
-// Database model type
+// Database model type (with metrics from API)
 type AutomationDB = {
   id: string;
   name: string;
@@ -59,6 +59,12 @@ type AutomationDB = {
     id: string;
     name: string;
   } | null;
+  // Metrics from API (computed from AutomationRun)
+  triggers?: number;
+  sent?: number;
+  opened?: number;
+  clicked?: number;
+  failed?: number;
 }
 
 // UI display type (extends DB with computed/placeholder fields)
@@ -84,6 +90,11 @@ type AutomationRow = {
 
 // Convert DB model to UI row
 function toAutomationRow(db: AutomationDB): AutomationRow {
+  const triggers = db.triggers ?? 0;
+  const sent = db.sent ?? 0;
+  const opened = db.opened ?? 0;
+  const clicked = db.clicked ?? 0;
+
   return {
     id: db.id,
     title: db.name,
@@ -95,11 +106,11 @@ function toAutomationRow(db: AutomationDB): AutomationRow {
     actionType: db.actionType,
     audienceId: db.audienceId,
     audienceName: db.audience?.name || null,
-    triggers: 0,
-    submissions: 0,
-    opened: 0,
-    conversions: 0,
-    conversionRate: 0,
+    triggers,
+    submissions: sent,
+    opened,
+    conversions: clicked,
+    conversionRate: sent > 0 ? (clicked / sent) * 100 : 0,
     updatedAt: db.updatedAt,
   };
 }

@@ -41,6 +41,7 @@ import {Search, Plus, Filter, X, Loader2} from "lucide-react";
 import {motion} from "framer-motion";
 import axios from "axios";
 import {toast} from "sonner";
+import { useCurrency } from "@/context/CurrencyContext";
 
 type DisplayOrderStatus = "Completed" | "Pending" | "Shipped" | "Cancelled";
 type OrderStatus = DisplayOrderStatus | "All";
@@ -148,19 +149,11 @@ function formatDate(iso: string): string {
   });
 }
 
-function formatMoney(amountCents?: number, currency?: string): string {
-  const dollars = (amountCents || 0) / 100;
-  return dollars.toLocaleString("en-US", {
-    style: "currency",
-    currency: currency || "USD",
-  });
-}
-
 export default function OrdersPage() {
+  const { formatPrice, selectedCurrency } = useCurrency();
   // order
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
-  const [defaultCurrency, setDefaultCurrency] = useState("USD");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus>("All");
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
@@ -194,15 +187,9 @@ export default function OrdersPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const prefRes = await axios.get("/api/user/preferences");
-        const preferredCurrency = prefRes.data?.defaultCurrency || "USD";
-
-        setDefaultCurrency(preferredCurrency);
-        await fetchOrders(preferredCurrency);
+        await fetchOrders();
       } catch (error) {
-        console.error("Failed to fetch user preferences:", error);
-        setDefaultCurrency("USD");
-        await fetchOrders("USD");
+        console.error("Failed to fetch orders:", error);
       }
     };
 
@@ -210,7 +197,7 @@ export default function OrdersPage() {
     fetchCustomers();
   }, []);
 
-  const fetchOrders = async (currency: string) => {
+  const fetchOrders = async () => {
     try {
       const [squareRes, localRes] = await Promise.allSettled([
         axios.get("/api/square/orders"),
@@ -228,10 +215,7 @@ export default function OrdersPage() {
               id: o.id,
               customer: o.customer_id || "Walk-in",
               date: formatDate(o.created_at),
-              total: formatMoney(
-                o.total_money?.amount,
-                currency || o.total_money?.currency || defaultCurrency,
-              ),
+              total: formatPrice(o.total_money?.amount / 100 || 0),
               status: mapSquareState(o.state),
             }))
           : [];
@@ -247,10 +231,7 @@ export default function OrdersPage() {
                 ? `${o.customer.firstName} ${o.customer.lastName}`.trim()
                 : "Walk-in",
               date: formatDate(o.createdAt),
-              total: formatMoney(
-                (o.totalAmount ?? 0) * 100,
-                currency || defaultCurrency,
-              ),
+              total: formatPrice(o.totalAmount ?? 0),
               status: mapDbStatus(o.status),
             }))
           : [];
@@ -316,7 +297,7 @@ export default function OrdersPage() {
   }, [isNewOrderDialogOpen]);
 
   useEffect(() => {
-    fetchOrders(defaultCurrency);
+    fetchOrders();
     fetchCustomers();
   }, []);
 
@@ -405,7 +386,7 @@ export default function OrdersPage() {
             ? `${created.customer.firstName} ${created.customer.lastName}`.trim()
             : "Walk-in",
           date: formatDate(created.createdAt),
-          total: formatMoney((created.totalAmount ?? 0) * 100, defaultCurrency),
+          total: formatPrice(created.totalAmount ?? 0),
           status: mapDbStatus(created.status),
         };
 
@@ -510,7 +491,7 @@ export default function OrdersPage() {
           ? `${fullOrder.customer.firstName} ${fullOrder.customer.lastName}`.trim()
           : "Walk-in",
         date: formatDate(fullOrder.createdAt),
-        total: formatMoney((fullOrder.totalAmount ?? 0) * 100, defaultCurrency),
+        total: formatPrice(fullOrder.totalAmount ?? 0),
         status: mapDbStatus(fullOrder.status),
         customerData: fullOrder.customer
           ? {
@@ -525,14 +506,8 @@ export default function OrdersPage() {
               quantity: item.quantity,
               currentStock: item.currentStock ?? 0,
               neededQty: item.neededQty ?? 0,
-              unitPrice: formatMoney(
-                (item.unitPrice ?? 0) * 100,
-                defaultCurrency,
-              ),
-              subPrice: formatMoney(
-                (item.subPrice ?? 0) * 100,
-                defaultCurrency,
-              ),
+              unitPrice: formatPrice(item.unitPrice ?? 0),
+              subPrice: formatPrice(item.subPrice ?? 0),
             }))
           : [],
       };
@@ -557,7 +532,7 @@ export default function OrdersPage() {
       });
       const message = res.data.message;
       toast(message);
-      await fetchOrders(defaultCurrency);
+      await fetchOrders();
     } catch (error: any) {
       console.error("Failed to update order status:", error);
       toast(
@@ -584,7 +559,7 @@ export default function OrdersPage() {
       const res = await axios.delete(`/api/orders/${orderToDelete.id}`);
       const message = res.data.message;
       toast(message);
-      await fetchOrders(defaultCurrency);
+      await fetchOrders();
 
       setIsDeleteDialogOpen(false);
       setOrderToDelete(null);
@@ -899,10 +874,7 @@ export default function OrdersPage() {
                               {product.name}
                             </p>
                             <p className="text-sm font-medium shrink-0">
-                              {formatMoney(
-                                product.retailPrice * 100,
-                                defaultCurrency,
-                              )}
+                              {formatPrice(product.retailPrice)}
                             </p>
                           </div>
                         </button>
@@ -943,10 +915,7 @@ export default function OrdersPage() {
                                 {item.name}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {formatMoney(
-                                  item.retailPrice * 100,
-                                  defaultCurrency,
-                                )}
+                                {formatPrice(item.retailPrice)}
                                 each
                               </p>
                               <p className="text-xs text-muted-foreground">
@@ -982,10 +951,7 @@ export default function OrdersPage() {
                             {/* RIGHT: total + remove */}
                             <div className="flex items-center gap-2 shrink-0">
                               <p className="text-sm font-medium">
-                                {formatMoney(
-                                  item.retailPrice * item.quantity * 100,
-                                  defaultCurrency,
-                                )}
+                                {formatPrice(item.retailPrice * item.quantity)}
                               </p>
 
                               <Button
@@ -1030,7 +996,7 @@ export default function OrdersPage() {
                 <div className="flex items-center justify-between border-t pt-4">
                   <span className="text-sm text-muted-foreground">Total</span>
                   <span className="text-xl font-semibold">
-                    {formatMoney(computedOrderTotal * 100, defaultCurrency)}
+                    {formatPrice(computedOrderTotal)}
                   </span>
                 </div>
               </div>

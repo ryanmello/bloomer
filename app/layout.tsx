@@ -3,6 +3,7 @@
 import "./globals.css";
 import AuthContext from "../context/AuthContext";
 import { ThemeProvider } from "../context/ThemeProvider";
+import { CurrencyProvider } from "../context/CurrencyContext";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function RootLayout({
@@ -26,8 +27,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthContext>
-            {children}
-            <Toaster />
+            <CurrencyProvider>
+              {children}
+              <Toaster />
+            </CurrencyProvider>
           </AuthContext>
         </ThemeProvider>
       </body>
