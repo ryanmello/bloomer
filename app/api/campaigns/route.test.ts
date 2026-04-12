@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 
 // ---------------------------------------------------------------------------
@@ -14,6 +14,12 @@ const {
   mockAudienceUpdate,
   mockCustomerFindMany,
   mockSendCampaignEmails,
+  mockGetAllCustomers,
+  mockGetNewCustomers,
+  mockGetVipCustomers,
+  mockGetHighSpenders,
+  mockGetBirthdayNextMonth,
+  mockGetInactiveCustomers,
 } = vi.hoisted(() => ({
   mockGetCurrentUser: vi.fn(),
   mockShopFindFirst: vi.fn(),
@@ -24,6 +30,12 @@ const {
   mockAudienceUpdate: vi.fn(),
   mockCustomerFindMany: vi.fn(),
   mockSendCampaignEmails: vi.fn(),
+  mockGetAllCustomers: vi.fn(),
+  mockGetNewCustomers: vi.fn(),
+  mockGetVipCustomers: vi.fn(),
+  mockGetHighSpenders: vi.fn(),
+  mockGetBirthdayNextMonth: vi.fn(),
+  mockGetInactiveCustomers: vi.fn(),
 }));
 
 vi.mock("@/actions/getCurrentUser", () => ({
@@ -50,6 +62,15 @@ vi.mock("@/lib/prisma", () => ({
 
 vi.mock("@/lib/resend-email", () => ({
   sendCampaignEmails: (...args: unknown[]) => mockSendCampaignEmails(...args),
+}));
+
+vi.mock("@/lib/audiences/predefined", () => ({
+  getAllCustomers: (...args: unknown[]) => mockGetAllCustomers(...args),
+  getNewCustomers: (...args: unknown[]) => mockGetNewCustomers(...args),
+  getVipCustomers: (...args: unknown[]) => mockGetVipCustomers(...args),
+  getHighSpenders: (...args: unknown[]) => mockGetHighSpenders(...args),
+  getBirthdayNextMonth: (...args: unknown[]) => mockGetBirthdayNextMonth(...args),
+  getInactiveCustomers: (...args: unknown[]) => mockGetInactiveCustomers(...args),
 }));
 
 import { GET, POST } from "./route";
@@ -97,6 +118,12 @@ function setupAuthAndShop() {
   mockShopFindFirst.mockResolvedValue(MOCK_SHOP);
 }
 
+/** Sets up env vars required by the POST route before body parsing. */
+function setupEnvVars() {
+  process.env.RESEND_API_KEY = "re_test_123";
+  process.env.UNSUBSCRIBE_SECRET = "unsub_secret_test";
+}
+
 const CREATED_CAMPAIGN = {
   id: "camp-1",
   campaignName: "Spring Sale",
@@ -112,10 +139,15 @@ beforeEach(() => {
   mockCampaignCreate.mockResolvedValue(CREATED_CAMPAIGN);
   mockCampaignUpdate.mockResolvedValue(undefined);
   mockAudienceUpdate.mockResolvedValue(undefined);
-  // Default: sendCampaignEmails returns a resolved promise
   mockSendCampaignEmails.mockResolvedValue(undefined);
-  // Default: no RESEND_API_KEY
+  // Clear env vars -- tests that need them will call setupEnvVars()
   delete process.env.RESEND_API_KEY;
+  delete process.env.UNSUBSCRIBE_SECRET;
+});
+
+afterEach(() => {
+  delete process.env.RESEND_API_KEY;
+  delete process.env.UNSUBSCRIBE_SECRET;
 });
 
 // ===========================================================================
@@ -204,8 +236,31 @@ describe("POST /api/campaigns", () => {
       expect(body.message).toBe("Not authenticated");
     });
 
-    it("returns 404 when user has no shop", async () => {
+    it("returns 500 when RESEND_API_KEY is missing", async () => {
       mockGetCurrentUser.mockResolvedValue(MOCK_USER);
+      // RESEND_API_KEY not set
+
+      const res = await POST(buildRequest(BASE_CAMPAIGN_BODY));
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.error).toContain("RESEND_API_KEY");
+    });
+
+    it("returns 500 when UNSUBSCRIBE_SECRET is missing", async () => {
+      mockGetCurrentUser.mockResolvedValue(MOCK_USER);
+      process.env.RESEND_API_KEY = "re_test_123";
+
+      const res = await POST(buildRequest(BASE_CAMPAIGN_BODY));
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.error).toContain("UNSUBSCRIBE_SECRET");
+    });
+
+    it("returns 404 when user has no shop", async () => {
+      setupAuthAndShop();
+      setupEnvVars();
       mockShopFindFirst.mockResolvedValue(null);
 
       const res = await POST(buildRequest(BASE_CAMPAIGN_BODY));
@@ -218,9 +273,12 @@ describe("POST /api/campaigns", () => {
 
   // ---- Validation ----
   describe("validation", () => {
-    it("returns 400 when campaignName is missing", async () => {
+    beforeEach(() => {
       setupAuthAndShop();
+      setupEnvVars();
+    });
 
+    it("returns 400 when campaignName is missing", async () => {
       const res = await POST(
         buildRequest({ subject: "Hi", emailBody: "<p>Hi</p>" })
       );
@@ -231,8 +289,6 @@ describe("POST /api/campaigns", () => {
     });
 
     it("returns 400 when subject is missing", async () => {
-      setupAuthAndShop();
-
       const res = await POST(
         buildRequest({ campaignName: "Test", emailBody: "<p>Hi</p>" })
       );
@@ -243,8 +299,6 @@ describe("POST /api/campaigns", () => {
     });
 
     it("returns 400 when emailBody is missing", async () => {
-      setupAuthAndShop();
-
       const res = await POST(
         buildRequest({ campaignName: "Test", subject: "Hi" })
       );
@@ -255,7 +309,6 @@ describe("POST /api/campaigns", () => {
     });
 
     it("returns 400 when audienceId references non-existent audience", async () => {
-      setupAuthAndShop();
       mockAudienceFindFirst.mockResolvedValue(null);
 
       const res = await POST(
@@ -268,7 +321,6 @@ describe("POST /api/campaigns", () => {
     });
 
     it("returns 400 when all customers are unsubscribed", async () => {
-      setupAuthAndShop();
       mockCustomerFindMany.mockResolvedValue([
         { id: "c1", email: "a@b.com", firstName: "A", lastName: "B", unsubscribedAt: new Date() },
       ]);
@@ -281,7 +333,6 @@ describe("POST /api/campaigns", () => {
     });
 
     it("returns 400 when no customers exist at all", async () => {
-      setupAuthAndShop();
       mockCustomerFindMany.mockResolvedValue([]);
 
       const res = await POST(buildRequest(BASE_CAMPAIGN_BODY));
@@ -296,6 +347,7 @@ describe("POST /api/campaigns", () => {
   describe("audience resolution", () => {
     beforeEach(() => {
       setupAuthAndShop();
+      setupEnvVars();
       mockCustomerFindMany.mockResolvedValue(SUBSCRIBED_CUSTOMERS);
     });
 
@@ -311,9 +363,23 @@ describe("POST /api/campaigns", () => {
       );
     });
 
-    it("fetches audience members when audienceId is provided", async () => {
+    it("handles array customerId with { in: [...] }", async () => {
+      await POST(
+        buildRequest({ ...BASE_CAMPAIGN_BODY, customerId: ["c1", "c2"] })
+      );
+
+      expect(mockCustomerFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { shopId: "shop-1", id: { in: ["c1", "c2"] } },
+        })
+      );
+    });
+
+    it("fetches custom audience members when audienceId with type=custom is provided", async () => {
       mockAudienceFindFirst.mockResolvedValue({
         id: "aud-1",
+        type: "custom",
+        predefinedType: null,
         customerIds: ["c1", "c2"],
       });
 
@@ -328,9 +394,29 @@ describe("POST /api/campaigns", () => {
       );
     });
 
+    it("uses predefined audience helper when type=predefined", async () => {
+      mockAudienceFindFirst.mockResolvedValue({
+        id: "aud-2",
+        type: "predefined",
+        predefinedType: "vip",
+        customerIds: [],
+      });
+      mockGetVipCustomers.mockResolvedValue(SUBSCRIBED_CUSTOMERS);
+
+      await POST(
+        buildRequest({ ...BASE_CAMPAIGN_BODY, audienceId: "aud-2" })
+      );
+
+      expect(mockGetVipCustomers).toHaveBeenCalledWith("shop-1");
+      // Should NOT call db.customer.findMany for predefined audiences
+      expect(mockCustomerFindMany).not.toHaveBeenCalled();
+    });
+
     it("normalizes array audienceId to first element", async () => {
       mockAudienceFindFirst.mockResolvedValue({
         id: "aud-1",
+        type: "custom",
+        predefinedType: null,
         customerIds: ["c1"],
       });
 
@@ -341,9 +427,11 @@ describe("POST /api/campaigns", () => {
         })
       );
 
-      expect(mockAudienceFindFirst).toHaveBeenCalledWith({
-        where: { id: "aud-1", shopId: "shop-1" },
-      });
+      expect(mockAudienceFindFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "aud-1", shopId: "shop-1" },
+        })
+      );
     });
 
     it("fetches all shop customers when neither customerId nor audienceId is provided", async () => {
@@ -377,6 +465,7 @@ describe("POST /api/campaigns", () => {
   describe("draft campaign (default)", () => {
     beforeEach(() => {
       setupAuthAndShop();
+      setupEnvVars();
       mockCustomerFindMany.mockResolvedValue(SUBSCRIBED_CUSTOMERS);
     });
 
@@ -422,6 +511,8 @@ describe("POST /api/campaigns", () => {
     it("does not update audience stats for draft", async () => {
       mockAudienceFindFirst.mockResolvedValue({
         id: "aud-1",
+        type: "custom",
+        predefinedType: null,
         customerIds: ["c1", "c2"],
       });
 
@@ -437,6 +528,7 @@ describe("POST /api/campaigns", () => {
   describe("scheduled campaign", () => {
     beforeEach(() => {
       setupAuthAndShop();
+      setupEnvVars();
       mockCustomerFindMany.mockResolvedValue(SUBSCRIBED_CUSTOMERS);
     });
 
@@ -472,12 +564,15 @@ describe("POST /api/campaigns", () => {
   describe("sent campaign", () => {
     beforeEach(() => {
       setupAuthAndShop();
+      setupEnvVars();
       mockCustomerFindMany.mockResolvedValue(SUBSCRIBED_CUSTOMERS);
     });
 
     it("updates audience stats when status is Sent and audienceId is provided", async () => {
       mockAudienceFindFirst.mockResolvedValue({
         id: "aud-1",
+        type: "custom",
+        predefinedType: null,
         customerIds: ["c1", "c2"],
       });
 
@@ -506,9 +601,7 @@ describe("POST /api/campaigns", () => {
       expect(mockAudienceUpdate).not.toHaveBeenCalled();
     });
 
-    it("calls sendCampaignEmails when RESEND_API_KEY is set", async () => {
-      process.env.RESEND_API_KEY = "re_test_123";
-
+    it("calls sendCampaignEmails with correct args", async () => {
       await POST(
         buildRequest({ ...BASE_CAMPAIGN_BODY, status: "Sent" })
       );
@@ -524,22 +617,7 @@ describe("POST /api/campaigns", () => {
       );
     });
 
-    it("updates campaign to Failed when RESEND_API_KEY is missing", async () => {
-      delete process.env.RESEND_API_KEY;
-
-      await POST(
-        buildRequest({ ...BASE_CAMPAIGN_BODY, status: "Sent" })
-      );
-
-      expect(mockCampaignUpdate).toHaveBeenCalledWith({
-        where: { id: "camp-1" },
-        data: { status: "Failed" },
-      });
-      expect(mockSendCampaignEmails).not.toHaveBeenCalled();
-    });
-
     it("uses 'Your Store' fallback when shop.name is empty", async () => {
-      process.env.RESEND_API_KEY = "re_test_123";
       mockShopFindFirst.mockResolvedValue({ ...MOCK_SHOP, name: "" });
 
       await POST(
@@ -551,7 +629,6 @@ describe("POST /api/campaigns", () => {
     });
 
     it("uses empty string fallback when shop.address is null", async () => {
-      process.env.RESEND_API_KEY = "re_test_123";
       mockShopFindFirst.mockResolvedValue({ ...MOCK_SHOP, address: null });
 
       await POST(
@@ -563,8 +640,6 @@ describe("POST /api/campaigns", () => {
     });
 
     it("still returns 201 even when sending (fire-and-forget)", async () => {
-      process.env.RESEND_API_KEY = "re_test_123";
-
       const res = await POST(
         buildRequest({ ...BASE_CAMPAIGN_BODY, status: "Sent" })
       );
@@ -577,6 +652,7 @@ describe("POST /api/campaigns", () => {
   describe("sentAt field", () => {
     beforeEach(() => {
       setupAuthAndShop();
+      setupEnvVars();
       mockCustomerFindMany.mockResolvedValue(SUBSCRIBED_CUSTOMERS);
     });
 
