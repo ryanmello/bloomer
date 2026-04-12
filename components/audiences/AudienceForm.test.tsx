@@ -2,8 +2,6 @@
 import { describe, it, beforeEach, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-import { toast } from "sonner";
-
 const pushMock = vi.fn();
 const refreshMock = vi.fn();
 
@@ -18,13 +16,14 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-vi.mock("sonner", () => {
-  const toast = vi.fn();
-  toast.success = vi.fn();
-  toast.error = vi.fn();
-  return { toast };
-});
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 
+import { toast } from "sonner";
 import AudienceForm from "./AudienceForm";
 
 describe("AudienceForm", () => {
@@ -40,7 +39,7 @@ describe("AudienceForm", () => {
     growthRate: 12,
     lastCampaign: "Spring Sale",
     engagementRate: 54,
-  };
+  } as const;
 
   beforeEach(() => {
     vi.restoreAllMocks();

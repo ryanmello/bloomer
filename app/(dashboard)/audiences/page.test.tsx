@@ -27,14 +27,14 @@ vi.mock("@/components/ui/tabs", () => ({
   },
 }));
 
-import AudiencesPage from "./page";
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 
-vi.mock("sonner", () => {
-  const toast = vi.fn();
-  toast.success = vi.fn();
-  toast.error = vi.fn();
-  return { toast };
-});
+import AudiencesPage from "./page";
 
 describe("Audiences page", () => {
   const sampleAudiences = [

@@ -54,6 +54,10 @@ const mockCookieStore = (value: string | null) => {
   } as any);
 };
 
+function assertResponse(res: Response | undefined): asserts res is Response {
+  if (!res) throw new Error("Expected response to be defined");
+}
+
 describe("/api/audience route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -67,6 +71,7 @@ describe("/api/audience route", () => {
       vi.mocked(getCurrentUser).mockResolvedValue(null as any);
 
       const res = await GET();
+      assertResponse(res);
       const body = await res.json();
 
       expect(res.status).toBe(401);
@@ -77,6 +82,7 @@ describe("/api/audience route", () => {
       vi.mocked(db.shop.findFirst).mockResolvedValue(null as any);
 
       const res = await GET();
+      assertResponse(res);
       const body = await res.json();
 
       expect(res.status).toBe(404);
@@ -116,6 +122,7 @@ describe("/api/audience route", () => {
         .mockResolvedValueOnce(5 as any);
 
       const res = await GET();
+      assertResponse(res);
       const body = await res.json();
 
       expect(res.status).toBe(200);
@@ -138,6 +145,7 @@ describe("/api/audience route", () => {
 
       const req = createRequest({ name: "New Audience" }, "POST");
       const res = await POST(req);
+      assertResponse(res);
       const body = await res.json();
 
       expect(res.status).toBe(401);
@@ -149,6 +157,7 @@ describe("/api/audience route", () => {
 
       const req = createRequest({ name: "New Audience" }, "POST");
       const res = await POST(req);
+      assertResponse(res);
       const body = await res.json();
 
       expect(res.status).toBe(404);
@@ -181,6 +190,7 @@ describe("/api/audience route", () => {
       );
 
       const res = await POST(req);
+      assertResponse(res);
       const body = await res.json();
 
       expect(res.status).toBe(201);
@@ -209,6 +219,7 @@ describe("/api/audience route", () => {
     it("returns 400 when no id or ids are provided", async () => {
       const req = createRequest({}, "DELETE");
       const res = await DELETE(req);
+      assertResponse(res);
       const body = await res.json();
 
       expect(res.status).toBe(400);
@@ -223,6 +234,7 @@ describe("/api/audience route", () => {
 
       const req = createRequest({ id: "aud-1" }, "DELETE");
       const res = await DELETE(req);
+      assertResponse(res);
       const body = await res.json();
 
       expect(res.status).toBe(200);
