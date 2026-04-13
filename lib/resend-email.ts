@@ -383,13 +383,15 @@ export function replaceMergeTags(content: string, data: MergeTagData): string {
 
 /**
  * Send automation email to a customer and increment sent count
+ * Includes compliance footer with unsubscribe link and List-Unsubscribe headers
  */
 export async function sendAutomationEmail(
   automationId: string,
   customer: { id: string; email: string; firstName: string; lastName: string },
   subject: string,
   emailBody: string,
-  shopName: string
+  shopName: string,
+  shopAddress: string = ""
 ): Promise<{ success: boolean; emailId?: string; error?: string }> {
   try {
     if (!customer.email?.includes('@')) {
@@ -404,14 +406,36 @@ export async function sendAutomationEmail(
     const resend = getResendClient();
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
-    const personalizedSubject = replaceMergeTags(subject, { ...customer, shopName });
-    const personalizedBody = replaceMergeTags(emailBody, { ...customer, shopName });
+    // Generate signed unsubscribe token (tamper-proof, 30d expiry)
+    const token = signUnsubscribeToken(customer.id);
+    const unsubscribeUrl = `${BASE_URL}/unsubscribe?token=${token}`;
+    // One-click POST goes to API (same token); footer link goes to page
+    const listUnsubscribeUrl = `${BASE_URL}/api/unsubscribe?token=${token}`;
+    const privacyUrl = `${BASE_URL}/privacy`;
+
+    const personalizedSubject = replaceMergeTags(subject, { ...customer, shopName, shopAddress });
+    const personalizedBody = replaceMergeTags(emailBody, { ...customer, shopName, shopAddress });
+
+    // Add compliance footer with unsubscribe link
+    const footerTemplate = getEmailFooterTemplate();
+    const footerContext: FooterMergeContext = {
+      shopName,
+      shopAddress: shopAddress || "—",
+      unsubscribeUrl,
+      privacyUrl,
+    };
+    const footerHtml = replaceFooterMergeTags(footerTemplate, footerContext);
+    const fullHtml = personalizedBody + footerHtml;
 
     const { data, error } = await resend.emails.send({
       from: `${shopName} <${fromEmail}>`,
       to: [customer.email],
       subject: personalizedSubject,
-      html: personalizedBody,
+      html: fullHtml,
+      headers: {
+        "List-Unsubscribe": `<${listUnsubscribeUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
     });
 
     if (error) {
