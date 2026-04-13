@@ -167,3 +167,37 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { name, phone, email, address } = body;
+
+    const shop = await db.shop.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!shop) {
+      return NextResponse.json({ message: "No shop found" }, { status: 404 });
+    }
+
+    const updated = await db.shop.update({
+      where: { id: shop.id },
+      data: { name, phone, email, address },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Failed to update shop" },
+      { status: 500 }
+    );
+  }
+}

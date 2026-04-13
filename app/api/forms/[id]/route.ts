@@ -5,7 +5,7 @@ import db from "../../../../lib/prisma";
 export async function GET(req: Request, context: any) {
 
   const auth = req.headers.get("Authorization");
-    if (auth !== `Bearer ${process.env.PUBLIC_FORM_KEY}`) {
+  if (auth !== `Bearer ${process.env.FORM_KEY}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

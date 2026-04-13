@@ -191,7 +191,8 @@ export default function Settings() {
   const onSubmit = async (data: ShopFormData) => {
     setIsLoading(true);
     try {
-      await axios.post("/api/shop", data);
+      await axios.put("/api/shop", data);
+      window.location.reload();
       toast.success("Business info saved successfully!");
       reset(data);
     } catch (error: any) {

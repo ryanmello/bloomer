@@ -12,7 +12,7 @@ export default defineConfig({
     environmentMatchGlobs: [
       ['**/*.test.tsx', 'jsdom'],
     ],
-    environment: 'node',
+    environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     server: {
       deps: {
