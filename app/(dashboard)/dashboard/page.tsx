@@ -1,8 +1,6 @@
 import MetricCard from "@/components/dashboard/MetricCard";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import TrendGraph from "@/components/dashboard/TrendGraph";
-import InventoryStatus from "@/components/dashboard/InventoryStatus";
-import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import { DollarSign, ShoppingBag, Users, Package } from "lucide-react";
 import CustomerOccasions from "@/components/dashboard/CustomerOccasions";
 import { getProductsForDashboard, getStockStatus } from "@/lib/inventory";
@@ -114,11 +112,6 @@ export default async function DashboardPage() {
       <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
         <TrendGraph monthlyRevenue={squareData ? monthlyRevenue : null} defaultCurrency={defaultCurrency} />
         <RecentActivity />
-      </div>
-
-      <div className="w-full flex flex-col xl:flex-row gap-4 min-w-0">
-        <UpcomingEvents />
-        <InventoryStatus products={inventoryProducts} />
       </div>
 
       <CustomerOccasions />

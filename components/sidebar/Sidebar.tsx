@@ -112,13 +112,13 @@ export default function Sidebar({isOpen = false, onClose}: SidebarProps) {
           link: "/deliveries",
           icon: <Route />,
           text: "Deliveries",
-          hidden: false,
+          hidden: true,
         },
         {
           link: "/storefront",
           icon: <Store />,
           text: "Storefront",
-          hidden: false,
+          hidden: true,
         },
         {
           link: "/coupons",
