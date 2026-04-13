@@ -56,6 +56,10 @@ export async function getCustomersForBirthdayTrigger(
       shopId,
       birthMonth: targetMonth,
       birthDay: targetDay,
+      OR: [
+        { unsubscribedAt: null },
+        { unsubscribedAt: { isSet: false } }, // Field doesn't exist
+      ],
     },
     select: {
       id: true,
@@ -84,20 +88,29 @@ export async function getCustomersForInactiveTrigger(
   const customers = await db.customer.findMany({
     where: {
       shopId,
+      // Exclude unsubscribed customers (handle both null and missing field)
       OR: [
-        // Customers with orders, but none since cutoff
+        { unsubscribedAt: null },
+        { unsubscribedAt: { isSet: false } },
+      ],
+      AND: [
         {
-          orders: {
-            every: {
+          OR: [
+            // Customers with orders, but none since cutoff
+            {
+              orders: {
+                every: {
+                  createdAt: { lt: cutoffDate },
+                },
+              },
+              orderCount: { gt: 0 },
+            },
+            // Customers who have never ordered and were created before cutoff
+            {
+              orderCount: 0,
               createdAt: { lt: cutoffDate },
             },
-          },
-          orderCount: { gt: 0 },
-        },
-        // Customers who have never ordered and were created before cutoff
-        {
-          orderCount: 0,
-          createdAt: { lt: cutoffDate },
+          ],
         },
       ],
     },
@@ -136,6 +149,11 @@ export async function getCustomersForNewCustomerTrigger(
         gte: startOfDay,
         lte: endOfDay,
       },
+      // Exclude unsubscribed customers (handle both null and missing field)
+      OR: [
+        { unsubscribedAt: null },
+        { unsubscribedAt: { isSet: false } },
+      ],
     },
     select: {
       id: true,
@@ -182,7 +200,14 @@ export async function getCustomersForHolidayTrigger(
 
   // Return all customers for this shop (audience filtering happens later)
   const customers = await db.customer.findMany({
-    where: { shopId },
+    where: {
+      shopId,
+      // Exclude unsubscribed customers (handle both null and missing field)
+      OR: [
+        { unsubscribedAt: null },
+        { unsubscribedAt: { isSet: false } },
+      ],
+    },
     select: {
       id: true,
       firstName: true,
