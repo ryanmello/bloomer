@@ -1,6 +1,36 @@
 import db from "@/lib/prisma";
 
 /**
+ * Holiday date mapping - maps trigger types to their fixed dates
+ * For floating holidays (like Thanksgiving), we use approximate dates
+ */
+export const HOLIDAY_DATES: Record<string, { month: number; day: number }> = {
+  valentines_day: { month: 2, day: 14 },
+  mothers_day: { month: 5, day: 11 }, // Second Sunday in May (approximate)
+  christmas: { month: 12, day: 25 },
+  thanksgiving: { month: 11, day: 28 }, // Fourth Thursday in Nov (approximate)
+  easter: { month: 4, day: 20 }, // Varies each year (approximate spring date)
+  admin_professionals_day: { month: 4, day: 24 }, // Last Wednesday in April (approximate)
+  international_womens_day: { month: 3, day: 8 },
+  memorial_day: { month: 5, day: 26 }, // Last Monday in May (approximate)
+  international_mens_day: { month: 11, day: 19 },
+};
+
+/**
+ * Check if a trigger type is a holiday
+ */
+export function isHolidayTrigger(triggerType: string): boolean {
+  return triggerType in HOLIDAY_DATES || triggerType === "holiday";
+}
+
+/**
+ * Get holiday date for a trigger type
+ */
+export function getHolidayDate(triggerType: string): { month: number; day: number } | null {
+  return HOLIDAY_DATES[triggerType] || null;
+}
+
+/**
  * Calculate the target date for a trigger (today + days offset)
  */
 function getTargetDate(daysFromNow: number): Date {
@@ -166,6 +196,7 @@ export async function getCustomersForHolidayTrigger(
 
 /**
  * Filter customers by audience membership
+ * Returns empty array if audience is specified but not found (safety measure)
  */
 export async function filterByAudience(
   customers: Array<{ id: string; firstName: string; lastName: string; email: string }>,
@@ -181,7 +212,9 @@ export async function filterByAudience(
   });
 
   if (!audience) {
-    return customers;
+    // Audience was deleted - return empty array to prevent sending to everyone
+    console.warn(`Audience ${audienceId} not found - returning empty customer list`);
+    return [];
   }
 
   const audienceCustomerIds = new Set(audience.customerIds);
@@ -217,13 +250,21 @@ export async function getAlreadySentCustomerIds(
       since.setDate(since.getDate() - 30);
       break;
     default:
-      since = new Date(0);
+      // For named holidays (valentines_day, christmas, etc.), check within current year
+      if (isHolidayTrigger(triggerType)) {
+        since = new Date(new Date().getFullYear(), 0, 1);
+      } else {
+        since = new Date(0);
+      }
   }
 
   const runs = await db.automationRun.findMany({
     where: {
       automationId,
-      status: "sent",
+      // Include all statuses that mean "already attempted" to prevent duplicates
+      // sent = initial send, delivered = confirmed delivery, bounced = failed delivery
+      // rate_limited = skipped due to limits (should retry), failed = send error (could retry)
+      status: { in: ["sent", "delivered", "bounced"] },
       createdAt: { gte: since },
     },
     select: { customerId: true },

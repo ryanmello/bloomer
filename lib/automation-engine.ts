@@ -8,6 +8,8 @@ import {
   filterByAudience,
   getAlreadySentCustomerIds,
   isHolidayTriggerDay,
+  isHolidayTrigger,
+  getHolidayDate,
 } from "@/lib/automation-triggers";
 import { canSendMarketingEmail } from "@/lib/email-rate-limit";
 
@@ -183,6 +185,25 @@ async function processAutomation(
       break;
 
     default:
+      // Check if it's a named holiday trigger (valentines_day, christmas, etc.)
+      if (isHolidayTrigger(automation.triggerType)) {
+        const holidayDate = getHolidayDate(automation.triggerType);
+        if (!holidayDate) {
+          console.log(`Unknown holiday trigger: ${automation.triggerType}`);
+          return result;
+        }
+        // Check if today is the trigger day for this holiday
+        if (!isHolidayTriggerDay(holidayDate.month, holidayDate.day, automation.timing)) {
+          return result;
+        }
+        customers = await getCustomersForHolidayTrigger(
+          automation.shopId,
+          holidayDate.month,
+          holidayDate.day,
+          automation.timing
+        );
+        break;
+      }
       console.log(`Unknown trigger type: ${automation.triggerType}`);
       return result;
   }
@@ -234,7 +255,7 @@ async function processAutomation(
 
       // Check rate limits before sending
       // Birthday and holiday automations skip cooloff but still count toward monthly cap
-      const skipCooloff = automation.triggerType === "birthday" || automation.triggerType === "holiday";
+      const skipCooloff = automation.triggerType === "birthday" || isHolidayTrigger(automation.triggerType);
       const rateLimitCheck = await canSendMarketingEmail(customer.id, {
         skipCooloff,
       });
