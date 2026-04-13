@@ -213,6 +213,24 @@ export default function Forms() {
       }
     }
     fetchForms()
+
+    const onFocus = () => {
+      fetchForms()
+    }
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchForms()
+      }
+    }
+
+    window.addEventListener("focus", onFocus)
+    document.addEventListener("visibilitychange", onVisibilityChange)
+
+    return () => {
+      window.removeEventListener("focus", onFocus)
+      document.removeEventListener("visibilitychange", onVisibilityChange)
+    }
   }, [])
 
   // Delete

@@ -13,6 +13,7 @@ export async function GET() {
   const mappedForms = forms.map(f => ({
   ...f,
   submissions: f._count.submissionsList,
+  conversions: f._count.submissionsList,
  }));
 
   return NextResponse.json(mappedForms);
