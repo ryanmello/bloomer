@@ -1,11 +1,12 @@
 "use client";
 
 import {useState} from "react";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {
-  Dialog,
   DialogClose,
   DialogContent,
   DialogDescription,
@@ -14,82 +15,35 @@ import {
   DialogOverlay,
   DialogPortal,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {Textarea} from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
 import {toast} from "sonner";
-import {Plus} from "lucide-react";
-
-export interface AddressProps {
-  line1: string;
-  line2?: string;
-  city: string;
-  state: string;
-  zip: string;
-  country: string;
-}
-
-interface FormCustomerProps {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber?: string;
-  additionalNote?: string;
-  squareId?: string;
-  address: AddressProps;
-  dateOfBirth?: string;
-}
+import {
+  createCustomerSchema,
+  US_STATES,
+  type CreateCustomerFormValues,
+} from "@/lib/validations/customer";
 
 export default function CreateCustomerForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<FormCustomerProps>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phoneNumber: "",
-    dateOfBirth: "",
-    additionalNote: "",
-    address: {
-      line1: "",
-      line2: "",
-      city: "",
-      state: "",
-      zip: "",
-      country: "",
-    },
-  });
 
-  // https://www.meje.dev/blog/handle-change-in-ts
-  // (handleChange in TypeScript)
-  // handle change for normal inputs
-  function handleInputChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) {
-    const {name, value} = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  }
-
-  function handleAddressChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) {
-    const {name, value} = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      address: {
-        // keep other address fields
-        ...prev.address,
-        // update the specific field
-        [name]: value,
-      },
-    }));
-  }
-
-  // handle reset form
-  function handleResetForm() {
-    setFormData({
+  const form = useForm<CreateCustomerFormValues>({
+    resolver: zodResolver(createCustomerSchema),
+    defaultValues: {
       firstName: "",
       lastName: "",
       email: "",
@@ -102,14 +56,12 @@ export default function CreateCustomerForm() {
         city: "",
         state: "",
         zip: "",
-        country: "",
+        country: "US",
       },
-    });
-  }
+    },
+  });
 
-  // handle submit
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function onSubmit(values: CreateCustomerFormValues) {
     setIsLoading(true);
 
     try {
@@ -118,11 +70,7 @@ export default function CreateCustomerForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...formData,
-          // Prisma expects an array
-          address: [formData.address],
-        }),
+        body: JSON.stringify(values),
       });
 
       const data = await response.json();
@@ -132,14 +80,11 @@ export default function CreateCustomerForm() {
         return;
       }
 
-      if (response.ok) {
-        toast.success(data.message);
-        handleResetForm();
-      } else {
-        toast.error("Failed to create customer");
-      }
+      toast.success(data.message);
+      form.reset();
     } catch (error) {
       console.error("Error creating customer:", error);
+      toast.error("Failed to create customer");
     } finally {
       setIsLoading(false);
     }
@@ -157,105 +102,205 @@ export default function CreateCustomerForm() {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="flex-1 overflow-y-auto space-y-4 py-2 -mx-1 px-1">
-          <Input
-            name="firstName"
-            placeholder="First Name"
-            value={formData.firstName}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            name="lastName"
-            placeholder="Last Name"
-            value={formData.lastName}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            name="phoneNumber"
-            placeholder="Phone Number"
-            value={formData.phoneNumber}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            name="dateOfBirth"
-            type="date"
-            placeholder="Date of Birth"
-            value={formData.dateOfBirth}
-            onChange={handleInputChange}
-            required
-          />
-          <Textarea
-            name="additionalNote"
-            placeholder="Additional Note"
-            value={formData.additionalNote}
-            onChange={handleInputChange}
-          />
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="flex flex-col flex-1 min-h-0 overflow-hidden"
+          >
+            <div className="flex-1 overflow-y-auto space-y-4 py-2 -mx-1 px-1">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({field}) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="First Name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <Label>Address</Label>
-          <Input
-            name="line1"
-            placeholder="Line 1"
-            value={formData.address.line1}
-            onChange={handleAddressChange}
-            required
-          />
-          <Input
-            name="line2"
-            placeholder="Line 2"
-            value={formData.address.line2}
-            onChange={handleAddressChange}
-          />
-          <Input
-            name="city"
-            placeholder="City"
-            value={formData.address.city}
-            onChange={handleAddressChange}
-            required
-          />
-          <Input
-            name="state"
-            placeholder="State"
-            value={formData.address.state}
-            onChange={handleAddressChange}
-            required
-          />
-          <Input
-            name="zip"
-            placeholder="ZIP"
-            value={formData.address.zip}
-            onChange={handleAddressChange}
-            required
-          />
-          <Input
-            name="country"
-            placeholder="Country"
-            value={formData.address.country}
-            onChange={handleAddressChange}
-            required
-          />
-          </div>
-          <DialogFooter className="flex-shrink-0 pt-4 border-t mt-4">
-            <DialogClose asChild>
-              <Button variant="destructive" onClick={handleResetForm}>
-                Cancel
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({field}) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="Last Name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({field}) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input type="email" placeholder="Email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({field}) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        type="tel"
+                        placeholder="Phone Number (e.g., 555-123-4567)"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="dateOfBirth"
+                render={({field}) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        placeholder="Date of Birth"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="additionalNote"
+                render={({field}) => (
+                  <FormItem>
+                    <FormControl>
+                      <Textarea placeholder="Additional Note" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Label className="font-semibold">Address</Label>
+
+              <FormField
+                control={form.control}
+                name="address.line1"
+                render={({field}) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="Line 1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address.line2"
+                render={({field}) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="Line 2" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address.city"
+                render={({field}) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="City" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address.state"
+                render={({field}) => (
+                  <FormItem>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select State" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {US_STATES.map((state) => (
+                          <SelectItem key={state.value} value={state.value}>
+                            {state.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address.zip"
+                render={({field}) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="ZIP Code" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address.country"
+                render={({field}) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="Country" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <DialogFooter className="flex-shrink-0 pt-4 border-t mt-4">
+              <DialogClose asChild>
+                <Button variant="destructive" onClick={() => form.reset()}>
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button variant="default" type="submit" disabled={isLoading}>
+                {isLoading ? "Saving..." : "Create Customer"}
               </Button>
-            </DialogClose>
-            <Button variant="default" type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Create Customer"}
-            </Button>
-          </DialogFooter>
-        </form>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </DialogPortal>
   );

@@ -46,10 +46,14 @@ export default async function UnsubscribePage({ searchParams }: Props) {
   }
 
   // Mark unsubscribed on GET (in case they opened in browser instead of one-click POST)
-  await db.customer.update({
-    where: { id: payload.customerId },
-    data: { unsubscribedAt: new Date() },
-  });
+  try {
+    await db.customer.update({
+      where: { id: payload.customerId },
+      data: { unsubscribedAt: new Date() },
+    });
+  } catch {
+    // Customer may have been deleted - still show success since they won't receive emails anyway
+  }
 
   return (
     <UnsubscribeLayout>

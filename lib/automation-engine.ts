@@ -58,7 +58,7 @@ export async function processAutomationsForShop(
 
   const shop = await db.shop.findUnique({
     where: { id: shopId },
-    select: { id: true, name: true },
+    select: { id: true, name: true, address: true },
   });
 
   if (!shop) {
@@ -85,7 +85,7 @@ export async function processAutomationsForShop(
   let totalRateLimited = 0;
 
   for (const automation of automations) {
-    const result = await processAutomation(automation, shop.name, dryRun);
+    const result = await processAutomation(automation, shop.name, shop.address || "", dryRun);
     results.push(result);
     totalEmailsSent += result.emailsSent;
     totalEmailsFailed += result.emailsFailed;
@@ -122,6 +122,7 @@ async function processAutomation(
     shopId: string;
   },
   shopName: string,
+  shopAddress: string,
   dryRun: boolean
 ): Promise<AutomationResult> {
   const result: AutomationResult = {
@@ -286,13 +287,14 @@ async function processAutomation(
         continue;
       }
 
-      // Send the email
+      // Send the email (includes footer with unsubscribe link)
       const emailResult = await sendAutomationEmail(
         automation.id,
         customer,
         automation.emailSubject,
         automation.emailBody,
-        shopName
+        shopName,
+        shopAddress
       );
 
       // Log the run with Resend email ID for webhook tracking
