@@ -213,6 +213,15 @@ describe("POST /api/customer", () => {
         firstName: "Alice",
         lastName: "Smith",
         email: "taken@example.com",
+        phoneNumber: "5551234567",
+        dateOfBirth: "1990-01-01",
+        address: {
+          line1: "123 St",
+          city: "NYC",
+          state: "NY",
+          zip: "10001",
+          country: "US",
+        },
       })
     );
     const body = await res.json();
@@ -239,8 +248,15 @@ describe("POST /api/customer", () => {
         firstName: "Alice",
         lastName: "Smith",
         email: "alice@example.com",
-        phoneNumber: "555-1234",
+        phoneNumber: "5551234567",
         additionalNote: "VIP",
+        address: {
+          line1: "123 St",
+          city: "NYC",
+          state: "NY",
+          zip: "10001",
+          country: "US",
+        },
       })
     );
     const body = await res.json();
@@ -255,7 +271,7 @@ describe("POST /api/customer", () => {
           firstName: "Alice",
           lastName: "Smith",
           email: "alice@example.com",
-          phoneNumber: "555-1234",
+          phoneNumber: "5551234567",
           additionalNote: "VIP",
           shopId: "shop-1",
           group: "new",
@@ -279,7 +295,20 @@ describe("POST /api/customer", () => {
     });
 
     await POST(
-      buildRequest({ firstName: "A", lastName: "B", email: "a@b.com" })
+      buildRequest({   
+        firstName: "A",
+        lastName: "B",
+        email: "a@b.com",
+        phoneNumber: "5551234567",
+        dateOfBirth: "1990-01-01",
+        address: {
+          line1: "123 Main St",
+          city: "New York",
+          state: "NY",
+          zip: "10001",
+          country: "US",
+        }, 
+      })
     );
 
     expect(mockCustomerCreate).toHaveBeenCalledWith(
@@ -306,6 +335,15 @@ describe("POST /api/customer", () => {
         lastName: "B",
         email: "a@b.com",
         group: "vip",
+        phoneNumber: "5551234567",
+        dateOfBirth: "1990-01-01",
+        address: {
+          line1: "123 Main St",
+          city: "New York",
+          state: "NY",
+          zip: "10001",
+          country: "US",
+        },
       })
     );
 
@@ -333,7 +371,15 @@ describe("POST /api/customer", () => {
         firstName: "A",
         lastName: "B",
         email: "a@b.com",
+        phoneNumber: "5551234567",
         dateOfBirth: dobString,
+        address: {
+          line1: "123 Main St",
+          city: "New York",
+          state: "NY",
+          zip: "10001",
+          country: "US",
+        },
       })
     );
 
@@ -358,7 +404,19 @@ describe("POST /api/customer", () => {
     });
 
     await POST(
-      buildRequest({ firstName: "A", lastName: "B", email: "a@b.com" })
+      buildRequest({ 
+        firstName: "A", 
+        lastName: "B", 
+        email: "a@b.com",
+        phoneNumber: "5551234567",
+        address: {
+          line1: "123 Main St",
+          city: "New York",
+          state: "NY",
+          zip: "10001",
+          country: "US",
+        },
+      })
     );
 
     const call = mockCustomerCreate.mock.calls[0][0];
@@ -390,6 +448,7 @@ describe("POST /api/customer", () => {
         firstName: "A",
         lastName: "B",
         email: "a@b.com",
+        phoneNumber: "5551234567",
         address: addr,
       })
     );
@@ -397,7 +456,7 @@ describe("POST /api/customer", () => {
     expect(mockCustomerCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          addresses: { create: addr },
+          addresses: { create: [addr] },
         }),
       })
     );
@@ -420,6 +479,14 @@ describe("POST /api/customer", () => {
         firstName: "Alice",
         lastName: "Smith",
         email: "alice@example.com",
+        phoneNumber: "5551234567",
+        address: {                  
+          line1: "123 Main",
+          city: "NYC",
+          state: "NY",
+          zip: "10001",
+          country: "US",
+        },
       })
     );
 
@@ -442,6 +509,14 @@ describe("POST /api/customer", () => {
         firstName: "A",
         lastName: "B",
         email: "a@b.com",
+        phoneNumber: "5551234567",
+        address: {
+          line1: "123 Main",
+          city: "NYC",
+          state: "NY",
+          zip: "10001",
+          country: "US",
+        },
       })
     );
     const body = await res.json();

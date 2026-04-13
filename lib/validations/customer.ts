@@ -90,9 +90,11 @@ export const createCustomerSchema = z.object({
     ),
   dateOfBirth: z
     .string()
-    .min(1, "Date of birth is required")
+    .optional()
+    .or(z.literal(""))
     .refine(
       (val) => {
+        if (!val) return true;
         const date = new Date(val);
         return !isNaN(date.getTime()) && date <= new Date();
       },
