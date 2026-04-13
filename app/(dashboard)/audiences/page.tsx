@@ -559,39 +559,6 @@ export default function Audiences() {
           </AlertDialog>
         )}
 
-        {deleteMode && selectedIds.length > 0 && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="flex items-center gap-2">
-                <Trash2 className="h-4 w-4" />
-                Delete Selected ({selectedIds.length})
-              </Button>
-            </AlertDialogTrigger>
-
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete audiences?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete{" "}
-                  <span className="font-semibold text-foreground">
-                    {selectedIds.length}
-                  </span>{" "}
-                  selected audiences? This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleBulkDelete}
-                  className="bg-destructive hover:bg-destructive/90">
-                  Delete Audiences
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
-
         <Button
           variant="outline"
           onClick={() => setExportOpen(true)}
