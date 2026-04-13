@@ -110,11 +110,20 @@ const TEMPLATES = {
 // Generate HTML email body from template + coupon
 function generateEmailBody(
     templateKey: string,
-    discount: number,
-    couponCode: string
+    discount?: number,
+    couponCode?: string
 ): string {
     const template = TEMPLATES[templateKey as keyof typeof TEMPLATES];
     if (!template) return "";
+
+    // If no coupon, generate body without discount section
+    if (!discount || !couponCode) {
+        return `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h1 style="color: ${template.color}; text-align: center;">${template.heading}</h1>
+  <p style="font-size: 16px; color: #333; text-align: center;">${template.message.replace(/, enjoy$/, '.')} We'd love to see you!</p>
+  <p style="color: #666; font-size: 14px; text-align: center;">With love,<br>{{shopName}}</p>
+</div>`;
+    }
 
     return `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
   <h1 style="color: ${template.color}; text-align: center;">${template.heading}</h1>
@@ -141,11 +150,11 @@ export function ActionConfiguration({ coupons }: ActionConfigurationProps) {
 
     // Auto-generate email body when template or coupon changes
     useEffect(() => {
-        if (messageTemplate && selectedCoupon) {
+        if (messageTemplate) {
             const body = generateEmailBody(
                 messageTemplate,
-                selectedCoupon.discount,
-                selectedCoupon.codeName
+                selectedCoupon?.discount,
+                selectedCoupon?.codeName
             );
             form.setValue('emailBody', body, { shouldDirty: false });
         }

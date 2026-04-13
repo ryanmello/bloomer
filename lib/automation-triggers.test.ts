@@ -124,12 +124,13 @@ describe('automation-triggers', () => {
       expect(result).toEqual([customers[0]]);
     });
 
-    it('should return all customers when audience is not found', async () => {
+    it('should return empty array when audience is not found (safety: prevent sending to everyone)', async () => {
       mockDb.audience.findUnique.mockResolvedValue(null);
 
       const result = await filterByAudience(customers, 'nonexistent');
 
-      expect(result).toEqual(customers);
+      // Safety feature: if audience is deleted, return empty to prevent mass send
+      expect(result).toEqual([]);
     });
   });
 
