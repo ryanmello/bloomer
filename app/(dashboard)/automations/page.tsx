@@ -59,6 +59,10 @@ type AutomationDB = {
     id: string;
     name: string;
   } | null;
+  // Email content
+  emailSubject?: string | null;
+  emailBody?: string | null;
+  couponId?: string | null;
   // Metrics from API (computed from AutomationRun)
   triggers?: number;
   sent?: number;
@@ -79,6 +83,10 @@ type AutomationRow = {
   actionType: string;
   audienceId?: string | null;
   audienceName?: string | null;
+  // Email content
+  emailSubject?: string | null;
+  emailBody?: string | null;
+  couponId?: string | null;
   // Placeholder metrics
   triggers: number;
   submissions: number;
@@ -106,6 +114,9 @@ function toAutomationRow(db: AutomationDB): AutomationRow {
     actionType: db.actionType,
     audienceId: db.audienceId,
     audienceName: db.audience?.name || null,
+    emailSubject: db.emailSubject,
+    emailBody: db.emailBody,
+    couponId: db.couponId,
     triggers,
     submissions: sent,
     opened,
@@ -259,6 +270,9 @@ export default function AutomationsPage() {
           timing: automation.timing,
           actionType: automation.actionType,
           audienceId: automation.audienceId,
+          emailSubject: automation.emailSubject,
+          emailBody: automation.emailBody,
+          couponId: automation.couponId,
           status: 'active',
         }),
       });
@@ -317,6 +331,10 @@ export default function AutomationsPage() {
           timing: editingAutomation.timing,
           triggerType: editingAutomation.triggerType,
           actionType: editingAutomation.actionType,
+          emailSubject: editingAutomation.emailSubject,
+          emailBody: editingAutomation.emailBody,
+          couponId: editingAutomation.couponId,
+          audienceId: editingAutomation.audienceId,
         }),
       });
 
@@ -990,10 +1008,35 @@ export default function AutomationsPage() {
                       <SelectItem value="birthday">Birthday</SelectItem>
                       <SelectItem value="inactive">Inactive Customer</SelectItem>
                       <SelectItem value="new_customer">New Customer</SelectItem>
-                      <SelectItem value="anniversary">Anniversary</SelectItem>
+                      <SelectItem value="valentines_day">Valentine&apos;s Day</SelectItem>
+                      <SelectItem value="mothers_day">Mother&apos;s Day</SelectItem>
+                      <SelectItem value="christmas">Christmas</SelectItem>
+                      <SelectItem value="thanksgiving">Thanksgiving</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Email Subject</label>
+                <input
+                  type="text"
+                  placeholder="Enter email subject"
+                  value={editingAutomation.emailSubject || ""}
+                  onChange={(e) => setEditingAutomation({ ...editingAutomation, emailSubject: e.target.value })}
+                  className="border rounded-md p-2 w-full bg-background"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Email Body (HTML)</label>
+                <textarea
+                  placeholder="Enter email body HTML"
+                  value={editingAutomation.emailBody || ""}
+                  onChange={(e) => setEditingAutomation({ ...editingAutomation, emailBody: e.target.value })}
+                  className="border rounded-md p-2 w-full bg-background font-mono text-sm"
+                  rows={6}
+                />
               </div>
 
               <div className="flex gap-2 mt-2">

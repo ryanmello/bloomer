@@ -54,6 +54,7 @@ export async function PUT(
       messageTemplate,
       emailSubject,
       emailBody,
+      couponId,
       audienceId,
       status
     } = body;
@@ -71,6 +72,7 @@ export async function PUT(
         messageTemplate: messageTemplate !== undefined ? messageTemplate : existingAutomation.messageTemplate,
         emailSubject: emailSubject !== undefined ? emailSubject : existingAutomation.emailSubject,
         emailBody: emailBody !== undefined ? emailBody : existingAutomation.emailBody,
+        couponId: couponId !== undefined ? (couponId || null) : existingAutomation.couponId,
         audienceId: audienceId !== undefined ? (audienceId || null) : existingAutomation.audienceId,
         status: status ?? existingAutomation.status,
       },
