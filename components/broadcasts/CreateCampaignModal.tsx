@@ -268,7 +268,8 @@ export default function CreateCampaignModal({
                 </SelectValue>
               </SelectTrigger>
 
-              <SelectContent className="max-h-60 overflow-auto">
+              <SelectContent>
+                <div className="max-h-60 overflow-auto">
                
                 <div
                   className="p-2 flex items-center justify-between cursor-pointer hover:bg-muted rounded"
@@ -324,6 +325,7 @@ export default function CreateCampaignModal({
                       />
                     </div>
                   ))}
+                  </div>
               </SelectContent>
             </Select>
           </div>
