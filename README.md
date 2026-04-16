@@ -310,22 +310,105 @@ npx prisma generate  # Regenerate Prisma client
 
 ## 🧪 Testing
 
-> **Note:** Testing will be implemented in CSC 191 (Spring 2026)
+The testing system in Bloomer ensures reliability across API routes, UI components, and core business logic using a multi-layer testing strategy. It includes unit testing, integration testing, end-to-end testing, and automated CI/CD validation.
 
-### Planned Testing Approach
+---
 
-- **Unit Tests:** Jest + React Testing Library for component testing
-- **Integration Tests:** API route testing with Supertest
-- **E2E Tests:** Playwright for end-to-end user flows
-- **Coverage Goal:** 80%+ code coverage
+### Testing Strategy
 
-### Running Tests (CSC 191)
+**Unit Testing**
+- Vitest + Jsdom  
+- Tests for individual functions, utilities, and components in isolation
 
-```bash
-npm test              # Run all tests
-npm test:coverage     # Run with coverage report
-npm test:e2e          # Run E2E tests
+
+**Integration Testing**
+- Supertest Tests
+- Tests for how multiple parts work together (API routes, database interactions, frontend/backend communication)
+
+  
+**End-to-End (E2E) System Testing**
+- Playwright
+- Tests for simulating full user workflows in the browser (e.g. customer creation, form submission, dashboard updates)
+
+  
+**CI/CD Testing**
+- Github Actions
+- Automatically runs all tests on every push and pull request 
+
+---
+
+### Test Structure
+
+- `.test.ts` – Unit and integration tests  
+- `.test.tsx` – React component tests
+- `.e2e.ts` -  End-to-end system tests
+- `/tests` – Centralized test directory (optional)  
+- Tests can also be colocated next to components for feature-based testing  
+
+---
+
+### Creating Tests
+
+Create a test file next to a feature or inside `/tests`:
+
+```ts
+import { describe, it, expect } from "vitest";
+
+describe("Example Test", () => {
+  it("should work correctly", () => {
+    expect(true).toBe(true);
+  });
+});
 ```
+### Running Tests
+
+- `npm test` – Run all tests once
+- `npm run test path/to/test-file` - Run a specific test
+- `npm run test:watch` – Run tests in watch mode (auto re-runs on changes)  
+- `npm run test:coverage` – Generate a coverage report
+- `npm test:e2e` - Run E2E tests
+
+---
+
+### Watch Mode
+
+Watch mode keeps the test runner active and automatically re-runs tests whenever code changes are detected. This is useful during development for instant feedback without manually restarting tests.
+
+---
+
+### Coverage Report
+
+Coverage reports show how much of the codebase is tested, including:
+
+- Lines of code covered  
+- Functions tested  
+- Branches covered  
+- Statements covered  
+
+This helps identify untested areas and improve overall test quality.
+
+---
+
+### Testing Workflow
+
+- Create or update a feature  
+- Add a matching `.test.ts` or `.test.tsx` file  
+- Run tests in watch mode during development  
+- Run full set of tests before committing changes  
+- Check coverage for missing tests  
+- Validate full user flows using Playwright End-to-End System tests  
+- CI/CD automatically runs tests on every push and pull request  
+
+---
+
+### CI/CD Testing
+
+All tests run automatically using GitHub Actions on:
+
+- Every push  
+- Every pull request  
+
+This ensures no broken code is merged into the main branch.
 
 ---
 
