@@ -310,7 +310,7 @@ npx prisma generate  # Regenerate Prisma client
 
 ## 🧪 Testing
 
-The testing system in Bloomer ensures reliability across API routes, UI components, and core business logic using a multi-layer testing strategy. It includes unit testing, integration testing, end-to-end testing, and automated CI/CD validation.
+The testing system in Bloomer ensures reliability across API routes, UI components, and core business logic using a multi-layer testing strategy. It includes unit testing, integration testing, end-to-end system testing, and automated CI/CD validation.
 
 ---
 
@@ -322,7 +322,7 @@ The testing system in Bloomer ensures reliability across API routes, UI componen
 
 
 **Integration Testing**
-- Supertest Tests
+- Supertest
 - Tests for how multiple parts work together (API routes, database interactions, frontend/backend communication)
 
   
