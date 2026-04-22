@@ -374,18 +374,12 @@ function InboxContent() {
           </p>
         </div>
         {connectedPlatform && (
-          <div className="flex items-center gap-2">
-            <Button type="button" onClick={openComposeNew} className="gap-2">
-              <SquarePen className="h-4 w-4" />
-              Compose
-            </Button>
-            <Badge variant="default">
-              <span className="text-sm">
-                Gmail Connected
-                {integrationStatus.gmail?.email && ` - ${integrationStatus.gmail.email}`}
-              </span>
-            </Badge>
-          </div>
+          <Badge variant="default">
+            <span className="text-sm">
+              Gmail Connected
+              {integrationStatus.gmail?.email && ` - ${integrationStatus.gmail.email}`}
+            </span>
+          </Badge>
         )}
       </div>
 
@@ -426,7 +420,7 @@ function InboxContent() {
             {/* Search and Filters */}
             <Card>
               <CardContent className="p-4">
-                <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex flex-wrap items-center gap-4">
                   <div className="relative flex-1 min-w-[12rem]">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -611,7 +605,7 @@ function InboxContent() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Button
                         variant="secondary"
                         size="sm"
