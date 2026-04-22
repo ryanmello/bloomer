@@ -1,14 +1,17 @@
 import db from "@/lib/prisma";
 
-export async function getGmailAccessToken(userId: string): Promise<string> {
-  const integration = await (db as any).emailIntegration.findUnique({
-    where: { userId_platform: { userId, platform: "gmail" } },
-  });
+type GmailIntegrationRow = {
+  accessToken: string;
+  refreshToken: string | null;
+  expiresAt: Date | null;
+  connected: boolean;
+  email: string;
+};
 
-  if (!integration || !integration.connected) {
-    throw new Error("Gmail not connected");
-  }
-
+async function resolveGmailAccessToken(
+  userId: string,
+  integration: GmailIntegrationRow
+): Promise<string> {
   let accessToken = integration.accessToken;
 
   if (integration.expiresAt && new Date(integration.expiresAt) < new Date()) {
@@ -50,4 +53,32 @@ export async function getGmailAccessToken(userId: string): Promise<string> {
   }
 
   return accessToken;
+}
+
+export async function getGmailAccessToken(userId: string): Promise<string> {
+  const integration = await (db as any).emailIntegration.findUnique({
+    where: { userId_platform: { userId, platform: "gmail" } },
+  });
+
+  if (!integration || !integration.connected) {
+    throw new Error("Gmail not connected");
+  }
+
+  return resolveGmailAccessToken(userId, integration);
+}
+
+/** Access token plus the connected mailbox address (for From: when sending). */
+export async function getGmailSendContext(
+  userId: string
+): Promise<{ accessToken: string; fromEmail: string }> {
+  const integration = await (db as any).emailIntegration.findUnique({
+    where: { userId_platform: { userId, platform: "gmail" } },
+  });
+
+  if (!integration || !integration.connected) {
+    throw new Error("Gmail not connected");
+  }
+
+  const accessToken = await resolveGmailAccessToken(userId, integration);
+  return { accessToken, fromEmail: integration.email };
 }

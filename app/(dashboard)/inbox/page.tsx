@@ -14,13 +14,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Mail, Inbox as InboxIcon, Send, Trash2, Archive, Star, Search, Filter, MailOpen, Loader2 } from "lucide-react";
+import {
+  Mail,
+  Inbox as InboxIcon,
+  Trash2,
+  Archive,
+  Star,
+  Search,
+  Filter,
+  MailOpen,
+  Loader2,
+  SquarePen,
+  Reply,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
 import clsx from "clsx";
+import ComposeEmailDialog from "@/components/inbox/ComposeEmailDialog";
 
 type EmailPlatform = "gmail" | null;
 
@@ -46,6 +59,19 @@ type IntegrationStatus = {
   } | null;
 };
 
+function extractReplyAddress(fromHeader: string): string {
+  const angle = fromHeader.match(/<([^>]+)>/);
+  if (angle?.[1]) return angle[1].trim();
+  const loose = fromHeader.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/);
+  return loose ? loose[0] : fromHeader.trim();
+}
+
+function replySubject(subject: string): string {
+  const t = subject.trim();
+  if (!t) return "Re: ";
+  return /^re:\s/i.test(t) ? t : `Re: ${t}`;
+}
+
 function InboxContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -68,6 +94,41 @@ function InboxContent() {
     snippet: string;
   } | null>(null);
   const [loadingFullEmail, setLoadingFullEmail] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeDraft, setComposeDraft] = useState<{
+    initialTo: string;
+    initialSubject: string;
+    initialBody: string;
+  } | null>(null);
+
+  const handleComposeOpenChange = (next: boolean) => {
+    setComposeOpen(next);
+    if (!next) setComposeDraft(null);
+  };
+
+  const openComposeNew = () => {
+    setComposeDraft(null);
+    setComposeOpen(true);
+  };
+
+  const openComposeReply = (email: Email) => {
+    const to = extractReplyAddress(email.from);
+    const subj = replySubject(email.subject);
+    const quoted =
+      fullEmail?.bodyPlain?.trim() ||
+      fullEmail?.snippet?.trim() ||
+      email.preview?.trim() ||
+      "";
+    const body = quoted
+      ? `\n\n---------- Original message ----------\n${quoted.split("\n").map((l) => `> ${l}`).join("\n")}`
+      : "\n\n";
+    setComposeDraft({
+      initialTo: to,
+      initialSubject: subj,
+      initialBody: body,
+    });
+    setComposeOpen(true);
+  };
 
   // Check connection status on mount
   useEffect(() => {
@@ -313,12 +374,18 @@ function InboxContent() {
           </p>
         </div>
         {connectedPlatform && (
-          <Badge variant="default">
-            <span className="text-sm">
-              Gmail Connected
-              {integrationStatus.gmail?.email && ` - ${integrationStatus.gmail.email}`}
-            </span>
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button type="button" onClick={openComposeNew} className="gap-2">
+              <SquarePen className="h-4 w-4" />
+              Compose
+            </Button>
+            <Badge variant="default">
+              <span className="text-sm">
+                Gmail Connected
+                {integrationStatus.gmail?.email && ` - ${integrationStatus.gmail.email}`}
+              </span>
+            </Badge>
+          </div>
         )}
       </div>
 
@@ -359,8 +426,8 @@ function InboxContent() {
             {/* Search and Filters */}
             <Card>
               <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <div className="relative flex-1">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div className="relative flex-1 min-w-[12rem]">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search emails..."
@@ -369,9 +436,14 @@ function InboxContent() {
                       className="pl-10"
                     />
                   </div>
+                  <Button type="button" size="sm" onClick={openComposeNew} className="gap-2 shrink-0">
+                    <SquarePen className="h-4 w-4" />
+                    Compose
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
+                    className="shrink-0"
                     onClick={() => fetchEmails(connectedPlatform, undefined, false)}
                   >
                     <Filter className="h-4 w-4 mr-2" />
@@ -539,7 +611,16 @@ function InboxContent() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="gap-1"
+                        onClick={() => openComposeReply(selectedEmail)}
+                      >
+                        <Reply className="h-4 w-4" />
+                        Reply
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -611,9 +692,14 @@ function InboxContent() {
                 <CardTitle className="text-lg">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" size="sm">
-                  <Send className="h-4 w-4 mr-2" />
-                  Compose Email
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  size="sm"
+                  onClick={openComposeNew}
+                >
+                  <SquarePen className="h-4 w-4 mr-2" />
+                  Compose email
                 </Button>
                 <Button
                   variant={view === "inbox" ? "default" : "outline"}
@@ -682,6 +768,20 @@ function InboxContent() {
           </div>
         </div>
       )}
+
+      <ComposeEmailDialog
+        open={composeOpen}
+        onOpenChange={handleComposeOpenChange}
+        gmailConnected={!!connectedPlatform}
+        initialTo={composeDraft?.initialTo ?? ""}
+        initialSubject={composeDraft?.initialSubject ?? ""}
+        initialBody={composeDraft?.initialBody ?? ""}
+        onSent={() => {
+          if (connectedPlatform) {
+            fetchEmails(connectedPlatform, undefined, false);
+          }
+        }}
+      />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
