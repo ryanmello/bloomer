@@ -374,18 +374,12 @@ function InboxContent() {
           </p>
         </div>
         {connectedPlatform && (
-          <div className="flex items-center gap-2">
-            <Button type="button" onClick={openComposeNew} className="gap-2">
-              <SquarePen className="h-4 w-4" />
-              Compose
-            </Button>
-            <Badge variant="default">
-              <span className="text-sm">
-                Gmail Connected
-                {integrationStatus.gmail?.email && ` - ${integrationStatus.gmail.email}`}
-              </span>
-            </Badge>
-          </div>
+          <Badge variant="default">
+            <span className="text-sm">
+              Gmail Connected
+              {integrationStatus.gmail?.email && ` - ${integrationStatus.gmail.email}`}
+            </span>
+          </Badge>
         )}
       </div>
 
