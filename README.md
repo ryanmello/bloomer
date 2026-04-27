@@ -1,16 +1,18 @@
+<p align="center">
+  <img src="public/flower.png" width="100"/>
+  <h1>🌸 Bloomer</h1>
+  <p><strong>Grow with Bloomer: Customer Relationship Management for Flower Shops</strong></p>
+</p>
+
+---
+
 # README TODO:
 
 Screenshots of product ui + descriptions and examples
 
-![Bloomer logo](public/flower.png)
-
 Testing section
 
 Clear deployment instructions
-
-# 🌸 Bloomer
-
-**Grow with Bloomer: Customer Relationship Management for Flower Shops**
 
 ### Project Description
 
