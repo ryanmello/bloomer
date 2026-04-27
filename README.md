@@ -1,10 +1,17 @@
-<p align="center">
-  <img src="public/flower.png" width="100"/>
-  <h1>🌸 Bloomer</h1>
-  <p><strong>Grow with Bloomer: Customer Relationship Management for Flower Shops</strong></p>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=e8475f&height=200&section=header&text=%20Bloomer&fontSize=60&fontColor=ffffff&desc=Customer%20Relationship%20Management%20for%20Flower%20Shops&descSize=18&descAlignY=75" width="100%"/>
+<p>
+  <img src="public/flower.png" width="80" align="left" style="margin-right: 10px;"/>
+    <strong style="font-size: 1.3em;">Grow with Bloomer: Customer Relationship Management for Flower Shops</strong>
 </p>
 
----
+![Next.js](https://img.shields.io/badge/Next.js-black?logo=next.js)
+![React](https://img.shields.io/badge/React-blue?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?logo=tailwindcss&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?logo=prisma)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?logo=mongodb&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-Test-6E9F18?logo=vitest&logoColor=white)
+![Square](https://img.shields.io/badge/POS-Square-3E4348?logo=square&logoColor=white)
 
 # README TODO:
 
