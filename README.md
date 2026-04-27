@@ -2,7 +2,7 @@
 
 Screenshots of product ui + descriptions and examples
 
-![alt text](images/flower.png)
+![Bloomer logo](public/bloomer-logo.png)
 
 Testing section
 
