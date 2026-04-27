@@ -2,7 +2,7 @@
 
 Screenshots of product ui + descriptions and examples
 
-Team or project logo
+![alt text](images/flower.png)
 
 Testing section
 
