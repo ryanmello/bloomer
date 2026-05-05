@@ -98,6 +98,36 @@ Bloomer is a specialized Customer Relationship Management (CRM) solution built s
 
 ---
 
+## 📸 Screenshots
+
+> **Note:** Insert screenshots of the live application here. Placeholders indicate the required screen for each section.
+
+### Dashboard
+> `[INSERT: Screenshot of the main dashboard showing metric cards, revenue trend graph, recent activity feed, and upcoming events]`
+
+### Customers
+> `[INSERT: Screenshot of the customers list page with filter panel and customer detail view]`
+
+### Broadcasts (Email Campaigns)
+> `[INSERT: Screenshot of the broadcasts page showing campaign list and the new campaign modal]`
+
+### Automations
+> `[INSERT: Screenshot of the automations page showing an automation with its trigger and email editor]`
+
+### Inbox (Gmail Integration)
+> `[INSERT: Screenshot of the inbox page showing the email list and Gmail connect prompt]`
+
+### Forms
+> `[INSERT: Screenshot of the forms page showing the form list and a form's submission view]`
+
+### Coupons
+> `[INSERT: Screenshot of the coupons page showing Active and Expired coupon badges]`
+
+### Settings
+> `[INSERT: Screenshot of the settings page showing profile edit, theme toggle, and team management]`
+
+---
+
 ## 📊 Dashboard Overview
 
 The Bloomer dashboard provides a comprehensive view of your flower shop's business performance and operations.
@@ -319,105 +349,115 @@ npx prisma generate  # Regenerate Prisma client
 
 ## 🧪 Testing
 
-The testing system in Bloomer ensures reliability across API routes, UI components, and core business logic using a multi-layer testing strategy. It includes unit testing, integration testing, end-to-end system testing, and automated CI/CD validation.
+Bloomer uses a four-layer testing strategy to ensure reliability across API routes, UI components, and core business logic.
 
 ---
 
 ### Testing Strategy
 
-**Unit Testing**
-- Vitest + Jsdom  
-- Tests for individual functions, utilities, and components in isolation
-
-
-**Integration Testing**
-- Supertest
-- Tests for how multiple parts work together (API routes, database interactions, frontend/backend communication)
-
-  
-**End-to-End (E2E) System Testing**
-- Playwright
-- Tests for simulating full user workflows in the browser (e.g. customer creation, form submission, dashboard updates)
-
-  
-**CI/CD Testing**
-- Github Actions
-- Automatically runs all tests on every push and pull request 
+| Layer | Tool | Purpose |
+|---|---|---|
+| **Unit Testing** | Vitest v1.6.x + JSDOM | Tests individual functions, utilities, and components in isolation |
+| **Integration Testing** | Vitest + Supertest | Tests API routes, database interactions, and frontend/backend communication |
+| **End-to-End (E2E)** | Playwright v1.44.x | Simulates full user workflows in the browser (customer creation, form submission, dashboard updates) |
+| **CI/CD** | GitHub Actions | Auto-runs all tests on every push and pull request to prevent broken code from merging |
 
 ---
 
-### Test Structure
+### Test File Structure
 
-- `.test.ts` – Unit and integration tests  
-- `.test.tsx` – React component tests
-- `.e2e.ts` -  End-to-end system tests
-- `/tests` – Centralized test directory (optional)  
-- Tests can also be colocated next to components for feature-based testing  
-
----
-
-### Creating Tests
-
-Create a test file next to a feature or inside `/tests`:
-
-```ts
-import { describe, it, expect } from "vitest";
-
-describe("Example Test", () => {
-  it("should work correctly", () => {
-    expect(true).toBe(true);
-  });
-});
 ```
+bloomer/
+├── lib/
+│   └── forms.test.ts        # Example: API-level integration test
+├── components/
+│   └── *.test.tsx           # Component unit tests (colocated)
+├── tests/                   # Optional centralized test directory
+│   └── *.test.ts
+```
+
+| Extension | Purpose |
+|---|---|
+| `.test.ts` | Unit and integration tests |
+| `.test.tsx` | React component tests |
+| `.e2e.ts` | End-to-end Playwright system tests |
+
+---
+
 ### Running Tests
 
-- `npm test` – Run all tests once
-- `npm run test path/to/test-file` - Run a specific test
-- `npm run test:watch` – Run tests in watch mode (auto re-runs on changes)  
-- `npm run test:coverage` – Generate a coverage report
-- `npm test:e2e` - Run E2E tests
+```bash
+npm test                        # Run all unit + integration tests once
+npm run test path/to/file       # Run a specific test file
+npm run test:watch              # Watch mode — auto re-runs on code changes
+npm run test:coverage           # Generate a coverage report
+npm test:e2e                    # Run Playwright end-to-end tests
+```
 
 ---
 
 ### Watch Mode
 
-Watch mode keeps the test runner active and automatically re-runs tests whenever code changes are detected. This is useful during development for instant feedback without manually restarting tests.
+Watch mode keeps Vitest active and automatically re-runs tests whenever code changes are detected. Use this during active development for instant feedback without manually restarting tests.
+
+```bash
+npm run test:watch
+```
 
 ---
 
 ### Coverage Report
 
-Coverage reports show how much of the codebase is tested, including:
+Run `npm run test:coverage` to generate a report showing how much of the codebase is tested:
 
-- Lines of code covered  
-- Functions tested  
-- Branches covered  
-- Statements covered  
+- **Lines** — Lines of code covered
+- **Functions** — Functions tested
+- **Branches** — If/else paths and ternary conditions covered
+- **Statements** — Individual statements covered
 
-This helps identify untested areas and improve overall test quality.
+Use coverage to identify untested areas and prioritize where to add tests.
+
+---
+
+### Writing a New Test
+
+Create a test file next to the feature you are testing, or place it in `/tests`. All test files must use the `.test.ts` or `.test.tsx` extension.
+
+```ts
+import { describe, it, expect } from "vitest";
+
+describe("Example Test Suite", () => {
+  it("should work correctly", () => {
+    expect(true).toBe(true);
+  });
+});
+```
 
 ---
 
 ### Testing Workflow
 
-- Create or update a feature  
-- Add a matching `.test.ts` or `.test.tsx` file  
-- Run tests in watch mode during development  
-- Run full set of tests before committing changes  
-- Check coverage for missing tests  
-- Validate full user flows using Playwright End-to-End System tests  
-- CI/CD automatically runs tests on every push and pull request  
+Follow this process when creating or updating any feature:
+
+1. Write or update the feature code in the appropriate component or API route
+2. Add a matching `.test.ts` or `.test.tsx` file alongside the feature
+3. Run `npm run test:watch` during development for instant feedback
+4. Run `npm test` before committing — all tests must pass
+5. Run `npm run test:coverage` and check for untested areas
+6. Validate full user flows using Playwright: `npm test:e2e`
+7. Push the branch — GitHub Actions CI will auto-run all tests on the pull request
 
 ---
 
-### CI/CD Testing
+### CI/CD Testing (GitHub Actions)
 
-All tests run automatically using GitHub Actions on:
+All tests run automatically on:
+- Every push to any branch
+- Every pull request targeting `main`
 
-- Every push  
-- Every pull request  
+The pipeline runs on `ubuntu-latest` and executes `npm install`, `npm run build`, and `npm test`. No broken code can be merged unless all checks pass.
 
-This ensures no broken code is merged into the main branch.
+View pipeline results: [github.com/ryanmello/bloomer/actions](https://github.com/ryanmello/bloomer/actions)
 
 ---
 
