@@ -43,9 +43,10 @@ Bloomer is a specialized Customer Relationship Management (CRM) solution built s
 
 **Target Users:** Small to medium-sized flower shops (1-10 employees) looking to modernize their customer management and grow their business through data-driven marketing.
 
-**Project Info:** CSC 190 (Fall 2025) / CSC 191 (Spring 2026)
+**Project Info:** CSC 190 (Fall 2025) / CSC 191 (Spring 2026)  
 **Live Application:** [gobloomer.com](https://gobloomer.com)  
 **Client:** Raquel Flores — Chicky Blooms, Fremont CA
+
 
 ---
 
