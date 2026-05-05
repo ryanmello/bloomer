@@ -466,23 +466,61 @@ View pipeline results: [github.com/ryanmello/bloomer/actions](https://github.com
 
 ## 🚀 Deployment
 
-> **Note:** Deployment will be configured in CSC 191 (Spring 2026)
+Bloomer is deployed on **Vercel** with automatic deployments from the `main` branch.
 
-### Planned Deployment Strategy
+### Platform Overview
 
-- **Platform:** Vercel (Next.js hosting)
-- **Database:** MongoDB Atlas (production cluster)
-- **Domain:** Custom domain with SSL
-- **CI/CD:** GitHub Actions for automated deployments
+| Service | Provider |
+|---------|----------|
+| Hosting & CI/CD | [Vercel](https://vercel.com) |
+| Database | MongoDB Atlas |
+| Email | Resend |
+| POS Integration | Square |
+| Rate Limiting | Upstash Redis |
 
-### Deployment Checklist (CSC 191)
+### How Deployments Work
 
-- [ ] Set up production MongoDB cluster
-- [ ] Configure environment variables in Vercel
-- [ ] Set up custom domain
-- [ ] Configure monitoring and error tracking
-- [ ] Test Square integration in production
-- [ ] Set up automated backups
+Vercel is connected to this GitHub repository. Every push to `main` triggers a production deployment, and every pull request gets its own **preview deployment** with a unique URL for testing.
+
+The build is configured in `vercel.json`:
+
+- **Build command:** `npm run build`
+- **Install command:** `npm ci --include=dev`
+- **Framework preset:** Next.js
+- **Node memory:** 4 GB (`--max-old-space-size=4096`)
+
+### Scheduled Cron Jobs
+
+Vercel Cron runs the following jobs automatically in production:
+
+| Schedule | Endpoint | Purpose |
+|----------|----------|---------|
+| Daily at 5:00 PM UTC | `/api/automation/run` | Execute marketing automation workflows |
+| Every hour | `/api/cron/sendlowstock` | Send low-stock inventory alerts |
+
+Cron requests are authenticated via the `CRON_SECRET` environment variable (sent as `Authorization: Bearer <token>`).
+
+### Environment Variables
+
+All environment variables must be configured in the Vercel project dashboard under **Settings → Environment Variables**. See `.env.example` for the full list of required variables:
+
+| Variable | Purpose |
+|----------|---------|
+| `NEXTAUTH_URL` | Production URL for NextAuth session handling |
+| `AUTH_SECRET` | NextAuth encryption secret |
+| `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | Email delivery via Resend |
+| `SQUARE_CLIENT_ID` / `SQUARE_CLIENT_SECRET` | Square POS OAuth integration |
+| `CRON_SECRET` | Authenticates Vercel Cron requests |
+| `UNSUBSCRIBE_SECRET` | Signs email unsubscribe links |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Maps for delivery features |
+| `NEXT_PUBLIC_PUBLIC_FORM_URL` | Public-facing form URL |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Rate limiting (optional — falls back to in-memory) |
+
+### Deploying
+
+1. **Production** — Merge a PR into `main`. Vercel builds and deploys automatically.
+2. **Preview** — Open a PR. Vercel creates a preview deployment and posts the URL as a commit status check.
+3. **Manual** — Trigger a redeploy from the Vercel dashboard if needed (e.g., after updating environment variables).
 
 ---
 
