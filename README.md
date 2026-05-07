@@ -312,12 +312,76 @@ npm install
 
 2. **Configure Environment Variables**
 
-Create a `.env` file:
-```env
-DATABASE_URL="mongodb+srv://username:password@cluster.mongodb.net/bloomer"
-AUTH_SECRET="your-secret-key"
-NEXTAUTH_URL="http://localhost:3000"
-SQUARE_ACCESS_TOKEN="your-square-token"
+Bloomer uses environment variables for all secrets, API keys, and environment-specific configuration. For local development, create a `.env` file in the project root. For production, configure these in the Vercel dashboard under **Settings → Environment Variables**.
+
+A reference template is available in `.env.example`.
+
+### Core Required Variables
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `DATABASE_URL` | MongoDB connection string (read by Prisma) | `mongodb+srv://user:pass@cluster.mongodb.net/bloomer` |
+| `AUTH_SECRET` | NextAuth session encryption key. Generate with `openssl rand -base64 32` | 32+ char random string |
+| `NEXTAUTH_SECRET` | Legacy alias for `AUTH_SECRET`. Set to the same value for backwards compatibility with 2FA utilities | Same as `AUTH_SECRET` |
+| `NEXTAUTH_URL` | Base URL for NextAuth callbacks and email links | `http://localhost:3000` (dev) / `https://gobloomer.com` (prod) |
+| `ENCRYPTION_KEY` | Encrypts 2FA secrets at rest. Falls back to `NEXTAUTH_SECRET`/`AUTH_SECRET` if unset | 32+ char random string |
+
+### Email (Resend)
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `RESEND_API_KEY` | API key for transactional and campaign email delivery | `re_xxxxxxxxxxxx` |
+| `RESEND_FROM_EMAIL` | Verified sender address. Defaults to `onboarding@resend.dev` if unset | `noreply@gobloomer.com` |
+| `RESEND_WEBHOOK_SECRET` | Verifies Resend webhook signatures for delivery/open/click events | From Resend dashboard |
+| `UNSUBSCRIBE_SECRET` | Signs one-click unsubscribe links in marketing emails. Generate with `openssl rand -hex 32` | 32+ char random string |
+| `APP_NAME` | App name shown in transactional email templates. Defaults to `Bloomer` | `Bloomer` |
+
+### Square POS Integration (OAuth)
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `SQUARE_CLIENT_ID` | Square OAuth application ID | `sq0idp-xxxxxxxxxxxx` |
+| `SQUARE_CLIENT_SECRET` | Square OAuth application secret | `sq0csp-xxxxxxxxxxxx` |
+
+> Sandbox vs production is determined automatically from `NODE_ENV`. Use **sandbox** credentials in development and **production** credentials only in deployed environments. Get both from [developer.squareup.com](https://developer.squareup.com).
+
+### Inbox Integrations (Optional)
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID for Gmail inbox integration | From Google Cloud Console |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | From Google Cloud Console |
+| `MICROSOFT_CLIENT_ID` | Microsoft OAuth client ID for Outlook inbox integration | From Azure Portal |
+| `MICROSOFT_CLIENT_SECRET` | Microsoft OAuth client secret | From Azure Portal |
+
+### Forms
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `FORM_KEY` | Bearer token authenticating requests to public form endpoints | Generate with `openssl rand -hex 32` |
+
+### Cron & Scheduled Jobs
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `CRON_SECRET` | Bearer token authenticating Vercel Cron requests. Generate with `openssl rand -hex 32` | 32+ char random string |
+
+### Public (Client-Side) Variables
+
+Variables prefixed with `NEXT_PUBLIC_` are exposed to the browser. **Never store secrets here.**
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Maps JS API for delivery address autocomplete and routing | `AIzaSyXXXXXXXX` |
+| `NEXT_PUBLIC_PUBLIC_FORM_URL` | Public-facing URL for embedded customer intake forms | `https://gobloomer.com/forms` |
+| `NEXT_PUBLIC_APP_URL` | Fallback base URL used when `NEXTAUTH_URL` is unset (Resend emails, OAuth callbacks) | Same as `NEXTAUTH_URL` |
+
+### Optional Variables
+
+| Variable | Purpose | Default if Unset |
+|---|---|---|
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis endpoint for distributed rate limiting | Falls back to in-memory rate limiting |
+| `UPSTASH_REDIS_REST_TOKEN` | Auth token for Upstash Redis | Falls back to in-memory rate limiting |
 ```
 
 3. **Setup Database**
