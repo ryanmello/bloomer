@@ -13,22 +13,16 @@
 ![Vitest](https://img.shields.io/badge/Vitest-Test-6E9F18?logo=vitest&logoColor=white)
 ![Square](https://img.shields.io/badge/POS-Square-3E4348?logo=square&logoColor=white)
 
-# README TODO:
-
-Screenshots of product ui + descriptions and examples
-
-Testing section
-
-Clear deployment instructions
-
 ### Project Description
 
 Bloomer is a comprehensive, all-in-one CRM platform specifically designed for flower shops and florists. It provides powerful tools for customer management, marketing automation, inventory tracking, and business analytics to help flower shops thrive in the modern marketplace.
 
 ### What the Application Does
+
 Bloomer allows users to manage customer relationships, track inventory with stock and expiration monitoring, and create targeted marketing campaigns through email broadcasts and automation workflows. It also provides business analytics through a real-time dashboard, supports audience segmentation for personalized outreach, and integrates with Square to synchronize customer and order data. The platform streamlines core business processes such as order tracking, occasion reminders, and promotional campaign management.
 
 ### Why This Application Was Created
+
 This application was created to address the lack of affordable, industry-specific CRM solutions for flower shops. Existing CRM platforms are often too generic or costly, failing to account for the unique operational needs of florists, such as managing perishable inventory, tracking customer occasions like birthdays and anniversaries, and handling time-sensitive orders and seasonal demand. Bloomer was developed to fill this gap by providing a tailored, cost-effective solution that helps floral businesses operate more efficiently and grow through data-driven decision-making.
 
 ---
@@ -46,7 +40,6 @@ Bloomer is a specialized Customer Relationship Management (CRM) solution built s
 **Project Info:** CSC 190 (Fall 2025) / CSC 191 (Spring 2026)  
 **Live Application:** [gobloomer.com](https://gobloomer.com)  
 **Client:** Raquel Flores — Chicky Blooms, Fremont CA
-
 
 ---
 
@@ -67,12 +60,16 @@ Bloomer is a specialized Customer Relationship Management (CRM) solution built s
 - [Team Members](#-team-members)
 
 ---
-## ERD 
+
+## ERD
+
 <img width="3353" height="5769" alt="image" src="https://github.com/user-attachments/assets/f0605bc2-6e4d-4d98-b9f0-4557bbc9810b" />
 
 ### CRM ERD Diagram
+
 - This Entity-Relationship Diagram represents a CRM and shop-management platform that connects users, customers, products, orders, inventory, discounts, and marketing campaigns into a single integrated system.
 - It shows the complete lifecycle of business operations; covering customer management, product tracking, order processing, inventory control, coupon handling, and automated marketing—centered around each shop owned by a user.
+
 ---
 
 ## ✨ Features
@@ -103,31 +100,60 @@ Bloomer is a specialized Customer Relationship Management (CRM) solution built s
 
 ## 📸 Screenshots
 
-> **Note:** Insert screenshots of the live application here. Placeholders indicate the required screen for each section.
-
 ### Dashboard
-> `[INSERT: Screenshot of the main dashboard showing metric cards, revenue trend graph, recent activity feed, and upcoming events]`
 
-### Customers
-> `[INSERT: Screenshot of the customers list page with filter panel and customer detail view]`
+![Dashboard](images/dashboard.png)
+![Dashboard](images/dashboard2.png)
 
-### Broadcasts (Email Campaigns)
-> `[INSERT: Screenshot of the broadcasts page showing campaign list and the new campaign modal]`
+### Calendar
 
-### Automations
-> `[INSERT: Screenshot of the automations page showing an automation with its trigger and email editor]`
+![Calendar](images/Calendar2.png)
 
 ### Inbox (Gmail Integration)
-> `[INSERT: Screenshot of the inbox page showing the email list and Gmail connect prompt]`
+
+![Indox](images/inbox.png)
+
+### Customers
+
+![Customers](images/customers2.png)
+![Customers](images/customers3.png)
+
+### Automations
+
+![Automations](images/automations2.png)
+![Automations](images/automations3.png)
+![Automations](images/automations4.png)
+
+### Audiences
+
+![Audiences](images/Audiences.png)
+![Audiences](images/Audiences3.png)
+![Audiences](images/Audiences2.png)
+
+### Contacts
+
+![Contacts](images/Contacts.png)
 
 ### Forms
-> `[INSERT: Screenshot of the forms page showing the form list and a form's submission view]`
+
+![Forms](images/forms.png)
+![Forms](images/forms2.png)
+![Forms](images/forms3.png)
+
+### Broadcasts (Email Campaigns)
+
+![Broadcasts](images/broadcasts2.png)
+![Broadcasts](images/broadcasts3.png)
 
 ### Coupons
-> `[INSERT: Screenshot of the coupons page showing Active and Expired coupon badges]`
+
+![Coupons](images/coupons2.png)
 
 ### Settings
-> `[INSERT: Screenshot of the settings page showing profile edit, theme toggle, and team management]`
+
+![Settings](images/setting.png)
+![Settings](images/setting2.png)
+![Settings](images/setting3.png)
 
 ---
 
@@ -138,20 +164,25 @@ The Bloomer dashboard provides a comprehensive view of your flower shop's busine
 ### Main Dashboard Components
 
 #### 1. **Key Performance Metrics**
+
 The dashboard displays four primary metric cards at the top:
+
 - **Total Revenue** - Current month's revenue with percentage change from previous period
 - **Orders** - Total order count with growth rate
 - **Customers** - Total customer base with growth tracking
 - **Inventory Items** - Current inventory count with stock change indicators
 
 Each metric card features:
+
 - Real-time value display
 - Percentage change indicator (positive/negative)
 - Icon representation
 - Color-coded trends (green for positive, red for negative)
 
 #### 2. **Revenue Trend Graph**
+
 A beautiful, interactive line chart displaying:
+
 - Monthly revenue data over the past year
 - Smooth trend lines with gradient fill
 - Hover tooltips showing exact values
@@ -161,26 +192,32 @@ A beautiful, interactive line chart displaying:
 Built with Chart.js and React Chart.js 2, the graph automatically adjusts colors based on the active theme.
 
 #### 3. **Recent Activity Feed**
+
 Real-time activity stream showing:
+
 - **New Orders** - Order number, items, and time
 - **New Customers** - Customer sign-ups and registrations
 - **Inventory Alerts** - Low stock warnings and notifications
 - **Sales Highlights** - Best-selling products and trends
 
 Each activity item includes:
+
 - Color-coded icons by activity type
 - Timestamp (relative time)
 - Brief description
 - Scrollable list with latest updates at the top
 
 #### 4. **Upcoming Events Calendar**
+
 Track important dates and occasions:
+
 - **Holidays** - Valentine's Day, Mother's Day, Easter, etc.
 - **Weddings** - Customer wedding dates with couple names
 - **Memorial Services** - Sympathy arrangement bookings
 - **Custom Events** - Other important dates
 
 Features:
+
 - Days until event countdown
 - Urgency badges (color-coded by proximity)
 - Customer names for personalized events
@@ -188,25 +225,31 @@ Features:
 - Scrollable list with fixed height
 
 #### 5. **Inventory Status Monitor**
+
 Real-time stock level tracking:
+
 - **In Stock** - Items with adequate inventory (green badge)
 - **Low Stock** - Items below threshold (amber badge)
 - **Out of Stock** - Items requiring reorder (red badge)
 
 Displays:
+
 - Item name and quantity
 - Unit of measurement (stems, bunches, plants)
 - Status indicators with icons
 - Scrollable list for large inventories
 
 #### 6. **Customer Occasions Table**
+
 Comprehensive tracking of customer special dates:
+
 - **Birthdays** - Customer birthday dates
 - **Anniversaries** - Wedding anniversary dates
 - **Contact Information** - Email and phone for quick outreach
 - **Customer Notes** - Preferences, allergies, past orders
 
 Table features:
+
 - Sortable columns
 - Days until occasion countdown
 - Urgency color coding (red for imminent, amber for soon)
@@ -219,6 +262,7 @@ Table features:
 ## 🛠 Tech Stack
 
 ### Frontend
+
 - **Next.js 15.5.2** - React framework with App Router
 - **React 19.1.0** - UI library
 - **TypeScript** - Type-safe development
@@ -231,6 +275,7 @@ Table features:
 - **next-themes** - Theme management
 
 ### Backend
+
 - **Next.js API Routes** - Serverless API endpoints
 - **NextAuth 5** - Authentication solution
 - **Prisma** - Type-safe database ORM
@@ -238,6 +283,7 @@ Table features:
 - **bcrypt** - Password hashing
 
 ### Development Tools
+
 - **Turbopack** - Fast bundler (Next.js 15)
 - **PostCSS** - CSS processing
 - **ESLint** - Code linting
@@ -257,12 +303,14 @@ Table features:
 ### Installation
 
 1. **Clone the repository**
+
 ```bash
 git clone https://github.com/yourusername/bloomer.git
 cd bloomer
 ```
 
 2. **Install dependencies**
+
 ```bash
 npm install
 ```
@@ -272,16 +320,19 @@ npm install
 Create a `.env` file in the root directory (see [Environment Variables](#-environment-variables) section below)
 
 4. **Generate Prisma Client**
+
 ```bash
 npx prisma generate
 ```
 
 5. **Run database migrations** (if using a SQL database)
+
 ```bash
 npx prisma db push
 ```
 
 6. **Start the development server**
+
 ```bash
 npm run dev
 ```
@@ -304,6 +355,7 @@ npm start
 ### Setting Up Development Environment
 
 1. **Clone and Install**
+
 ```bash
 git clone https://github.com/yourusername/bloomer.git
 cd bloomer
@@ -318,79 +370,81 @@ A reference template is available in `.env.example`.
 
 ### Core Required Variables
 
-| Variable | Purpose | Example |
-|---|---|---|
-| `DATABASE_URL` | MongoDB connection string (read by Prisma) | `mongodb+srv://user:pass@cluster.mongodb.net/bloomer` |
-| `AUTH_SECRET` | NextAuth session encryption key. Generate with `openssl rand -base64 32` | 32+ char random string |
-| `NEXTAUTH_SECRET` | Legacy alias for `AUTH_SECRET`. Set to the same value for backwards compatibility with 2FA utilities | Same as `AUTH_SECRET` |
-| `NEXTAUTH_URL` | Base URL for NextAuth callbacks and email links | `http://localhost:3000` (dev) / `https://gobloomer.com` (prod) |
-| `ENCRYPTION_KEY` | Encrypts 2FA secrets at rest. Falls back to `NEXTAUTH_SECRET`/`AUTH_SECRET` if unset | 32+ char random string |
+| Variable          | Purpose                                                                                              | Example                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `DATABASE_URL`    | MongoDB connection string (read by Prisma)                                                           | `mongodb+srv://user:pass@cluster.mongodb.net/bloomer`          |
+| `AUTH_SECRET`     | NextAuth session encryption key. Generate with `openssl rand -base64 32`                             | 32+ char random string                                         |
+| `NEXTAUTH_SECRET` | Legacy alias for `AUTH_SECRET`. Set to the same value for backwards compatibility with 2FA utilities | Same as `AUTH_SECRET`                                          |
+| `NEXTAUTH_URL`    | Base URL for NextAuth callbacks and email links                                                      | `http://localhost:3000` (dev) / `https://gobloomer.com` (prod) |
+| `ENCRYPTION_KEY`  | Encrypts 2FA secrets at rest. Falls back to `NEXTAUTH_SECRET`/`AUTH_SECRET` if unset                 | 32+ char random string                                         |
 
 ### Email (Resend)
 
-| Variable | Purpose | Example |
-|---|---|---|
-| `RESEND_API_KEY` | API key for transactional and campaign email delivery | `re_xxxxxxxxxxxx` |
-| `RESEND_FROM_EMAIL` | Verified sender address. Defaults to `onboarding@resend.dev` if unset | `noreply@gobloomer.com` |
-| `RESEND_WEBHOOK_SECRET` | Verifies Resend webhook signatures for delivery/open/click events | From Resend dashboard |
-| `UNSUBSCRIBE_SECRET` | Signs one-click unsubscribe links in marketing emails. Generate with `openssl rand -hex 32` | 32+ char random string |
-| `APP_NAME` | App name shown in transactional email templates. Defaults to `Bloomer` | `Bloomer` |
+| Variable                | Purpose                                                                                     | Example                 |
+| ----------------------- | ------------------------------------------------------------------------------------------- | ----------------------- |
+| `RESEND_API_KEY`        | API key for transactional and campaign email delivery                                       | `re_xxxxxxxxxxxx`       |
+| `RESEND_FROM_EMAIL`     | Verified sender address. Defaults to `onboarding@resend.dev` if unset                       | `noreply@gobloomer.com` |
+| `RESEND_WEBHOOK_SECRET` | Verifies Resend webhook signatures for delivery/open/click events                           | From Resend dashboard   |
+| `UNSUBSCRIBE_SECRET`    | Signs one-click unsubscribe links in marketing emails. Generate with `openssl rand -hex 32` | 32+ char random string  |
+| `APP_NAME`              | App name shown in transactional email templates. Defaults to `Bloomer`                      | `Bloomer`               |
 
 ### Square POS Integration (OAuth)
 
-| Variable | Purpose | Example |
-|---|---|---|
-| `SQUARE_CLIENT_ID` | Square OAuth application ID | `sq0idp-xxxxxxxxxxxx` |
+| Variable               | Purpose                         | Example               |
+| ---------------------- | ------------------------------- | --------------------- |
+| `SQUARE_CLIENT_ID`     | Square OAuth application ID     | `sq0idp-xxxxxxxxxxxx` |
 | `SQUARE_CLIENT_SECRET` | Square OAuth application secret | `sq0csp-xxxxxxxxxxxx` |
 
 > Sandbox vs production is determined automatically from `NODE_ENV`. Use **sandbox** credentials in development and **production** credentials only in deployed environments. Get both from [developer.squareup.com](https://developer.squareup.com).
 
 ### Inbox Integrations (Optional)
 
-| Variable | Purpose | Example |
-|---|---|---|
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID for Gmail inbox integration | From Google Cloud Console |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | From Google Cloud Console |
-| `MICROSOFT_CLIENT_ID` | Microsoft OAuth client ID for Outlook inbox integration | From Azure Portal |
-| `MICROSOFT_CLIENT_SECRET` | Microsoft OAuth client secret | From Azure Portal |
+| Variable                  | Purpose                                                 | Example                   |
+| ------------------------- | ------------------------------------------------------- | ------------------------- |
+| `GOOGLE_CLIENT_ID`        | Google OAuth client ID for Gmail inbox integration      | From Google Cloud Console |
+| `GOOGLE_CLIENT_SECRET`    | Google OAuth client secret                              | From Google Cloud Console |
+| `MICROSOFT_CLIENT_ID`     | Microsoft OAuth client ID for Outlook inbox integration | From Azure Portal         |
+| `MICROSOFT_CLIENT_SECRET` | Microsoft OAuth client secret                           | From Azure Portal         |
 
 ### Forms
 
-| Variable | Purpose | Example |
-|---|---|---|
+| Variable   | Purpose                                                       | Example                              |
+| ---------- | ------------------------------------------------------------- | ------------------------------------ |
 | `FORM_KEY` | Bearer token authenticating requests to public form endpoints | Generate with `openssl rand -hex 32` |
 
 ### Cron & Scheduled Jobs
 
-| Variable | Purpose | Example |
-|---|---|---|
+| Variable      | Purpose                                                                                | Example                |
+| ------------- | -------------------------------------------------------------------------------------- | ---------------------- |
 | `CRON_SECRET` | Bearer token authenticating Vercel Cron requests. Generate with `openssl rand -hex 32` | 32+ char random string |
 
 ### Public (Client-Side) Variables
 
 Variables prefixed with `NEXT_PUBLIC_` are exposed to the browser. **Never store secrets here.**
 
-| Variable | Purpose | Example |
-|---|---|---|
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Maps JS API for delivery address autocomplete and routing | `AIzaSyXXXXXXXX` |
-| `NEXT_PUBLIC_PUBLIC_FORM_URL` | Public-facing URL for embedded customer intake forms | `https://gobloomer.com/forms` |
-| `NEXT_PUBLIC_APP_URL` | Fallback base URL used when `NEXTAUTH_URL` is unset (Resend emails, OAuth callbacks) | Same as `NEXTAUTH_URL` |
+| Variable                          | Purpose                                                                              | Example                       |
+| --------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------- |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Maps JS API for delivery address autocomplete and routing                     | `AIzaSyXXXXXXXX`              |
+| `NEXT_PUBLIC_PUBLIC_FORM_URL`     | Public-facing URL for embedded customer intake forms                                 | `https://gobloomer.com/forms` |
+| `NEXT_PUBLIC_APP_URL`             | Fallback base URL used when `NEXTAUTH_URL` is unset (Resend emails, OAuth callbacks) | Same as `NEXTAUTH_URL`        |
 
 ### Optional Variables
 
-| Variable | Purpose | Default if Unset |
-|---|---|---|
-| `UPSTASH_REDIS_REST_URL` | Upstash Redis endpoint for distributed rate limiting | Falls back to in-memory rate limiting |
-| `UPSTASH_REDIS_REST_TOKEN` | Auth token for Upstash Redis | Falls back to in-memory rate limiting |
-```
+| Variable                   | Purpose                                              | Default if Unset                      |
+| -------------------------- | ---------------------------------------------------- | ------------------------------------- |
+| `UPSTASH_REDIS_REST_URL`   | Upstash Redis endpoint for distributed rate limiting | Falls back to in-memory rate limiting |
+| `UPSTASH_REDIS_REST_TOKEN` | Auth token for Upstash Redis                         | Falls back to in-memory rate limiting |
+
+````
 
 3. **Setup Database**
 ```bash
 npx prisma generate
 npx prisma db push
-```
+````
 
 4. **Run Development Server**
+
 ```bash
 npm run dev
 ```
@@ -422,12 +476,12 @@ Bloomer uses a four-layer testing strategy to ensure reliability across API rout
 
 ### Testing Strategy
 
-| Layer | Tool | Purpose |
-|---|---|---|
-| **Unit Testing** | Vitest v1.6.x + JSDOM | Tests individual functions, utilities, and components in isolation |
-| **Integration Testing** | Vitest + Supertest | Tests API routes, database interactions, and frontend/backend communication |
-| **End-to-End (E2E)** | Playwright v1.44.x | Simulates full user workflows in the browser (customer creation, form submission, dashboard updates) |
-| **CI/CD** | GitHub Actions | Auto-runs all tests on every push and pull request to prevent broken code from merging |
+| Layer                   | Tool                  | Purpose                                                                                              |
+| ----------------------- | --------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Unit Testing**        | Vitest v1.6.x + JSDOM | Tests individual functions, utilities, and components in isolation                                   |
+| **Integration Testing** | Vitest + Supertest    | Tests API routes, database interactions, and frontend/backend communication                          |
+| **End-to-End (E2E)**    | Playwright v1.44.x    | Simulates full user workflows in the browser (customer creation, form submission, dashboard updates) |
+| **CI/CD**               | GitHub Actions        | Auto-runs all tests on every push and pull request to prevent broken code from merging               |
 
 ---
 
@@ -443,11 +497,11 @@ bloomer/
 │   └── *.test.ts
 ```
 
-| Extension | Purpose |
-|---|---|
-| `.test.ts` | Unit and integration tests |
-| `.test.tsx` | React component tests |
-| `.e2e.ts` | End-to-end Playwright system tests |
+| Extension   | Purpose                            |
+| ----------- | ---------------------------------- |
+| `.test.ts`  | Unit and integration tests         |
+| `.test.tsx` | React component tests              |
+| `.e2e.ts`   | End-to-end Playwright system tests |
 
 ---
 
@@ -491,7 +545,7 @@ Use coverage to identify untested areas and prioritize where to add tests.
 Create a test file next to the feature you are testing, or place it in `/tests`. All test files must use the `.test.ts` or `.test.tsx` extension.
 
 ```ts
-import { describe, it, expect } from "vitest";
+import {describe, it, expect} from "vitest";
 
 describe("Example Test Suite", () => {
   it("should work correctly", () => {
@@ -519,6 +573,7 @@ Follow this process when creating or updating any feature:
 ### CI/CD Testing (GitHub Actions)
 
 All tests run automatically on:
+
 - Every push to any branch
 - Every pull request targeting `main`
 
@@ -534,13 +589,13 @@ Bloomer is deployed on **Vercel** with automatic deployments from the `main` bra
 
 ### Platform Overview
 
-| Service | Provider |
-|---------|----------|
+| Service         | Provider                     |
+| --------------- | ---------------------------- |
 | Hosting & CI/CD | [Vercel](https://vercel.com) |
-| Database | MongoDB Atlas |
-| Email | Resend |
-| POS Integration | Square |
-| Rate Limiting | Upstash Redis |
+| Database        | MongoDB Atlas                |
+| Email           | Resend                       |
+| POS Integration | Square                       |
+| Rate Limiting   | Upstash Redis                |
 
 ### How Deployments Work
 
@@ -557,10 +612,10 @@ The build is configured in `vercel.json`:
 
 Vercel Cron runs the following jobs automatically in production:
 
-| Schedule | Endpoint | Purpose |
-|----------|----------|---------|
-| Daily at 5:00 PM UTC | `/api/automation/run` | Execute marketing automation workflows |
-| Every hour | `/api/cron/sendlowstock` | Send low-stock inventory alerts |
+| Schedule             | Endpoint                 | Purpose                                |
+| -------------------- | ------------------------ | -------------------------------------- |
+| Daily at 5:00 PM UTC | `/api/automation/run`    | Execute marketing automation workflows |
+| Every hour           | `/api/cron/sendlowstock` | Send low-stock inventory alerts        |
 
 Cron requests are authenticated via the `CRON_SECRET` environment variable (sent as `Authorization: Bearer <token>`).
 
@@ -568,16 +623,16 @@ Cron requests are authenticated via the `CRON_SECRET` environment variable (sent
 
 All environment variables must be configured in the Vercel project dashboard under **Settings → Environment Variables**. See `.env.example` for the full list of required variables:
 
-| Variable | Purpose |
-|----------|---------|
-| `NEXTAUTH_URL` | Production URL for NextAuth session handling |
-| `AUTH_SECRET` | NextAuth encryption secret |
-| `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | Email delivery via Resend |
-| `SQUARE_CLIENT_ID` / `SQUARE_CLIENT_SECRET` | Square POS OAuth integration |
-| `CRON_SECRET` | Authenticates Vercel Cron requests |
-| `UNSUBSCRIBE_SECRET` | Signs email unsubscribe links |
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Maps for delivery features |
-| `NEXT_PUBLIC_PUBLIC_FORM_URL` | Public-facing form URL |
+| Variable                                              | Purpose                                            |
+| ----------------------------------------------------- | -------------------------------------------------- |
+| `NEXTAUTH_URL`                                        | Production URL for NextAuth session handling       |
+| `AUTH_SECRET`                                         | NextAuth encryption secret                         |
+| `RESEND_API_KEY` / `RESEND_FROM_EMAIL`                | Email delivery via Resend                          |
+| `SQUARE_CLIENT_ID` / `SQUARE_CLIENT_SECRET`           | Square POS OAuth integration                       |
+| `CRON_SECRET`                                         | Authenticates Vercel Cron requests                 |
+| `UNSUBSCRIBE_SECRET`                                  | Signs email unsubscribe links                      |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`                     | Google Maps for delivery features                  |
+| `NEXT_PUBLIC_PUBLIC_FORM_URL`                         | Public-facing form URL                             |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Rate limiting (optional — falls back to in-memory) |
 
 ### Deploying
@@ -670,15 +725,18 @@ bloomer/
 Bloomer uses Prisma with MongoDB. Here's an overview of the main models:
 
 ### User
+
 - Stores user authentication and profile information
 - One-to-many with Shops, Coupons, and Campaigns
 
 ### Shop
+
 - Represents a flower shop business
 - Contains business details (name, phone, email, address)
 - One-to-many with Customers and Campaigns
 
 ### Customer
+
 - Complete customer profile with contact information
 - Tracks order history, spend amount, and occasions
 - Can be synced with Square POS via `squareId`
@@ -686,24 +744,28 @@ Bloomer uses Prisma with MongoDB. Here's an overview of the main models:
 - Customer groups: VIP, Repeat, New, Potential
 
 ### Campaign
+
 - Email marketing campaigns
 - Statuses: Draft, Scheduled, Sent, Failed
 - Audience types: All, VIP, New, Potential, Newsletter, Custom
 - Tracks scheduling and delivery times
 
 ### CampaignRecipient
+
 - Junction table for Campaign-Customer relationship
 - Tracks individual email delivery status
 - Records opens and clicks
 - Statuses: Pending, Sent, Failed, Opened, Clicked
 
 ### Coupon
+
 - Discount codes for customers
 - Percentage-based discounts
 - Expiration date support
 - Unique code names
 
 ### Address
+
 - Customer addresses for deliveries
 - Supports multiple addresses per customer
 - Full address details (line1, line2, city, state, zip, country)
@@ -713,6 +775,7 @@ Bloomer uses Prisma with MongoDB. Here's an overview of the main models:
 Bloomer integrates with Square POS to sync customer and order data.
 
 ### Features
+
 - **Customer Import** - Sync customers from Square
 - **Order Sync** - Import order history
 - **Automatic Updates** - Keep data synchronized
@@ -731,10 +794,10 @@ Bloomer integrates with Square POS to sync customer and order data.
 
 ```typescript
 // Import customers from Square
-await fetch("/api/customer/import", { method: "POST" });
+await fetch("/api/customer/import", {method: "POST"});
 
 // Sync Square data
-await fetch("/api/square/sync", { method: "POST" });
+await fetch("/api/square/sync", {method: "POST"});
 ```
 
 ---
@@ -742,6 +805,7 @@ await fetch("/api/square/sync", { method: "POST" });
 ## 📱 Responsive Design
 
 Bloomer is fully responsive and optimized for:
+
 - 📱 Mobile phones (320px+)
 - 📱 Tablets (768px+)
 - 💻 Laptops (1024px+)
@@ -753,6 +817,7 @@ Bloomer is fully responsive and optimized for:
 ## 🎨 Theming
 
 Bloomer supports light and dark themes with:
+
 - Automatic theme detection
 - Persistent theme selection
 - Smooth theme transitions
@@ -831,34 +896,42 @@ Contributions are welcome! Please follow these steps:
 ## 👥 Team Members
 
 ### 1. Zyale Brown-Sanger
+
 - **Email:** zyaleparis@gmail.com
 - **GitHub:** github.com/Zyale21
 
 ### 2. Pavel Bratan
+
 - **Email:** pbratan@csus.edu
 - **GitHub:** github.com/Proxtron
 
 ### 3. Ryan Mello
+
 - **Email:** ryanmello897@gmail.com
 - **GitHub:** github.com/ryanmello
 
 ### 4. Brendan Wong
+
 - **Email:** tobrendanw@gmail.com
 - **GitHub:** github.com/BrendanMWong
 
 ### 5. Arianna Hernandez
+
 - **Email:** ari.hernandez0010@gmail.com
 - **GitHub:** github.com/ahernandez41
 
 ### 6. Edgar Castaneda
+
 - **Email:** edgar.castaneda1211@gmail.com
 - **GitHub:** github.com/edgarcastaneda89
 
 ### 7. Chik Pan Wong
+
 - **Email:** chikpanwong@gmail.com
 - **GitHub:** github.com/chikpanwong
 
 ### 8. Caillou Xiong
+
 - **Email:** caillouxiong@csus.edu
 - **GitHub:** github.com/cxiiong
 
@@ -866,4 +939,4 @@ Contributions are welcome! Please follow these steps:
 
 **Built with ❤️ for flower shops everywhere**
 
-*Grow your business. Bloom with confidence.*
+_Grow your business. Bloom with confidence._
