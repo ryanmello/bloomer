@@ -107,7 +107,7 @@ Bloomer is a specialized Customer Relationship Management (CRM) solution built s
 
 ### Calendar
 
-![Calendar](images/Calendar2.png)
+![Calendar](images/calendar2.png)
 
 ### Inbox (Gmail Integration)
 
@@ -126,13 +126,13 @@ Bloomer is a specialized Customer Relationship Management (CRM) solution built s
 
 ### Audiences
 
-![Audiences](images/Audiences.png)
-![Audiences](images/Audiences3.png)
-![Audiences](images/Audiences2.png)
+![Audiences](images/audiences.png)
+![Audiences](images/audiences3.png)
+![Audiences](images/audiences2.png)
 
 ### Contacts
 
-![Contacts](images/Contacts.png)
+![Contacts](images/contacts.png)
 
 ### Forms
 
